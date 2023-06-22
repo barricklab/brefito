@@ -1,7 +1,7 @@
-name: raven
+name: polypolish
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - raven-assembler
+  - polypolish

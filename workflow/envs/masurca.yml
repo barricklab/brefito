@@ -1,7 +1,8 @@
-name: raven
+name:masurca
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - raven-assembler
+  - masurca
+  - bwa

@@ -21,7 +21,8 @@ ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLIS
 
 rule all:
   input:
-    expand("04_assemblies/{dataset}/assembly_{assembly_id}.fasta", dataset=DATASETS, assembly_id=ALL_RESAMPLED_IDS)
+#    expand("04_assemblies/{dataset}/assembly_{assembly_id}.fasta", dataset=DATASETS, assembly_id=ALL_RESAMPLED_IDS)
+     expand("05_trycycler/{dataset}/clustering.done", dataset=DATASETS)
 
 rule assemble_with_flye:
     input:
@@ -44,7 +45,7 @@ rule assemble_with_miniasm_minipolish:
         assembly_id="|".join(MINIASM_MINIPOLISH_RESAMPLED_IDS),
     output:
         assembly = "04_assemblies/{dataset}/assembly_{assembly_id}.fasta",
-        graph = "04_assemblies/{dataset}/assembly_{assembly_id}..gfa"
+        graph = "04_assemblies/{dataset}/assembly_{assembly_id}.gfa"
     conda:
         "envs/miniasm_minipolish.yml"
     threads: 16
@@ -86,4 +87,16 @@ rule assemble_with_raven:
     threads: 16
     shell:
         "raven --threads {threads} --disable-checkpoints --graphical-fragment-assembly 04_assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}.gfa {input} > {output}"
+
+rule trycycler_cluster:
+    input:
+        reads = "01_trimmed_reads/{dataset}_long_reads.fastq",
+        assemblies = expand("04_assemblies/{{dataset}}/assembly_{assembly_id}.fasta", assembly_id=ALL_RESAMPLED_IDS)
+    output:
+        "05_trycycler/{dataset}/clustering.done"
+    conda:
+        "envs/trycycler.yml"
+    threads: 128
+    shell:
+        "trycycler cluster --threads {threads} --assemblies {input.assemblies} --reads {input.reads} --out_dir 05_trycycler/{wildcards.dataset} && touch {output}"
 

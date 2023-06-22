@@ -1,7 +1,7 @@
-name: raven
+name: medaka
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - raven-assembler
+  - medaka
