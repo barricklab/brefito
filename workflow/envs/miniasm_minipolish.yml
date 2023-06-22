@@ -1,0 +1,9 @@
+name: miniasm_minipolish
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - miniasm
+  - minipolish
+  - any2fasta
