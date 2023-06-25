@@ -1,8 +1,7 @@
-name: masurca
+name: unicycler
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca
-  - bwa
+  - unicycler

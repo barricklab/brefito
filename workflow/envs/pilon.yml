@@ -1,8 +1,10 @@
-name: masurca
+name: pilon
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca
-  - bwa
+  - bowtie2
+  - minimap2
+  - samtools
+  - pilon

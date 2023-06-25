@@ -1,8 +1,7 @@
-name: masurca
+name: seqkit
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca
-  - bwa
+  - seqkit

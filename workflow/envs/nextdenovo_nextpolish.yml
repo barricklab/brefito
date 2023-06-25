@@ -1,8 +1,8 @@
-name: masurca
+name: nextdenovo_nextpolish
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca
-  - bwa
+  - nextdenovo
+  - nextpolish

@@ -1,8 +1,7 @@
-name: masurca
+name: canu
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca
-  - bwa
+  - canu

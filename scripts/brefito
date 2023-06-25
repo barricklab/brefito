@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+
+import glob
+import os.path
+import argparse
+import re
+
+# What command did we choose
+parser = argparse.ArgumentParser(
+                    prog='brefito',
+                    description='wrapper for bacterial reference genome assembly, polishing, and annotation',
+                    epilog='')
+
+parser.add_argument('-p', '--path', default='.', type=str)      # option that takes a value
+parser.add_argument('command', type=str)           # positional argument
+parser.add_argument('samples', nargs='?', type=str)           # positional argument
+
+args = parser.parse_args()
+base_path = args.path
+command_to_run = args.command
+samples_to_run = args.samples
+
+# What command did we run?
+print("Command: " + command_to_run)
+if (samples_to_run != None):
+    print("Samples:" + samples_to_run)
+else:
+    print("Samples: all")
+print("Base path: " + base_path)
+
+# What samples are we running?
+
+
+# What files are available?
+
+
+
+def find_input_files_matching_ending(file_ending):
+    existing_files=glob.glob(os.path.join(base_path,"input", "*."+file_ending))
+    #print(os.path.join(base_path,"input", "*."+file_ending))
+    matching_input_files = {}
+    for this_input_file in existing_files:
+        this_file_name=os.path.basename(this_input_file)
+        #print(this_file_name)
+        full_base_name = re.findall("(.+)\." + re.escape(file_ending), this_file_name)
+        if not full_base_name: continue
+        #print(full_base_name)
+        sample_name = re.findall("(.+?)\.(.+)", full_base_name[0]) 
+        #print(full_base_name)
+        #print(sample_name)
+        if sample_name:
+            matching_input_files[sample_name[0][0]] = full_base_name[0]
+        else:
+            matching_input_files[full_base_name[0]] = full_base_name[0]
+
+    return(matching_input_files)
+
+print("\nFound long read files (XXXXXX.long_reads.gz) in " + os.path.join(base_path,"input"))
+input_long_read_files = find_input_files_matching_ending("long_reads.fastq.gz")
+for k in input_long_read_files.keys(): print("    " + k)
+
+print("\nFound matching pairs of short read files (XXXXXX.short_reads_[1/2].gz) in " + os.path.join(base_path,"input"))
+input_short_read_1_files = find_input_files_matching_ending("short_reads_1.fastq.gz")
+for k in input_short_read_1_files.keys(): print("    " + k)
+
+input_short_read_2_files = find_input_files_matching_ending("short_reads_2.fastq.gz")
+for k in input_short_read_2_files.keys(): print("    " + k)
+
+
+## Check that both _1 and _2 are available
+
+print("\nFound reference files (XXXXX.fasta) in " + os.path.join(base_path,"input"))
+input_reference_files = find_input_files_matching_ending("fasta")
+for k in input_reference_files.keys(): print("    " + k)
