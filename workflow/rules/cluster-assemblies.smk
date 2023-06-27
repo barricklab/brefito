@@ -1,13 +1,5 @@
 include: "assemble.smk"
 
-rule ungzip_long_reads:
-    input:
-        reads = "01_trimmed_reads/{dataset}.long_reads.trimmed.fastq.gz"
-    output:
-        reads = "01_trimmed_reads/{dataset}.long_reads.trimmed.fastq"
-    shell:
-        "gzunzip {input}"
-
 rule trycycler_cluster:
     input:
         reads = "01_trimmed_reads/{dataset}.long_reads.trimmed.fastq",

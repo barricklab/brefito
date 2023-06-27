@@ -2,7 +2,7 @@ include: "trim-short-reads.smk"
 
 READ_NUMS = ["1", "2"]
 
-rule filter_short_reads:
+rule subsample_short_reads:
     input:
         expand("01_trimmed_reads/{{dataset}}.short_reads_{read_num}.fastq.gz", read_num=READ_NUMS)
     output:

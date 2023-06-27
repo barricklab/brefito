@@ -1,0 +1,9 @@
+name: mummer_syri_plotsr
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - mummer
+  - syri
+  - plotsr
