@@ -1,10 +1,12 @@
 import glob
 import os.path
 
-INPUT_SAMPLE_FILES=glob.glob("input/samples/*.fasta")
-
 INPUT_REFERENCE_FILES=glob.glob("input/references/*.fasta")
 print(INPUT_REFERENCE_FILES)
+
+INPUT_SAMPLE_FILES=glob.glob("input/samples/*.fasta")
+print(INPUT_SAMPLE_FILES)
+
 OUTPUT_PDF_FILES = []
 SYRI_OUTPUT_FILES = []
 for this_reference_file in INPUT_REFERENCE_FILES:
@@ -21,19 +23,38 @@ for this_reference_file in INPUT_REFERENCE_FILES:
 
 print(OUTPUT_PDF_FILES)
 
-print(SYRI_OUTPUT_FILES)
 
-
-
-    
+NORMALIZE_ASSEMBLIES_SCRIPT_PATH = os.path.join(workflow.current_basedir, "..", "scripts", "normalize_assembly.py")
 
 rule all:
     input: OUTPUT_PDF_FILES
 
+rule sort_reference_assemblies:
+    input:
+        "input/references/{reference}.fasta",
+    output:
+        "00_normalized_assemblies/references/{reference}.fasta"
+    conda:
+        "../envs/biopython.yml"
+    shell:
+        "{NORMALIZE_ASSEMBLIES_SCRIPT_PATH} -r {input} -i {input} -o {output} -s"
+
+
+rule normalize_assemblies:
+    input:
+        reference = "00_normalized_assemblies/references/{reference}.fasta",
+        sample = "input/samples/{sample}.fasta"
+    output:
+        "00_normalized_assemblies/samples/{reference}/{sample}.fasta"
+    conda:
+        "../envs/biopython.yml"
+    shell:
+        "{NORMALIZE_ASSEMBLIES_SCRIPT_PATH} -r {input.reference} -i {input.sample} -o {output} -s -c -x"
+
 rule compare_mummer:
     input:
-        reference = "input/references/{reference}.fasta",
-        sample = "input/samples/{sample}.fasta"
+        reference = "00_normalized_assemblies/references/{reference}.fasta",
+        sample = "00_normalized_assemblies/samples/{reference}/{sample}.fasta"
     output:
         delta = "01_mummer/{reference}/{sample}.delta",
         filtered_delta = "01_mummer/{reference}/{sample}.filtered.delta",
@@ -49,8 +70,8 @@ rule compare_mummer:
 
 rule create_genomes_tsv:
         input:
-            reference_fasta_file = "input/references/{reference}.fasta",
-            sample_fasta_files = "input/samples/{sample}.fasta"
+            reference_fasta_file = "00_normalized_assemblies/references/{reference}.fasta",
+            sample_fasta_files = "00_normalized_assemblies/samples/{reference}/{sample}.fasta"
         output:
             "03_plotsr/{reference}/{sample}/genomes.tsv"
         shell:
@@ -64,8 +85,8 @@ rule create_genomes_tsv:
 
 rule run_syri:
     input:
-        reference = "input/references/{reference}.fasta",
-        sample = "input/samples/{sample}.fasta",
+        reference = "00_normalized_assemblies/references/{reference}.fasta",
+        sample = "00_normalized_assemblies/samples/{reference}/{sample}.fasta",
         coords = "01_mummer/{reference}/{sample}.coords",
         filtered_delta = "01_mummer/{reference}/{sample}.filtered.delta"
     output:

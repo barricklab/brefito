@@ -1,8 +1,8 @@
 rule trim_long_reads:
     input:
-        "input/{sample}.long_reads.fastq.gz"
+        "nanopore_reads/{sample}.fastq.gz"
     output:
-        "01_trimmed_reads/{sample}.long_reads.trimmed.fastq.gz"
+        "01_trimmed_nanopore_reads/{sample}.trimmed.fastq.gz"
     conda:
         "../envs/porechop.yml"
     threads: 16

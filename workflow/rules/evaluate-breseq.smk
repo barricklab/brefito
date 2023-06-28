@@ -1,0 +1,39 @@
+include: "trim-nanopore-reads.smk"
+include: "trim-illumina-reads.smk"
+
+rule evaluate_breseq_with_nanopore_reads:
+    input:
+        reference = "assemblies/{sample}.fasta",
+        reads = "01_trimmed_nanopore_reads/{sample}.trimmed.fastq.gz"
+    output:
+        intermediate_path = temp(directory("06_breseq/{sample}_nanopore_reads")),
+        output_path = directory("evaluate/breseq/{sample}_nanopore_reads")
+    log: 
+        "logs/evaluate_breseq_nanopore_reads_{sample}.log"
+    conda:
+        "../envs/breseq.yml"
+    threads: 8
+    shell:
+        """
+        breseq --nanopore --long-read-split-length 500 --long-read-distribute-remainder -j {threads} -r {input.reference} -o {output.intermediate_path} {input.reads} > {log} 2>&1
+        mv {output.intermediate_path}/output {output.output_path}
+       """    
+
+rule evaluate_breseq_with_illumina_reads:
+    input:
+        reference = "assemblies/{sample}.fasta",
+        reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
+    output:
+        intermediate_path = temp(directory("06_breseq/{sample}_illumina_reads")),
+        output_path = directory("evaluate/breseq/{sample}_illumina_reads")
+    log: 
+        "logs/evaluate_breseq_illumina_reads_{sample}.log"
+    conda:
+        "../envs/breseq.yml"
+    threads: 8
+    shell:
+        """
+        breseq -j {threads} -r {input.reference} -o {output.intermediate_path}  {input.reads} > {log} 2>&1
+        echo "mv {output.intermediate_path}/output {output.output_path}"
+        mv {output.intermediate_path}/output {output.output_path}
+        """    
