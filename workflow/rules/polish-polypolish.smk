@@ -6,7 +6,7 @@ NORMALIZE_ASSEMBLIES_SCRIPT_PATH = os.path.join(workflow.current_basedir, "..", 
 rule polish_with_polypolish:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = expand("01_illumina_trimmed_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
+        reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
     output:
         path = temp(directory("06_polypolish/{sample}")),
         polished_fasta = "06_polypolish/{sample}.fasta.polished.temp"

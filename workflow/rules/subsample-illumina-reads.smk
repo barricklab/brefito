@@ -1,12 +1,12 @@
-include: "trim-short-reads.smk"
+include: "trim-illumina-reads.smk"
 
 READ_NUMS = ["1", "2"]
 
-rule subsample_short_reads:
+rule subsample_illumina_reads:
     input:
         expand("01_trimmed_reads/{{dataset}}.short_reads_{read_num}.fastq.gz", read_num=READ_NUMS)
     output:
-        expand("02_subsampled_short_reads/{{dataset}}/sample_{{assembly_id}}_{read_num}.fastq.gz", read_num=READ_NUMS)
+        expand("03_subsampled_illumina_reads/{{dataset}}/sample_{{assembly_id}}_{read_num}.fastq.gz", read_num=READ_NUMS)
     conda:
         "../envs/seqkit.yml"
     shell:

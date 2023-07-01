@@ -1,4 +1,4 @@
-include: "assemble.smk"
+include: "trycycler-assemble.smk"
 
 rule trycycler_cluster:
     input:

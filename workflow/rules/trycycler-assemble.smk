@@ -1,6 +1,6 @@
-include: "subsample-long-reads.smk"
-include: "subsample-short-reads.smk"
+# Does all steps through assembly and clustering
 
+include: "subsample-nanopore-reads.smk"
 
 num_resampled_read_sets=24
 FLYE_RESAMPLED_IDS = ["01", "07", "13", "19"]
@@ -8,13 +8,17 @@ MINIASM_MINIPOLISH_RESAMPLED_IDS = ["02", "08", "14", "20"]
 RAVEN_RESAMPLED_IDS = ["03", "09", "15", "21"]
 CANU_RESAMPLED_IDS = ["04", "10", "16", "22"]
 NECAT_RESAMPLED_IDS = ["05", "11", "17", "23"]
-UNICYCLER_RESAMPLED_IDS = ["06", "12", "18", "24"]
+UNICYCLER_RESAMPLED_IDS = []
+
+# Uncomment if using unicycler
+#include: "subsample-illumina-reads.smk"
+#UNICYCLER_RESAMPLED_IDS = ["06", "12", "18", "24"]
 
 ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLISH_RESAMPLED_IDS + CANU_RESAMPLED_IDS + NECAT_RESAMPLED_IDS + UNICYCLER_RESAMPLED_IDS
 
 rule assemble_with_flye:
     input:
-        "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq"
+        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(FLYE_RESAMPLED_IDS),
     output:
@@ -28,7 +32,7 @@ rule assemble_with_flye:
 
 rule assemble_with_miniasm_minipolish:
     input:
-        "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq"
+        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(MINIASM_MINIPOLISH_RESAMPLED_IDS),
     output:
@@ -65,7 +69,7 @@ rule assemble_with_miniasm_minipolish:
 
 rule assemble_with_raven:
     input:
-        "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq"
+        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(RAVEN_RESAMPLED_IDS),
     output:
@@ -80,7 +84,7 @@ rule assemble_with_raven:
 rule assemble_with_canu:
     priority: 2
     input:
-        "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq"
+        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(CANU_RESAMPLED_IDS),
     output:
@@ -114,7 +118,7 @@ rule trim_canu_assembly :
 
 rule assemble_with_necat:
     input:
-        "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq"
+        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(NECAT_RESAMPLED_IDS),
     output:
@@ -138,11 +142,13 @@ rule assemble_with_necat:
         cp necat/6-bridge_contigs/polished_contigs.fasta $ORIGINALPATH/{output.assembly_fasta}
         """
 
+READ_NUMS = ["1", "2"]
+
 rule assemble_with_unicycler:
     priority: 1
     input:
-        long_reads = "02_subsampled_long_reads/{dataset}/sample_{assembly_id}.fastq",
-        short_reads = expand("02_subsampled_short_reads/{{dataset}}/sample_{{assembly_id}}_{read_num}.fastq.gz", read_num=READ_NUMS)
+        long_reads = "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq",
+        short_reads = expand("03_subsampled_illumina_reads/{{dataset}}/sample_{{assembly_id}}_R{read_num}.fastq.gz", read_num=READ_NUMS)
     wildcard_constraints:
         assembly_id="|".join(UNICYCLER_RESAMPLED_IDS),
     output:
@@ -158,3 +164,17 @@ rule assemble_with_unicycler:
         cp {output.assembly_directory}/assembly.fasta {output.assembly_fasta}
         cp {output.assembly_directory}/assembly.gfa {output.assembly_gfa}
         """
+
+rule trycycler_cluster:
+    input:
+        reads = "02_filtered_nanopore_reads/{dataset}.fastq",
+        assemblies = expand("04_assemblies/{{dataset}}/assembly_{assembly_id}.fasta", assembly_id=ALL_RESAMPLED_IDS)
+    output:
+        output_directory = directory("05_trycycler/{dataset}"),
+        done_file = "05_trycycler/{dataset}/done"
+    conda:
+        "../envs/trycycler.yml"
+    threads: 128
+    shell:
+        "trycycler cluster --threads {threads} --assemblies {input.assemblies} --reads {input.reads} --out_dir 05_trycycler/{wildcards.dataset} && touch {output.done_file}"
+

@@ -3,12 +3,12 @@ include: "trim-nanopore-reads.smk"
 rule polish_with_medaka:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = "01_trimmed_nanopore_reads/{sample}.trimmed.fastq.gz"
+        reads = "02_filtered_nanopore_reads/{sample}.fastq"
     output:
         path = temp(directory("06_medaka_polish/{sample}")),
         fasta = "assemblies/{sample}.fasta.polished"
     log: 
-        "logs/polis_medaka_{sample}.log"
+        "logs/polish_medaka_{sample}.log"
     conda:
         "../envs/medaka.yml"
     threads: 8
