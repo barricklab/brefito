@@ -1,0 +1,9 @@
+name: brefito
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - snakemake
+  - lftp

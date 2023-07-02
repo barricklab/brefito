@@ -6,9 +6,18 @@ import argparse
 import re
 import subprocess
 
+# Need to use importlib to get proper location after install!!
+
+# import importlib
+# print(importlib.resources.files("brefito"))
+
+# for entry in importlib_resources.files('my.package.subpackage').iterdir():
+#     print(entry.name)
+
 
 # We need to look at relative paths to find the smk files
 script_path = os.path.abspath(os.path.dirname(__file__))
+
 rules_path = os.path.join(script_path, "..", "workflow", "rules")
 
 # What command did we choose
@@ -54,6 +63,8 @@ def find_matching_input_files(in_base_path, in_file_ending):
     return(matching_input_files)
 
 assemblies_path = "assemblies"
+reference_assemblies_path = "references"
+sample_assemblies_path = "samples"
 nanopore_input_path = "nanopore_reads"
 illumina_input_path = "illumina_reads"
 
@@ -83,8 +94,6 @@ if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.it
     print("    " + "NONE FOUND")
 
 
-
-
 print()
 print("Genome assembly files found (*.fasta) in " + assemblies_path)
 print()
@@ -92,6 +101,21 @@ input_assembly_files = find_matching_input_files(assemblies_path, "fasta")
 for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
 if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
+
+print()
+print("Reference genome assembly files found (*.fasta) in " + reference_assemblies_path)
+print()
+input_reference_assembly_files = find_matching_input_files(reference_assemblies_path, "fasta")
+for (k, v) in input_reference_assembly_files.items(): print("    " + k + " : " + v)
+if (len(input_reference_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+
+print()
+print("Sample genome assembly files found (*.fasta) in " + sample_assemblies_path)
+print()
+input_sample_assembly_files = find_matching_input_files(sample_assemblies_path, "fasta")
+for (k, v) in input_sample_assembly_files.items(): print("    " + k + " : " + v)
+if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
 snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
 
@@ -116,9 +140,15 @@ if command_to_run == "download-reads-lftp":
     resource_options_list = resource_options_list + ["connections=1"]
     valid_command_found = True 
 
+if command_to_run == "compare-syri":
+    for s in input_sample_assembly_files.keys():
+        for r in input_reference_assembly_files.keys():
+            smk_targets = smk_targets + [ "comparisons/" + r + "/" + s + ".pdf" ]
+    valid_command_found = True 
+
 
 #################################################
-### trycycler trifect
+### trycycler trifecta
 #################################################
 
 if command_to_run == "trycycler-assemble":
