@@ -17,7 +17,7 @@ Then, create an environment for _brefito_ thet includes its requirements and ins
 ```
 mamba env create -f environment.yml
 conda activate brefito
-pip install -e .
+pip install .
 ```
 
 Now you should be able to run the _brefito_ script and see the help like this!

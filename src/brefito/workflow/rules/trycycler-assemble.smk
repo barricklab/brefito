@@ -99,8 +99,6 @@ rule assemble_with_canu:
         rm -rf canu_temp
         """
 
-CANU_SCRIPT_PATH = os.path.join(workflow.current_basedir, "..", "scripts", "canu_trim.py")
-
 rule trim_canu_assembly :
     input:
         "03_canu_assembly_temp/{dataset}/{assembly_id}/canu.contigs.fasta"
@@ -111,7 +109,7 @@ rule trim_canu_assembly :
     shell:
         """
         echo "Executing... {CANU_SCRIPT_PATH}\n"
-        {CANU_SCRIPT_PATH} {input} > {output}
+        canu_trim {input} > {output}
         """
 
 

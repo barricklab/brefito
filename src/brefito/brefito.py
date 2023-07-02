@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+
+def main():
+
+    import glob
+    import os.path
+    import argparse
+    import re
+    import subprocess
+
+
+    # Where are the smk rules files?
+    import brefito
+    import importlib.resources
+    brefito_package_path = importlib.resources.files(brefito)
+    rules_path = os.path.join(brefito_package_path, "workflow", "rules")
+
+    # What command did we choose
+    parser = argparse.ArgumentParser(
+                        prog='brefito',
+                        description='wrapper for bacterial reference genome assembly, polishing, and annotation',
+                        epilog='')
+
+    parser.add_argument('-p', '--path', default='.', type=str)      # option that takes a value
+    parser.add_argument('--config', action='append', default=[])         
+    parser.add_argument('command', type=str)           # positional argument
+    parser.add_argument('samples', nargs='?', type=str)           # positional argument
+
+    args = parser.parse_args()
+    base_path = args.path
+    command_to_run = args.command.lower()
+    samples_to_run = args.samples
+    config_options_list = args.config
+    resource_options_list = []
+
+    # What command did we run?
+    print("Command: " + command_to_run)
+    if (samples_to_run != None):
+        print("Samples:" + samples_to_run)
+    else:
+        print("Samples: all")
+    print("Base path: " + base_path)
+    print("Config options: " + " ".join(config_options_list))
+
+
+    # What files are available?
+
+    def find_matching_input_files(in_base_path, in_file_ending):
+        existing_files=glob.glob(os.path.join(in_base_path, "*."+in_file_ending))
+        #print(os.path.join(base_path,"input", "*."+file_ending))
+        matching_input_files = {}
+        for this_input_file in existing_files:
+            this_file_name=os.path.basename(this_input_file)
+            #print(this_file_name)
+            short_name = re.findall("(.+)\." + re.escape(in_file_ending), this_file_name)
+            matching_input_files[short_name[0]] = this_input_file
+
+        return(matching_input_files)
+
+    assemblies_path = "assemblies"
+    reference_assemblies_path = "references"
+    sample_assemblies_path = "samples"
+    nanopore_input_path = "nanopore_reads"
+    illumina_input_path = "illumina_reads"
+
+    print()
+    print("Nanopore read files found (*.fastq.gz in " + nanopore_input_path)
+    print()
+
+    input_nanopore_files = find_matching_input_files(nanopore_input_path, "fastq.gz")
+    for k in input_nanopore_files: print("    " + k)
+    if (len(input_nanopore_files.items()) == 0) : print("    " + "NONE FOUND")
+
+    print()
+    print("Paired-end Illumina read files found (*.R[1/2].gz) in " + illumina_input_path)
+    print()
+
+    input_illumina_1_files = find_matching_input_files(illumina_input_path, "R1.fastq.gz")
+    input_illumina_2_files = find_matching_input_files(illumina_input_path, "R2.fastq.gz")
+
+    for key in set( list(input_illumina_1_files.keys()) + list(input_illumina_2_files.keys()) ):
+        if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
+        if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
+
+        assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
+        assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
+
+    if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
+        print("    " + "NONE FOUND")
+
+
+    print()
+    print("Genome assembly files found (*.fasta) in " + assemblies_path)
+    print()
+    input_assembly_files = find_matching_input_files(assemblies_path, "fasta")
+    for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
+    if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+
+    print()
+    print("Reference genome assembly files found (*.fasta) in " + reference_assemblies_path)
+    print()
+    input_reference_assembly_files = find_matching_input_files(reference_assemblies_path, "fasta")
+    for (k, v) in input_reference_assembly_files.items(): print("    " + k + " : " + v)
+    if (len(input_reference_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+
+    print()
+    print("Sample genome assembly files found (*.fasta) in " + sample_assemblies_path)
+    print()
+    input_sample_assembly_files = find_matching_input_files(sample_assemblies_path, "fasta")
+    for (k, v) in input_sample_assembly_files.items(): print("    " + k + " : " + v)
+    if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+    snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
+
+    # What are appropriate targets for the command we are running?
+    valid_command_found = False
+    smk_targets = []
+
+    if command_to_run == "polish-polypolish" or command_to_run == "polish-polca" or command_to_run == "polish-medaka":
+        valid_command_found = True 
+        smk_targets = [ d + ".polished" for d in input_assembly_files.values() ]
+
+    # We use one smk with different targets for these three
+    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-nanopore-reads":
+        smk_targets = smk_targets + [ "evaluate/breseq/{}_nanopore_reads".format(key) for key in input_assembly_files.keys() ]
+    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads":
+        smk_targets = smk_targets + [ "evaluate/breseq/{}_illumina_reads".format(key) for key in input_assembly_files.keys() ]
+    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads" or command_to_run == "evaluate-breseq-nanopore-reads":
+        command_to_run = "evaluate-breseq"
+        valid_command_found = True 
+
+    if command_to_run == "download-reads-lftp":
+        resource_options_list = resource_options_list + ["connections=1"]
+        valid_command_found = True 
+
+    if command_to_run == "compare-syri":
+        for s in input_sample_assembly_files.keys():
+            for r in input_reference_assembly_files.keys():
+                smk_targets = smk_targets + [ "comparisons/" + r + "/" + s + ".pdf" ]
+        valid_command_found = True 
+
+
+    #################################################
+    ### trycycler trifecta
+    #################################################
+
+    if command_to_run == "trycycler-assemble":
+        valid_command_found = True 
+        smk_targets = [ "05_trycycler/" + d + "/done" for d in input_nanopore_files.keys() ]
+
+    if command_to_run == "trycycler-reconcile":
+        valid_command_found = True 
+        input_files=glob.glob("05_trycycler/*/cluster_*")
+        for this_input_file in input_files:
+            smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
+
+    if command_to_run == "trycycler-consensus":
+        valid_command_found = True 
+        smk_targets = [ "assemblies/" + d + ".fasta" for d in input_nanopore_files.keys() ]
+
+    #################################################
+    assert valid_command_found, "Command not recognized: " + command_to_run + "\nRun brefito -h to see valid options!"
+
+    smk_file_path = os.path.join(rules_path, command_to_run + ".smk")
+    target_options = ["-s", smk_file_path]
+
+    config_options = []
+    if len(config_options_list) > 0:
+        config_options =  ["--config"]
+        for i in config_options_list:
+            si = i.split('=')
+            config_options = config_options + [si[0] + '="' + si[1] + '"']
+
+    resource_options = []
+    if len(resource_options_list) > 0:
+        resource_options =  ["--resources", " ".join(resource_options_list)]
+
+    command = snakemake_plus_common_options + target_options + smk_targets + config_options + resource_options
+
+    print()
+    print("RUNNING COMMAND")
+    print(" ".join(command))
+
+    subprocess.run(command)
+
+    ## Cleanup
+
+    def copy_and_rename_assemblies(in_input_assembly_files, in_ending_to_add):
+        for a in in_input_assembly_files:
+            
+            # Check for new file
+            if os.path.isfile(a + ".polished"):
+
+                # Check if we are the original file
+                if not os.path.isfile(a + ".1.original"):
+                    subprocess.run(["cp", a, a + ".1.original"])
+
+                # Rename the new one and replace the main one so we can iterate
+                i=1
+                while len(glob.glob(a + "." + str(i) + ".*")) == 1:
+                    i = i + 1
+
+                subprocess.run(["cp", a + ".polished", a + "." + str(i) + "." + in_ending_to_add])
+                subprocess.run(["mv", a + ".polished", a])
+
+
+    if command_to_run == "polish-polypolish":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polypolish")
+    elif command_to_run == "polish-polca":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polca")
+    elif command_to_run == "polish-medaka":
+        copy_and_rename_assemblies(input_assembly_files.values(), "medaka")
+
+
+if __name__ == "__main__":
+    main()

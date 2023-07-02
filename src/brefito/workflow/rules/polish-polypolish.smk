@@ -1,8 +1,5 @@
 include: "trim-illumina-reads.smk"
 
-# We need to fix the contig names with this polisher
-NORMALIZE_ASSEMBLIES_SCRIPT_PATH = os.path.join(workflow.current_basedir, "..", "scripts", "normalize_assembly.py")
-
 rule polish_with_polypolish:
     input:
         reference = "assemblies/{sample}.fasta",
@@ -34,4 +31,4 @@ rule polish_with_polypolish_postprocess_rename_contigs:
     conda:
         "../envs/biopython.yml"
     shell:
-        "{NORMALIZE_ASSEMBLIES_SCRIPT_PATH} -r {input.reference} -i {input.sample} -o {output} -c"
+        "normalize_assembly -r {input.reference} -i {input.sample} -o {output} -c"

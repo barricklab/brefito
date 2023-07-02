@@ -1,34 +1,3 @@
-# import glob
-# import os.path
-
-# INPUT_REFERENCE_FILES=glob.glob("input/references/*.fasta")
-# print(INPUT_REFERENCE_FILES)
-
-# INPUT_SAMPLE_FILES=glob.glob("input/samples/*.fasta")
-# print(INPUT_SAMPLE_FILES)
-
-# OUTPUT_PDF_FILES = []
-# SYRI_OUTPUT_FILES = []
-# for this_reference_file in INPUT_REFERENCE_FILES:
-#     this_file_name=os.path.basename(this_reference_file)
-#     reference_name = re.findall("(.+)\.fasta", this_file_name)
-
-
-#     for this_sample_file in INPUT_SAMPLE_FILES:
-#         this_sample_file_name=os.path.basename(this_sample_file)
-#         sample_name = re.findall("(.+)\.fasta", this_sample_file_name)
-#         SYRI_OUTPUT_FILES.append(os.path.join("02_syri", reference_name[0], sample_name[0],  "syri.out"))
-
-#         OUTPUT_PDF_FILES.append(os.path.join("output", reference_name[0], sample_name[0] + ".pdf"))
-
-# print(OUTPUT_PDF_FILES)
-
-
-NORMALIZE_ASSEMBLIES_SCRIPT_PATH = os.path.join(workflow.current_basedir, "..", "scripts", "normalize_assembly.py")
-
-# rule all:
-#     input: OUTPUT_PDF_FILES
-
 rule sort_reference_assemblies:
     input:
         "references/{reference}.fasta",
@@ -37,7 +6,7 @@ rule sort_reference_assemblies:
     conda:
         "../envs/biopython.yml"
     shell:
-        "{NORMALIZE_ASSEMBLIES_SCRIPT_PATH} -r {input} -i {input} -o {output} -s"
+        "normalize_assembly -r {input} -i {input} -o {output} -s"
 
 
 rule normalize_assemblies:
@@ -49,7 +18,7 @@ rule normalize_assemblies:
     conda:
         "../envs/biopython.yml"
     shell:
-        "{NORMALIZE_ASSEMBLIES_SCRIPT_PATH} -r {input.reference} -i {input.sample} -o {output} -s -c -x"
+        "normalize_assembly -r {input.reference} -i {input.sample} -o {output} -s -c -x"
 
 rule compare_mummer:
     input:

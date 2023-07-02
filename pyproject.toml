@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brefito"
+version = "0.0.1"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["*.smk", "*.yml"]
+
+[project.scripts]
+brefito = "brefito.brefito:main"
+normalize_assembly = "brefito.normalize_assembly:main"
+canu_trim = "brefito.canu_trim:main"
+
+
