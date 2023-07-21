@@ -53,7 +53,7 @@ def main():
     parser = argparse.ArgumentParser(description="Reindex sequence file to a conserved sequence")
     parser.add_argument("-r", "--reference", help="Bases to reindex on", action="store", default=None)
     parser.add_argument("-i", "--input", help="Folder containing target files", action="store", required=True)
-    parser.add_argument("-o", "--output", help="Folder containing target files", action="store", required=True)
+    parser.add_argument("-o", "--output", help="Folder containing target files", action="store", default=None)
     parser.add_argument("-t", "--file-type", help="Filetype to reindex [fasta]", action="store", default="fasta")
     parser.add_argument("-s", "--sort", help="Sort contigs, longest to shortest. Sorting happens before renaming", action='store_true')
     parser.add_argument("-c", "--copy-names", help="Rename contig names to match the reference in order.", action='store_true')
@@ -61,6 +61,7 @@ def main():
     parser.add_argument("-x", "--reindex", help="Reindex (rotate) contigs so they start with the same bases as the reference", action='store_true')
     parser.add_argument("-y", "--reindex-initial-bases", help="Reindex (rotate) contigs in so they start with the same number of identical nucleotides to the reference", action="store", type=int, default=24)
     parser.add_argument("-z", "--reindex-sequence", help="Reindex (rotate) all contigs to begin with this sequence if possible", action="store")
+    parser.add_argument("-?", "--info", help="Print extra information about contigs after performing operations", action="store_true")
 
     args = parser.parse_args()
 
@@ -71,20 +72,22 @@ def main():
         exit(1)
 
     # Load reference file
-
+    print("LOADING")
     reference_seqs = []
     if (args.reference != None):
         print("Reference File: ", args.reference)
         for record in SeqIO.parse(args.reference, "fasta"):
             reference_seqs.append({'id' : record.id, 'seq' : record.seq})
-        print("  * Contigs:" + str([d['id'] for d in reference_seqs]) )
+    for i, item in enumerate(reference_seqs):
+        print("    {} ({} bp)".format(item['id'], len(item['seq'])))     
 
     # Load input file
     input_seqs = []
     print("Input File: ", args.input)
     for record in SeqIO.parse(args.input, "fasta"):
         input_seqs.append({'id' : record.id, 'seq' : record.seq})
-    print("  * Contigs:" + str([d['id'] for d in input_seqs]) )
+    for i, item in enumerate(input_seqs):
+        print("    {} ({} bp)".format(item['id'], len(item['seq']))) 
 
     # Handle sorting
     if (args.sort):
@@ -103,8 +106,6 @@ def main():
     if (args.new_names):
         print("RENAMING BY INDEX")
         assert len(reference_seqs)==len(input_seqs), "Reference and input files must have the same number of sequences."
-        for i, item in enumerate(input_seqs):
-            item['id'] = args.new_names + str(i+1)
 
     # Reindex
     if (args.reindex):
@@ -120,13 +121,19 @@ def main():
             item['seq'] = reindex_sequence(item['seq'], item['id'], args.reindex_sequence)
 
     #Write output file
-    with open(args.output, "w") as output_handle:
-        for i in input_seqs:
-            simple_seq_r = SeqRecord(Seq(i['seq']))
-            simple_seq_r.id = i['id']
-            simple_seq_r.description = ""
-            SeqIO.write(simple_seq_r, output_handle, "fasta")
+    if (args.output != None):
+        with open(args.output, "w") as output_handle:
+            for i in input_seqs:
+                simple_seq_r = SeqRecord(Seq(i['seq']))
+                simple_seq_r.id = i['id']
+                simple_seq_r.description = ""
+                SeqIO.write(simple_seq_r, output_handle, "fasta")
 
+    if (args.info):
+        print("PRINTING INFO")
+        print("  Number of contigs: " + str(len(input_seqs)))
+        for i, item in enumerate(input_seqs):
+            print("    {} ({} bp)".format(item['id'], len(item['seq'])))
 
 if __name__ == '__main__':
     main()

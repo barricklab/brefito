@@ -15,7 +15,7 @@ rule evaluate_breseq_with_nanopore_reads:
     threads: 8
     shell:
         """
-        breseq --nanopore --long-read-split-length 500 --long-read-distribute-remainder -j {threads} -r {input.reference} -o {output.intermediate_path} {input.reads} > {log} 2>&1
+        breseq -l 100 --nanopore --long-read-split-length 500 --long-read-distribute-remainder -j {threads} -r {input.reference} -o {output.intermediate_path} {input.reads} > {log} 2>&1
         mv {output.intermediate_path}/output {output.output_path}
        """    
 
@@ -33,7 +33,7 @@ rule evaluate_breseq_with_illumina_reads:
     threads: 8
     shell:
         """
-        breseq -j {threads} -r {input.reference} -o {output.intermediate_path}  {input.reads} > {log} 2>&1
+        breseq -l 100 -j {threads} -r {input.reference} -o {output.intermediate_path}  {input.reads} > {log} 2>&1
         echo "mv {output.intermediate_path}/output {output.output_path}"
         mv {output.intermediate_path}/output {output.output_path}
         """    

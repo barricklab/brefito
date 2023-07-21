@@ -23,8 +23,11 @@ def main():
 
     parser.add_argument('-p', '--path', default='.', type=str)      # option that takes a value
     parser.add_argument('--config', action='append', default=[])         
+    parser.add_argument('--rerun-incomplete', action='store_true') 
+    parser.add_argument('--unlock', action='store_true') 
     parser.add_argument('command', type=str)           # positional argument
     parser.add_argument('samples', nargs='?', type=str)           # positional argument
+
 
     args = parser.parse_args()
     base_path = args.path
@@ -96,6 +99,17 @@ def main():
     for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
     if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
+    input_main_reference_assembly_files = glob.glob("reference.fasta")
+    input_main_reference_assembly_file = None
+    input_main_reference_assembly_file_status = "UNKNOWN";
+    if (len(input_main_reference_assembly_files) == 1):
+        input_main_reference_assembly_file = input_main_reference_assembly_files[0]
+        input_main_reference_assembly_file_status = "FOUND"
+    else:
+        input_main_reference_assembly_file_status = "NOT FOUND"
+    print()
+    print("Main reference genome assembly file found (reference.fasta)? " + input_main_reference_assembly_file_status)
+    print()
 
     print()
     print("Reference genome assembly files found (*.fasta) in " + reference_assemblies_path)
@@ -113,6 +127,11 @@ def main():
     if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
     snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
+    if args.rerun_incomplete:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
+    if args.unlock:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--unlock"]
+
 
     # What are appropriate targets for the command we are running?
     valid_command_found = False
@@ -133,6 +152,42 @@ def main():
 
     if command_to_run == "download-reads-lftp":
         resource_options_list = resource_options_list + ["connections=1"]
+        valid_command_found = True 
+
+    if command_to_run == "assemble-flye":
+        smk_targets = smk_targets + [ "assemblies/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
+        valid_command_found = True 
+
+    if command_to_run == "assemble-unicycler":
+        smk_targets = smk_targets + [ "assemblies_unicycler/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
+        valid_command_found = True 
+
+    if command_to_run == "predict-mutations-breseq":
+
+        input_illumina_1_files.keys()
+        input_read_file_set = set(input_illumina_1_files.keys()) | set(input_illumina_2_files.keys()) | set(input_nanopore_files.keys())
+
+        smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
+        valid_command_found = True 
+
+    # When we normalize, we need to know it will work = the same number of contigs as reference
+    normalize_assembly_files = {}
+    if command_to_run == "normalize-assemblies":
+        from Bio import SeqIO
+        assert input_main_reference_assembly_file != None, "Main reference assembly required for this command!" 
+        input_main_reference_seqs = []
+        for record in SeqIO.parse(input_main_reference_assembly_file, "fasta"):
+            input_main_reference_seqs.append({'id' : record.id, 'seq' : record.seq})
+        num_reference_contigs = len(input_main_reference_seqs)
+
+        for input_assembly_file_key in input_assembly_files.keys():
+            input_assembly_seqs = []
+            input_assembly_file = input_assembly_files[input_assembly_file_key]
+            for record in SeqIO.parse(input_assembly_file, "fasta"):
+                input_assembly_seqs.append({'id' : record.id, 'seq' : record.seq})
+            if len(input_assembly_seqs) == num_reference_contigs:
+                smk_targets.append("assemblies/{}.fasta.normalized".format(input_assembly_file_key))
+                normalize_assembly_files[input_assembly_file_key] = input_assembly_file
         valid_command_found = True 
 
     if command_to_run == "compare-syri":
@@ -187,11 +242,11 @@ def main():
 
     ## Cleanup
 
-    def copy_and_rename_assemblies(in_input_assembly_files, in_ending_to_add):
+    def copy_and_rename_assemblies(in_input_assembly_files, in_ending_to_remove, in_ending_to_add):
         for a in in_input_assembly_files:
             
             # Check for new file
-            if os.path.isfile(a + ".polished"):
+            if os.path.isfile(a + "." + in_ending_to_remove):
 
                 # Check if we are the original file
                 if not os.path.isfile(a + ".1.original"):
@@ -202,16 +257,18 @@ def main():
                 while len(glob.glob(a + "." + str(i) + ".*")) == 1:
                     i = i + 1
 
-                subprocess.run(["cp", a + ".polished", a + "." + str(i) + "." + in_ending_to_add])
-                subprocess.run(["mv", a + ".polished", a])
+                subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
+                subprocess.run(["mv", a + "." + in_ending_to_remove, a])
 
 
     if command_to_run == "polish-polypolish":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polypolish")
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
     elif command_to_run == "polish-polca":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polca")
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polca")
     elif command_to_run == "polish-medaka":
-        copy_and_rename_assemblies(input_assembly_files.values(), "medaka")
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
+    elif command_to_run == "normalize-assemblies":
+        copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
 
 
 if __name__ == "__main__":

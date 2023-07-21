@@ -27,11 +27,18 @@ BOOKMARK = ""
 if "bookmark" in config.keys():
     BOOKMARK = config["bookmark"]
 
-
 file_info = []
 URL_dict = {}
 
-with open('data.csv') as data_file:
+data_csv = 'data.csv'
+if "data_csv" in config:
+    data_csv = config["data_csv"]
+
+REMOTE_BASE_PATH='.'
+if "remote_path" in config:
+    REMOTE_BASE_PATH = config["remote_path"]
+
+with open(data_csv) as data_file:
     data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
     for row in data_reader:
         if (row['type'] == "nanopore"):
@@ -85,9 +92,9 @@ rule download_reads:
         connections=1
     shell:
         """
-        echo 'cd "{config[remote_path]}"' > {params.lftp_commands_file}
+        echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
         echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file} 
-        cat {params.lftp_commands_file} 
+        #cat {params.lftp_commands_file} 
         lftp {params.bookmark} < {params.lftp_commands_file}
         rm {params.lftp_commands_file} 
         mv {params.download_path} {output.output_path}

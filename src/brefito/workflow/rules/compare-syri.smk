@@ -3,8 +3,6 @@ rule sort_reference_assemblies:
         "references/{reference}.fasta",
     output:
         "01_normalized_assemblies/references/{reference}.fasta"
-    conda:
-        "../envs/biopython.yml"
     shell:
         "normalize_assembly -r {input} -i {input} -o {output} -s"
 
@@ -15,8 +13,6 @@ rule normalize_assemblies:
         sample = "samples/{sample}.fasta"
     output:
         "01_normalized_assemblies/samples/{reference}/{sample}.fasta"
-    conda:
-        "../envs/biopython.yml"
     shell:
         "normalize_assembly -r {input.reference} -i {input.sample} -o {output} -s -c -x"
 
