@@ -83,7 +83,7 @@ def main():
 
     for key in set( list(input_illumina_1_files.keys()) + list(input_illumina_2_files.keys()) ):
         if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
-        if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
+        if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
         assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
         assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
@@ -170,6 +170,19 @@ def main():
         smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
         valid_command_found = True 
 
+    if command_to_run == "align-for-igv":
+
+        # Indexed FASTA
+        smk_targets = smk_targets + [ "output_aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
+
+        #  Indexed nanopore BAM
+        smk_targets = smk_targets + [ "output_aligned_reads/{}/nanopore.bam.bai".format(key) for key in input_nanopore_files ]
+
+        #  Indexed illumina BAM
+        smk_targets = smk_targets + [ "output_aligned_reads/{}/illumina.bam.bai".format(key) for key in input_illumina_1_files ]
+
+        valid_command_found = True 
+
     # When we normalize, we need to know it will work = the same number of contigs as reference
     normalize_assembly_files = {}
     if command_to_run == "normalize-assemblies":
@@ -196,6 +209,13 @@ def main():
                 smk_targets = smk_targets + [ "comparisons/" + r + "/" + s + ".pdf" ]
         valid_command_found = True 
 
+
+    if command_to_run == "compare-mummer":
+        command_to_run = "compare-syri"
+        for s in input_sample_assembly_files.keys():
+            for r in input_reference_assembly_files.keys():
+                smk_targets = smk_targets + [ "02_mummer_results/" + r + "/" + s + ".coords" ]
+        valid_command_found = True 
 
     #################################################
     ### trycycler trifecta

@@ -12,10 +12,10 @@ rule subsample_illumina_reads:
     shell:
         """
         NOMINALDEPTH=80
-        seqkit stats {input} -T > 01_trimmed_reads/{wildcards.dataset}.short_reads.stats.tsv
-        BASES=`tail -n -2 01_trimmed_reads/{wildcards.dataset}.short_reads.stats.tsv | echo $(( $( cut -d$'\t' -f5 | paste -s -d+ - ) ))`
+        seqkit stats {input} -T > 01_trimmed_illumina_reads/{wildcards.dataset}.short_reads.stats.tsv
+        BASES=`tail -n -2 01_trimmed_illumina_reads/{wildcards.dataset}.short_reads.stats.tsv | echo $(( $( cut -d$'\t' -f5 | paste -s -d+ - ) ))`
         echo $BASES
-        READS=`tail -n -2 01_trimmed_reads/{wildcards.dataset}.short_reads.stats.tsv | echo $(( $( cut -d$'\t' -f4 | paste -s -d+ - ) ))`
+        READS=`tail -n -2 01_trimmed_illumina_reads/{wildcards.dataset}.short_reads.stats.tsv | echo $(( $( cut -d$'\t' -f4 | paste -s -d+ - ) ))`
         echo $READS
         READPROPORTION=`python -c "print(min(1, $BASES / {config[genome_size]} * $NOMINALDEPTH))"`
         echo $READPROPORTION

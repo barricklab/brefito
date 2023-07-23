@@ -1,6 +1,6 @@
 # brefito
 
-Snakemake pipeline for assembling, polishing, and annotating bacterial reference sequences.
+Helper for running snakemake pipelines for assembling, polishing, and annotating bacterial reference sequences and for predicting mutations in a bacterial genome from re-sequencing data.
 
 ## Installation
 
@@ -28,3 +28,29 @@ brefito
 ## Overview
 
 _brefito_ is a wrapper to make running several related snakemake pipelines easier!
+
+## Working Directory Structure
+
+To get started, you'll need to place your input files in some standard locations withing the main working directory that you will use for running _brefito_.
+
+Input directories of sequencing reads:
+* `input/illumina_reads`
+* `input/nanopore_reads`
+
+Special input/output directory, depending on the command
+* `assemblies`
+
+Input directories for commands that compare genomes:
+* `input/references`
+* `input/samples`
+
+Output files usually appear in directories of the form `output/*`
+
+## Commands
+
+### `brefito evaluate-breseq`
+```
+Inputs:
+Output:
+Options: --config breseq_options="<breseq_options>"
+``

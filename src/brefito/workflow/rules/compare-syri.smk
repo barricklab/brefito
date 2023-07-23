@@ -28,6 +28,7 @@ rule compare_mummer:
         "../envs/mummer_syri_plotsr.yml"
     shell:
         """
+        mkdir -p 02_mummer_results/{wildcards.reference}
         nucmer --maxmatch -c 100 -b 500 -p 02_mummer_results/{wildcards.reference}/{wildcards.sample} {input.reference} {input.sample}
         delta-filter -m -i 90 -l 100 {output.delta} > {output.filtered_delta}
         show-coords -THrd {output.filtered_delta} > {output.coords}
