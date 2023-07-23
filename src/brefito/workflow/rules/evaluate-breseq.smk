@@ -8,7 +8,7 @@ if "breseq_options" in config.keys():
 rule evaluate_breseq_with_nanopore_reads:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = "01_trimmed_nanopore_reads/{sample}.trimmed.fastq.gz"
+        reads = "01_trimmed_nanopore_reads/{sample}fastq.gz"
     output:
         intermediate_path = temp(directory("06_breseq/{sample}_nanopore_reads")),
         output_path = directory("evaluate/breseq/{sample}_nanopore_reads")
