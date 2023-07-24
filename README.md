@@ -25,6 +25,11 @@ Now you should be able to run the _brefito_ script and see the help like this!
 brefito
 ```
 
+It's also highly recommended that you set up a common location for snakemake to store conda environments. Otherwise it will re-install each environment in each working directory you use, which is slow and wastes disk space! To do so, set this environment variable in your startup script (`~/.bashrc`, `~/.zshrc`, etc.) to something like this:
+```
+export SNAKEMAKE_CONDA_PREFIX=$HOME/snakemake_conda_envs
+```
+
 ## Overview
 
 _brefito_ is a wrapper to make running several related snakemake pipelines easier!
@@ -53,4 +58,4 @@ Output files usually appear in directories of the form `output/*`
 Inputs:
 Output:
 Options: --config breseq_options="<breseq_options>"
-``
+```

@@ -8,9 +8,9 @@ if "breseq_options" in config.keys():
 rule evaluate_breseq_with_nanopore_reads:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = "01_trimmed_nanopore_reads/{sample}.trimmed.fastq.gz"
+        reads = "01_trimmed_nanopore_reads/{sample}.fastq.gz"
     output:
-        intermediate_path = temp(directory("06_breseq/{sample}_nanopore_reads")),
+        intermediate_path = directory("06_breseq/{sample}_nanopore_reads"),
         output_path = directory("evaluate/breseq/{sample}_nanopore_reads")
     log: 
         "logs/evaluate_breseq_nanopore_reads_{sample}.log"
@@ -19,7 +19,7 @@ rule evaluate_breseq_with_nanopore_reads:
     threads: 8
     shell:
         """
-        breseq --nanopore {BRESEQ_OPTIONS} --long-read-distribute-remainder -j {threads} -r {input.reference} -o {output.intermediate_path} {input.reads} > {log} 2>&1
+        breseq --nanopore {BRESEQ_OPTIONS} -j {threads} -r {input.reference} -o {output.intermediate_path} {input.reads} > {log} 2>&1
         mv {output.intermediate_path}/output {output.output_path}
        """    
 
@@ -28,7 +28,7 @@ rule evaluate_breseq_with_illumina_reads:
         reference = "assemblies/{sample}.fasta",
         reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
     output:
-        intermediate_path = temp(directory("06_breseq/{sample}_illumina_reads")),
+        intermediate_path = directory("06_breseq/{sample}_illumina_reads"),
         output_path = directory("evaluate/breseq/{sample}_illumina_reads")
     log: 
         "logs/evaluate_breseq_illumina_reads_{sample}.log"

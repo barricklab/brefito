@@ -50,11 +50,11 @@ def reindex_sequence(in_sequence, in_sequence_name, in_reindex_bases):
 
 def main():
     # Get arguments
-    parser = argparse.ArgumentParser(description="Reindex sequence file to a conserved sequence")
-    parser.add_argument("-r", "--reference", help="Bases to reindex on", action="store", default=None)
-    parser.add_argument("-i", "--input", help="Folder containing target files", action="store", required=True)
-    parser.add_argument("-o", "--output", help="Folder containing target files", action="store", default=None)
-    parser.add_argument("-t", "--file-type", help="Filetype to reindex [fasta]", action="store", default="fasta")
+    parser = argparse.ArgumentParser(description="Reindex/rename/sort contigs in a genome assembly")
+    parser.add_argument("-r", "--reference", help="Input sequence file to use as a reference", action="store", default=None)
+    parser.add_argument("-i", "--input", help="Input sequence file", action="store", required=True)
+    parser.add_argument("-o", "--output", help="Output sequence file", action="store", default=None)
+    parser.add_argument("-t", "--file-type", help="Input sequence file type [fasta]", action="store", default="fasta")
     parser.add_argument("-s", "--sort", help="Sort contigs, longest to shortest. Sorting happens before renaming", action='store_true')
     parser.add_argument("-c", "--copy-names", help="Rename contig names to match the reference in order.", action='store_true')
     parser.add_argument("-n", "--new-names", help="Rename contigs with  this prefix followed by their index in the file", action="store")

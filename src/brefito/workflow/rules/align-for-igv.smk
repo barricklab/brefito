@@ -6,7 +6,7 @@ rule align_nanopore_reads:
         reads = "01_trimmed_nanopore_reads/{sample}.fastq.gz",
         reference = "assemblies/{sample}.fasta"
     output:
-        temporary("output_aligned_reads/{sample}/nanopore.sam")
+        temp("intermediate_aligned_reads/{sample}/nanopore.sam")
     conda:
         "../envs/minimap2.yml"
     threads: 12
@@ -18,22 +18,23 @@ rule align_illumina_reads:
         reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"]),
         reference = "assemblies/{sample}.fasta"
     output:
-        temporary("output_aligned_reads/{sample}/illumina.sam")
+        temp("intermediate_aligned_reads/{sample}/illumina.sam")
     conda:
         "../envs/bowtie2.yml"
     threads: 12
     shell:
         """
-        bowtie2-build {input.reference} output_aligned_reads/{wildcards.sample}/bowtie2
-        bowtie2 --threads {threads} -x output_aligned_reads/{wildcards.sample}/bowtie2 -1 {input.reads[0]} -2 {input.reads[1]} -S {output}
-        rm output_aligned_reads/{wildcards.sample}/bowtie2*
+        mkdir -p intermediate_aligned_reads/{wildcards.sample}
+        bowtie2-build {input.reference} intermediate_aligned_reads/{wildcards.sample}/bowtie2
+        bowtie2 --threads {threads} -x intermediate_aligned_reads/{wildcards.sample}/bowtie2 -1 {input.reads[0]} -2 {input.reads[1]} -S {output}
+        rm intermediate_aligned_reads/{wildcards.sample}/bowtie2*
         """
 
 rule samtools_view:
     input:
-        "output_aligned_reads/{sample}/{technology}.sam"
+        "intermediate_aligned_reads/{sample}/{technology}.sam"
     output:
-        temporary("output_aligned_reads/{sample}/{technology}.unsorted.bam")
+        temp("intermediate_aligned_reads/{sample}/{technology}.unsorted.bam")
     conda:
         "../envs/samtools.yml"
     shell:
@@ -43,7 +44,7 @@ rule samtools_view:
 
 rule samtools_sort:
     input:
-        "output_aligned_reads/{sample}/{technology}.unsorted.bam"
+        "intermediate_aligned_reads/{sample}/{technology}.unsorted.bam"
     output:
         "output_aligned_reads/{sample}/{technology}.bam"
     conda:

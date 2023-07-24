@@ -64,7 +64,7 @@ rule predict_mutations_with_breseq:
         breseq = directory("breseq/{sample}"),
         output = directory("output/{sample}")
     log: 
-        "logs/evaluate_breseq_illumina_reads_{sample}.log"
+        "logs/evaluate_breseq_{sample}.log"
     conda:
         "../envs/breseq.yml"
     params:
@@ -72,11 +72,13 @@ rule predict_mutations_with_breseq:
     threads: 8
     shell:
         """
+        mkdir -p output
+        mkdir -p breseq
         BRESEQ_TMP_DIR=$(mktemp -d)
-        #echo "$BRESEQ_TMP_DIR"
+        echo "$BRESEQ_TMP_DIR"
         breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {REFERENCE_ARGUMENT} -o $BRESEQ_TMP_DIR  {input.reads} > {log} 2>&1
         # Add the sample name as the TITLE in the GD file - so we can do meaningful gdtools COMPARE
-        sed -i -e 's/^\(#=GENOME_DIFF.*\)$/\1\n#=TITLE\t{wildcards.sample}/' $BRESEQ_TMP_DIR/output/output.gd
+        #sed -i -e 's/^\(#=GENOME_DIFF.*\)$/\1\n#=TITLE\t{wildcards.sample}/' $BRESEQ_TMP_DIR/output/output.gd
         #echo "cp -r $BRESEQ_TMP_DIR  {output.breseq}"
         cp -r $BRESEQ_TMP_DIR {output.breseq}
         #echo "cp -r {output.breseq}/output {output.output}"
