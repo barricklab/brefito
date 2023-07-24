@@ -162,6 +162,10 @@ def main():
         smk_targets = smk_targets + [ "assemblies_unicycler/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
         valid_command_found = True 
 
+    if command_to_run == "annotate-references":
+        smk_targets = smk_targets + [ "output/annotated_references/{}.gbk".format(key) for key in input_reference_assembly_files.keys() ]
+        valid_command_found = True 
+
     if command_to_run == "predict-mutations-breseq":
 
         input_illumina_1_files.keys()

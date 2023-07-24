@@ -2,50 +2,39 @@ rule annotate_with_prokka:
     input:
         "references/{sample}.fasta"
     output:
-        directory = directory("01_prokka/{sample}")
-        annotated_reference = "01_prokka/{sample}/reference.gbk"
+        dir = directory("intermediate/prokka/{sample}"),
+        prokka_annotated_reference = "intermediate/prokka/{sample}/reference.gbk"
     conda:
         "../envs/prokka.yml"
-    threads: 12
+    threads: 32
     shell:
-        "prokka --cpus {threads} --outdir {output.directory} {input} --count 2 --out_dir 03_subsampled_nanopore_reads/{wildcards.sample}"
-
+        """
+        prokka --cpus {threads} --prefix reference --force --outdir {output.dir} {input}
+        """
 
 rule annotate_with_isescan:
     input:
         "references/{sample}.fasta"
     output:
-        fasta = "assemblies/{dataset}.fasta",
-        gfa = "assemblies/{dataset}.gfa",
-    log:
-        "logs/flye_{dataset}.log"
-    params:
-        tmpdir = "04_flye_assembly/{dataset}"
+        dir = directory("intermediate/isescan/{sample}"),
+        isescan_annotated_csv = "intermediate/isescan/{sample}/references/{sample}.fasta.csv"
     conda:
         "../envs/isescan.yml"
-    threads: 16
+    threads: 32
     shell:
         """
-        mkdir -p {params.tmpdir}
-        flye --nano-raw {input} --threads {threads} --out-dir {params.tmpdir} 2> {log}
-        cp {params.tmpdir}/assembly.fasta {output.fasta}
-        cp {params.tmpdir}/assembly_graph.gfa {output.gfa}
+        isescan.py --removeShortIS --nthread {threads} --seqfile {input} --output {output.dir}
         """
 
 rule combine_annotation_with_breseq:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_01.fastq"
+        prokka = "intermediate/prokka/{sample}/reference.gbk",
+        isescan = "intermediate/isescan/{sample}/references/{sample}.fasta.csv"
     output:
-        fasta = "assemblies/{dataset}.fasta",
-        gfa = "assemblies/{dataset}.gfa",
-    log:
-        "logs/flye_{dataset}.log"
-    params:
-        tmpdir = "04_flye_assembly/{dataset}"
+        "output/annotated_references/{sample}.gbk"
     conda:
         "../envs/breseq.yml"
-    threads: 16
     shell:
         """
-        breseq CONVERT-REFEENCE
+        breseq CONVERT-REFERENCE -f GENBANK -s {input.isescan} -o {output} {input.prokka}  
         """
