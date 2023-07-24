@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--config', action='append', default=[])         
     parser.add_argument('--rerun-incomplete', action='store_true') 
     parser.add_argument('--unlock', action='store_true') 
+    parser.add_argument('--no-temp', action='store_true') 
     parser.add_argument('command', type=str)           # positional argument
     parser.add_argument('samples', nargs='?', type=str)           # positional argument
 
@@ -131,7 +132,8 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
     if args.unlock:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--unlock"]
-
+    if args.no_temp:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--no-temp"]
 
     # What are appropriate targets for the command we are running?
     valid_command_found = False

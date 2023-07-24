@@ -6,7 +6,7 @@ rule align_nanopore_reads:
         reads = "01_trimmed_nanopore_reads/{sample}.fastq.gz",
         reference = "assemblies/{sample}.fasta"
     output:
-        temporary("intermediate_aligned_reads/{sample}/nanopore.sam")
+        temp("intermediate_aligned_reads/{sample}/nanopore.sam")
     conda:
         "../envs/minimap2.yml"
     threads: 12
@@ -18,7 +18,7 @@ rule align_illumina_reads:
         reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"]),
         reference = "assemblies/{sample}.fasta"
     output:
-        temporary("intermediate_aligned_reads/{sample}/illumina.sam")
+        temp("intermediate_aligned_reads/{sample}/illumina.sam")
     conda:
         "../envs/bowtie2.yml"
     threads: 12
@@ -34,7 +34,7 @@ rule samtools_view:
     input:
         "intermediate_aligned_reads/{sample}/{technology}.sam"
     output:
-        temporary("intermediate_aligned_reads/{sample}/{technology}.unsorted.bam")
+        temp("intermediate_aligned_reads/{sample}/{technology}.unsorted.bam")
     conda:
         "../envs/samtools.yml"
     shell:
