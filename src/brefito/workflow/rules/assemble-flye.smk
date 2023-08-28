@@ -1,5 +1,13 @@
 include: "filter-nanopore-reads.smk"
 
+def get_fastq_reads(wildcards):
+    #print(wildcards)
+    if ("subsample" in config.keys()) and (config[subsample] != False):
+        return ["03_subsampled_nanopore_reads/{}/sample_01.fastq".format(wildcards.dataset)]
+    else:
+        return ["02_filtered_nanopore_reads/{}.fastq".format(wildcards.dataset)]
+    return []
+
 rule subsample_nanopore_reads:
     input:
         "02_filtered_nanopore_reads/{sample}.fastq"
@@ -15,7 +23,7 @@ rule subsample_nanopore_reads:
 
 rule assemble_with_flye:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_01.fastq"
+        get_fastq_reads
     output:
         fasta = "assemblies/{dataset}.fasta",
         gfa = "assemblies/{dataset}.gfa",

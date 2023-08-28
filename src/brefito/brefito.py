@@ -26,6 +26,8 @@ def main():
     parser.add_argument('--rerun-incomplete', action='store_true') 
     parser.add_argument('--unlock', action='store_true') 
     parser.add_argument('--no-temp', action='store_true') 
+    parser.add_argument('--keep-going', action='store_true') 
+    parser.add_argument("--dry-run", '-r', action='store_true') 
     parser.add_argument('command', type=str)           # positional argument
     parser.add_argument('samples', nargs='?', type=str)           # positional argument
 
@@ -86,8 +88,9 @@ def main():
         if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
         if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
-        assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
-        assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
+        if (command_to_run != "download-reads-lftp"):
+            assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
+            assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
 
     if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
         print("    " + "NONE FOUND")
@@ -134,6 +137,11 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--unlock"]
     if args.no_temp:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--no-temp"]
+    if args.keep_going:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--keep-going"]
+    if args.dry_run:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["-r"]
+
 
     # What are appropriate targets for the command we are running?
     valid_command_found = False
@@ -223,6 +231,13 @@ def main():
                 smk_targets = smk_targets + [ "02_mummer_results/" + r + "/" + s + ".coords" ]
         valid_command_found = True 
 
+
+    if command_to_run == "evaluate-nanopore-reads":
+        smk_targets = smk_targets + [ "nanopore_read_stats/{}".format(key) for key in input_nanopore_files ]
+        valid_command_found = True 
+
+    
+
     #################################################
     ### trycycler trifecta
     #################################################
@@ -230,6 +245,7 @@ def main():
     if command_to_run == "trycycler-assemble":
         valid_command_found = True 
         smk_targets = [ "05_trycycler/" + d + "/done" for d in input_nanopore_files.keys() ]
+        #resource_options_list = resource_options_list + ["necats=4"]
 
     if command_to_run == "trycycler-reconcile":
         valid_command_found = True 

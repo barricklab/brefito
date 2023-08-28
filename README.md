@@ -53,6 +53,14 @@ Output files usually appear in directories of the form `output/*`
 
 ## Commands
 
+### `brefito download-reads-lftp`
+```
+Inputs: data.csv
+Outputs: nanopore_reads, illumina_reads
+Options: --config bookmark=<lftp bookmark name>
+Options: --config bookmark=<lftp bookmark name>
+```
+
 ### `brefito evaluate-breseq`
 ```
 Inputs:

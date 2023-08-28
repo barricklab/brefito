@@ -16,11 +16,9 @@ rule cat_contigs:
     shell:
         "cat {input} > {output}"
 
-
 rule trycycler_msa:
     input:
-        all_seqs = "05_trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta",
-        cluster_dir = "05_trycycler/{dataset}/cluster_{cluster_id}"
+        "05_trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta",
     output:
         "05_trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
     conda:
@@ -29,13 +27,12 @@ rule trycycler_msa:
         "05_trycycler/{dataset}/cluster_{cluster_id}/msa.log"
     threads: 16
     shell:
-        "trycycler msa --threads {threads} --cluster_dir {input.cluster_dir} 2> {log}"
+        "trycycler msa --threads {threads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
 
 rule trycycler_partition:
     input:
         reads = "02_filtered_nanopore_reads/{dataset}.fastq",
-        all_seqs = "05_trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta",
-        cluster_dir = "05_trycycler/{dataset}/cluster_{cluster_id}"
+        all_seqs = "05_trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
     output:
         "05_trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
     conda:
@@ -44,12 +41,11 @@ rule trycycler_partition:
         "05_trycycler/{dataset}/cluster_{cluster_id}/partition.log"
     threads: 32
     shell:
-        "trycycler partition --threads {threads} --reads {input.reads} --cluster_dir {input.cluster_dir} 2> {log}"
+        "trycycler partition --threads {threads} --reads {input.reads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
 
 rule trycycler_consensus:
     input:
-        all_seqs = "05_trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq",
-        cluster_dir = "05_trycycler/{dataset}/cluster_{cluster_id}"
+        "05_trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
     output:
         "05_trycycler/{dataset}/cluster_{cluster_id}/7_final_consensus.fasta"
     conda:
@@ -58,4 +54,4 @@ rule trycycler_consensus:
         "05_trycycler/{dataset}/cluster_{cluster_id}/consensus.log"
     threads: 32
     shell:
-        "trycycler consensus --threads {threads} --cluster_dir {input.cluster_dir} 2> {log}"
+        "trycycler consensus --threads {threads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"

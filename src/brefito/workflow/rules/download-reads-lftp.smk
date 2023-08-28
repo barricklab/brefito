@@ -38,9 +38,10 @@ REMOTE_BASE_PATH='.'
 if "remote_path" in config:
     REMOTE_BASE_PATH = config["remote_path"]
 
-with open(data_csv) as data_file:
+with open(data_csv, encoding='utf-8-sig') as data_file:
     data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
     for row in data_reader:
+        print(row)
         if (row['type'] == "nanopore"):
             file_info.append({ 
                 'sample' : row['sample'],
@@ -92,6 +93,7 @@ rule download_reads:
         connections=1
     shell:
         """
+        rm -f {params.download_path}
         echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
         echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file} 
         #cat {params.lftp_commands_file} 
