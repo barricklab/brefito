@@ -17,6 +17,6 @@ rule polish_with_medaka:
       # Copy fasta to output directory in order to avoid preserving an index file
       mkdir -p {output.path}
       cp {input.reference} {output.path}
-      medaka_consensus -i {input.reads} -d {output.path}/{wildcards.sample}.fasta -o {output.path} -m r941_min_sup_g507 -t {threads} 2> {log} 2>&1
+      medaka_consensus -i {input.reads} -d {output.path}/{wildcards.sample}.fasta -o {output.path} -m r941_min_sup_g507 -t {threads} > {log} 2>&1
       mv {output.path}/consensus.fasta {output.fasta}
       """    
