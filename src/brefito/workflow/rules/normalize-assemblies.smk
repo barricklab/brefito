@@ -5,4 +5,4 @@ rule normalize_assemblies:
     output:
         "assemblies/{sample}.fasta.normalized"
     shell:
-        "normalize_assembly -r {input.reference} -i {input.assembly} -o {output} -s -c -x"
+        "normalize_assembly -r {input.reference} -i {input.assembly} -o {output} -s -c -x -n {wildcards.sample}"

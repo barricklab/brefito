@@ -105,7 +105,11 @@ def main():
     # Handle renaming (by index)
     if (args.new_names):
         print("RENAMING BY INDEX")
-        assert len(reference_seqs)==len(input_seqs), "Reference and input files must have the same number of sequences."
+        if len(input_seqs) == 1:
+            input_seqs[0]['id'] = args.new_names
+        else:
+            for i, item in enumerate(input_seqs):
+                item['id'] = args.new_names + "_" + str(i+1) 
 
     # Reindex
     if (args.reindex):
