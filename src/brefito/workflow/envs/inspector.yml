@@ -1,0 +1,9 @@
+name: inspector
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pandas==1.5.3
+  - numpy==1.23
+  - inspector

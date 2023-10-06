@@ -14,8 +14,16 @@ rule cat_contigs:
     output:
         "assemblies/{dataset}.fasta"
     shell:
-        "cat {input} > {output}"
-
+        """
+        ARG={input}
+        if [[ -z "$ARG" ]]; then
+            echo "No inut files found for generating {output}"
+            touch {output}
+        else
+            cat {input} > {output}
+        fi
+        
+        """
 rule trycycler_msa:
     input:
         "05_trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta",

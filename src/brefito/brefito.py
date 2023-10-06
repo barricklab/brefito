@@ -190,10 +190,14 @@ def main():
         smk_targets = smk_targets + [ "output_aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
 
         #  Indexed nanopore BAM
-        smk_targets = smk_targets + [ "output_aligned_reads/{}/nanopore.bam.bai".format(key) for key in input_nanopore_files ]
+        for key in input_assembly_files:
+            if (key in input_nanopore_files):
+                smk_targets = smk_targets + [ "output_aligned_reads/{}/nanopore.bam.bai".format(key) ]
 
         #  Indexed illumina BAM
-        smk_targets = smk_targets + [ "output_aligned_reads/{}/illumina.bam.bai".format(key) for key in input_illumina_1_files ]
+        for key in input_assembly_files:
+            if (key in input_illumina_1_files):
+                smk_targets = smk_targets + [ "output_aligned_reads/{}/illumina.bam.bai".format(key) ]
 
         valid_command_found = True 
 
@@ -236,6 +240,9 @@ def main():
         smk_targets = smk_targets + [ "nanopore_read_stats/{}".format(key) for key in input_nanopore_files ]
         valid_command_found = True 
 
+    if command_to_run == "evaluate-inspector":
+        smk_targets = smk_targets + [ "inspector_assembly_evaluation/{}".format(key) for key in input_assembly_files ]
+        valid_command_found = True 
     
 
     #################################################

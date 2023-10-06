@@ -3,7 +3,7 @@ include: "trim-illumina-reads.smk"
 
 rule align_nanopore_reads:
     input:
-        reads = "01_trimmed_nanopore_reads/{sample}.fastq.gz",
+        reads = "01_trimmed_nanopore_reads/{sample}.fastq",
         reference = "assemblies/{sample}.fasta"
     output:
         temp("intermediate_aligned_reads/{sample}/nanopore.sam")
