@@ -95,7 +95,6 @@ def main():
     if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
         print("    " + "NONE FOUND")
 
-
     print()
     print("Genome assembly files found (*.fasta) in " + assemblies_path)
     print()
@@ -153,9 +152,9 @@ def main():
 
     # We use one smk with different targets for these three
     if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-nanopore-reads":
-        smk_targets = smk_targets + [ "evaluate/breseq/{}_nanopore_reads".format(key) for key in input_assembly_files.keys() ]
+        smk_targets = smk_targets + [ "evaluate/breseq_output/{}_nanopore_reads".format(key) for key in input_assembly_files.keys() ]
     if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads":
-        smk_targets = smk_targets + [ "evaluate/breseq/{}_illumina_reads".format(key) for key in input_assembly_files.keys() ]
+        smk_targets = smk_targets + [ "evaluate/breseq_output/{}_illumina_reads".format(key) for key in input_assembly_files.keys() ]
     if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads" or command_to_run == "evaluate-breseq-nanopore-reads":
         command_to_run = "evaluate-breseq"
         valid_command_found = True 
@@ -227,14 +226,12 @@ def main():
                 smk_targets = smk_targets + [ "comparisons/" + r + "/" + s + ".pdf" ]
         valid_command_found = True 
 
-
     if command_to_run == "compare-mummer":
         command_to_run = "compare-syri"
         for s in input_sample_assembly_files.keys():
             for r in input_reference_assembly_files.keys():
                 smk_targets = smk_targets + [ "02_mummer_results/" + r + "/" + s + ".coords" ]
         valid_command_found = True 
-
 
     if command_to_run == "evaluate-nanopore-reads":
         smk_targets = smk_targets + [ "nanopore_read_stats/{}".format(key) for key in input_nanopore_files ]
@@ -243,7 +240,21 @@ def main():
     if command_to_run == "evaluate-inspector":
         smk_targets = smk_targets + [ "inspector_assembly_evaluation/{}".format(key) for key in input_assembly_files ]
         valid_command_found = True 
+
+    if command_to_run == "evaluate-coverage":
+        smk_targets = smk_targets + [ "evaluate/coverage_plots/nanopore/{}".format(key) for key in input_assembly_files ]
+        valid_command_found = True 
+
+    if command_to_run == "evaluate-breseq-coverage":
+        smk_targets = smk_targets + [ "evaluate/coverage_plots/breseq_nanopore/{}".format(key) for key in input_assembly_files ]
+        valid_command_found = True 
     
+    if command_to_run == "evaluate-soft-clipping":
+
+        smk_targets = smk_targets + [ "evaluate/soft_clipping_summary/nanopore/{}_soft_clipping_summary.csv".format(key) for key in input_assembly_files ]
+        config_options_list.append("brefito_package_path=" + str(brefito_package_path))
+        valid_command_found = True 
+
 
     #################################################
     ### trycycler trifecta

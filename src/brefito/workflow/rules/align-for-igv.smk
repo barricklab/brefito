@@ -3,7 +3,7 @@ include: "trim-illumina-reads.smk"
 
 rule align_nanopore_reads:
     input:
-        reads = "01_trimmed_nanopore_reads/{sample}.fastq",
+        reads = "01_trimmed_nanopore_reads/{sample}.fastq.gz",
         reference = "assemblies/{sample}.fasta"
     output:
         temp("intermediate_aligned_reads/{sample}/nanopore.sam")
@@ -58,9 +58,9 @@ rule samtools_sort:
 
 rule samtools_bam_index:
     input:
-        "output_aligned_reads/{sample}/{technology}.bam"
+        "evaluate/aligned_reads/{sample}/{technology}.bam"
     output:
-        "output_aligned_reads/{sample}/{technology}.bam.bai"
+        "evaluate/aligned_reads/{sample}/{technology}.bam.bai"
     conda:
         "../envs/samtools.yml"
     shell:
@@ -72,8 +72,8 @@ rule samtools_fasta_index:
     input:
         "assemblies/{sample}.fasta"
     output:
-        fasta = "output_aligned_reads/{sample}/reference.fasta",
-        fai = "output_aligned_reads/{sample}/reference.fasta.fai"
+        fasta = "evaluate/aligned_reads/{sample}/reference.fasta",
+        fai = "evaluate/aligned_reads/{sample}/reference.fasta.fai"
     conda:
         "../envs/samtools.yml"
     shell:
