@@ -255,6 +255,11 @@ def main():
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
         valid_command_found = True 
 
+    if command_to_run == "evaluate-redotable":
+        smk_targets = smk_targets + [ "evaluate/dot_plot/{}.svg".format(key) for key in input_assembly_files ]
+        #config_options_list.append("brefito_package_path=" + str(brefito_package_path))
+        valid_command_found = True 
+
 
     #################################################
     ### trycycler trifecta
