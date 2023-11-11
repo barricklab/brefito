@@ -248,6 +248,10 @@ def main():
     if command_to_run == "evaluate-breseq-coverage":
         smk_targets = smk_targets + [ "evaluate/coverage_plots/breseq_nanopore/{}".format(key) for key in input_assembly_files ]
         valid_command_found = True 
+
+    if command_to_run == "evaluate-isescan":
+        smk_targets = smk_targets + [ "evaluate/isescan/{}.csv".format(key) for key in input_assembly_files ]
+        valid_command_found = True 
     
     if command_to_run == "evaluate-soft-clipping":
 
