@@ -11,7 +11,7 @@ rule align_nanopore_reads:
         "../envs/minimap2.yml"
     threads: 12
     shell:
-        "minimap2 -t {threads} -x map-ont -a -o {output} {input.reference} {input.reads}"
+        "minimap2 --secondary=no -t {threads} -x map-ont -a -o {output} {input.reference} {input.reads}"
 
 rule align_illumina_reads:
     input:
@@ -46,7 +46,7 @@ rule samtools_sort:
     input:
         "intermediate_aligned_reads/{sample}/{technology}.unsorted.bam"
     output:
-        "output_aligned_reads/{sample}/{technology}.bam"
+        "evaluate/aligned_reads/{sample}/{technology}.bam"
     conda:
         "../envs/samtools.yml"
     threads: 12

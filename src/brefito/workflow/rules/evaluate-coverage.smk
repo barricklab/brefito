@@ -6,7 +6,9 @@ include: "evaluate-breseq.smk"
 rule evaluate_coverage:
     input:
         bam = "evaluate/aligned_reads/{sample}/{technology}.bam",
+        bai = "evaluate/aligned_reads/{sample}/{technology}.bam.bai",
         fasta = "evaluate/aligned_reads/{sample}/reference.fasta",
+        fai = "evaluate/aligned_reads/{sample}/reference.fasta.fai",
         breseq_summary_json = "evaluate/breseq_output/{sample}_{technology}_reads/summary.json"
     output:
         dir = directory("evaluate/coverage_plots/{technology}/{sample}"),
@@ -21,9 +23,9 @@ rule evaluate_coverage:
         """
         mkdir -p {output.dir}
         # tiles across sequences
-        breseq bam2cov -o {output.dir} -b {input.bam} -f {input.fasta} -a --tile-size 10000 --tile-overlap 2000 -p 1000 -j {input.breseq_summary_json} > {log} 2>&1
+        breseq bam2cov --format PNG -o {output.dir} -b {input.bam} -f {input.fasta} -a --tile-size 10000 --tile-overlap 2000 -p 1000 -j {input.breseq_summary_json} > {log} 2>&1
         # entire sequences
-        breseq bam2cov -o {output.dir} -b {input.bam} -f {input.fasta} -a -p 10000 -j {input.breseq_summary_json} > {log} 2>&1
+        breseq bam2cov --format PNG -o {output.dir}/{wildcards.sample} -b {input.bam} -f {input.fasta} -a -p 10000 -j {input.breseq_summary_json} > {log} 2>&1
         touch {output.done_file}
         """
         #breseq bam2cov -o {output.whole_genome_file} -b {input.bam} -f {input.fasta} -a -j {input.breseq_summary_json} -p 10000 > {log} 2>&1

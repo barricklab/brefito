@@ -186,17 +186,17 @@ def main():
     if command_to_run == "align-for-igv":
 
         # Indexed FASTA
-        smk_targets = smk_targets + [ "output_aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
+        smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
 
         #  Indexed nanopore BAM
         for key in input_assembly_files:
             if (key in input_nanopore_files):
-                smk_targets = smk_targets + [ "output_aligned_reads/{}/nanopore.bam.bai".format(key) ]
+                smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/nanopore.bam.bai".format(key) ]
 
         #  Indexed illumina BAM
         for key in input_assembly_files:
             if (key in input_illumina_1_files):
-                smk_targets = smk_targets + [ "output_aligned_reads/{}/illumina.bam.bai".format(key) ]
+                smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/illumina.bam.bai".format(key) ]
 
         valid_command_found = True 
 
