@@ -28,16 +28,16 @@ def main():
     parser.add_argument('--no-temp', action='store_true') 
     parser.add_argument('--keep-going', action='store_true') 
     parser.add_argument("--dry-run", '-r', action='store_true') 
+    parser.add_argument("--resources", action='append', default=[]) 
     parser.add_argument('command', type=str)           # positional argument
     parser.add_argument('samples', nargs='?', type=str)           # positional argument
-
 
     args = parser.parse_args()
     base_path = args.path
     command_to_run = args.command.lower()
     samples_to_run = args.samples
     config_options_list = args.config
-    resource_options_list = []
+    resource_options_list = args.resources
 
     # What command did we run?
     print("Command: " + command_to_run)
@@ -47,6 +47,7 @@ def main():
         print("Samples: all")
     print("Base path: " + base_path)
     print("Config options: " + " ".join(config_options_list))
+    print("Resource options: " + " ".join(resource_options_list))
 
 
     # What files are available?
@@ -70,7 +71,7 @@ def main():
     illumina_input_path = "illumina_reads"
 
     print()
-    print("Nanopore read files found (*.fastq.gz in " + nanopore_input_path)
+    print("Nanopore read files found (*.fastq.gz) in " + nanopore_input_path)
     print()
 
     input_nanopore_files = find_matching_input_files(nanopore_input_path, "fastq.gz")
@@ -88,7 +89,7 @@ def main():
         if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
         if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
-        if (command_to_run != "download-reads-lftp"):
+        if (command_to_run != "download-reads-lftp") and (command_to_run != "download-data-lftp"):
             assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
             assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
 
@@ -160,7 +161,11 @@ def main():
         valid_command_found = True 
 
     if command_to_run == "download-reads-lftp":
-        resource_options_list = resource_options_list + ["connections=1"]
+        resource_options_list = ["connections=1"] + resource_options_list
+        valid_command_found = True 
+
+    if command_to_run == "download-data-lftp":
+        resource_options_list = ["connections=1"] + resource_options_list
         valid_command_found = True 
 
     if command_to_run == "assemble-flye":
@@ -169,6 +174,9 @@ def main():
 
     if command_to_run == "assemble-unicycler":
         smk_targets = smk_targets + [ "assemblies_unicycler/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
+        valid_command_found = True 
+
+    if command_to_run == "assemble-unicycler-csv":
         valid_command_found = True 
 
     if command_to_run == "annotate-references":
@@ -182,6 +190,9 @@ def main():
 
         smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
         valid_command_found = True 
+
+    if command_to_run == "predict-mutations-breseq-csv":
+       valid_command_found = True 
 
     if command_to_run == "align-for-igv":
 
@@ -297,9 +308,16 @@ def main():
             si = i.split('=')
             config_options = config_options + [si[0] + '="' + si[1] + '"']
 
+    # This lets us replace defaults with user specified resource settings
     resource_options = []
     if len(resource_options_list) > 0:
-        resource_options =  ["--resources", " ".join(resource_options_list)]
+        resource_options =  ["--resources"]
+        resource_options_dict = {}
+        for i in resource_options_list:
+            si = i.split('=')
+            resource_options_dict[si[0]]=si[1] 
+        for k in resource_options_dict:
+            resource_options = resource_options + [k + '=' + resource_options_dict[k]]
 
     command = snakemake_plus_common_options + target_options + smk_targets + config_options + resource_options
 
