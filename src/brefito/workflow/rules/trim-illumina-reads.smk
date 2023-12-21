@@ -14,5 +14,5 @@ rule trim_with_fastp:
     threads: 12
     shell:
         """
-        fastp -j {log.json} -h {log.html} --thread {threads} -i {input[0]} -I {input[1]} -o {output[0]} -O {output[1]} > {log.log} 2>&1
+        fastp --detect_adapter_for_pe -j {log.json} -h {log.html} --thread {threads} -i {input[0]} -I {input[1]} -o {output[0]} -O {output[1]} > {log.log} 2>&1
         """

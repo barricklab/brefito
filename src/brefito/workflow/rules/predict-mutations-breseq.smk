@@ -74,13 +74,21 @@ rule predict_mutations_with_breseq:
         """
         mkdir -p output
         mkdir -p breseq
-        BRESEQ_TMP_DIR=$(mktemp -d)
-        echo "$BRESEQ_TMP_DIR"
-        breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {REFERENCE_ARGUMENT} -o $BRESEQ_TMP_DIR  {input.reads} > {log} 2>&1
-        # Add the sample name as the TITLE in the GD file - so we can do meaningful gdtools COMPARE
-        #sed -i -e 's/^\(#=GENOME_DIFF.*\)$/\1\n#=TITLE\t{wildcards.sample}/' $BRESEQ_TMP_DIR/output/output.gd
-        #echo "cp -r $BRESEQ_TMP_DIR  {output.breseq}"
-        cp -r $BRESEQ_TMP_DIR {output.breseq}
-        #echo "cp -r {output.breseq}/output {output.output}"
+        breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {REFERENCE_ARGUMENT} -o {output.breseq}  {input.reads} > {log} 2>&1
         cp -r {output.breseq}/output {output.output}
         """    
+
+
+        # """
+        # mkdir -p output
+        # mkdir -p breseq
+        # BRESEQ_TMP_DIR=$(mktemp -d)
+        # echo "$BRESEQ_TMP_DIR"
+        # breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {REFERENCE_ARGUMENT} -o $BRESEQ_TMP_DIR  {input.reads} > {log} 2>&1
+        # # Add the sample name as the TITLE in the GD file - so we can do meaningful gdtools COMPARE
+        # #sed -i -e 's/^\(#=GENOME_DIFF.*\)$/\1\n#=TITLE\t{wildcards.sample}/' $BRESEQ_TMP_DIR/output/output.gd
+        # #echo "cp -r $BRESEQ_TMP_DIR  {output.breseq}"
+        # cp -r $BRESEQ_TMP_DIR {output.breseq}
+        # #echo "cp -r {output.breseq}/output {output.output}"
+        # cp -r {output.breseq}/output {output.output}
+        # """    

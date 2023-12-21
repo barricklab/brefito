@@ -25,7 +25,7 @@ Now you should be able to run the _brefito_ script and see the help like this!
 brefito
 ```
 
-It's also highly recommended that you set up a common location for snakemake to store conda environments. Otherwise it will re-install each environment in each working directory you use, which is slow and wastes disk space! To do so, set this environment variable in your startup script (`~/.bashrc`, `~/.zshrc`, etc.) to something like this:
+It's also *highly recommended* that you set up a common location for snakemake to store conda environments. Otherwise it will re-install each environment in each working directory you use, which is slow and wastes disk space! To do so, set this environment variable in your startup script (`~/.bashrc`, `~/.zshrc`, etc.) to something like this:
 ```
 export SNAKEMAKE_CONDA_PREFIX=$HOME/snakemake_conda_envs
 ```
@@ -34,9 +34,16 @@ export SNAKEMAKE_CONDA_PREFIX=$HOME/snakemake_conda_envs
 
 _brefito_ is a wrapper to make running several related snakemake pipelines easier!
 
-## Working Directory Structure
+## Specifying Input Data
 
-To get started, you'll need to place your input files in some standard locations withing the main working directory that you will use for running _brefito_.
+### Using a CSV file
+
+Each line specifies a sample and a reference or read file associated with that sample.
+
+
+### Using a Directory Structure
+
+Instead of creating the CSV file, you can place input files in some standard locations within the main working directory that you will use for running _brefito_. This option is more limited in terms of flexibility. For example, you can't use multiple reference files or read file sets, you'll need to make just one per sample.
 
 Input directories of sequencing reads:
 * `input/illumina_reads`
@@ -49,6 +56,9 @@ Input directories for commands that compare genomes:
 * `input/references`
 * `input/samples`
 
+Global reference file for comparisons
+* `reference.fasta`
+
 Output files usually appear in directories of the form `output/*`
 
 ## Commands
@@ -57,7 +67,6 @@ Output files usually appear in directories of the form `output/*`
 ```
 Inputs: data.csv
 Outputs: nanopore_reads, illumina_reads
-Options: --config bookmark=<lftp bookmark name>
 Options: --config bookmark=<lftp bookmark name>
 ```
 
