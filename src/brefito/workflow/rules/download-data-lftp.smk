@@ -20,25 +20,29 @@
 # by default - which has your password as plain text under ~/.local
 # if you provide a password
 
-include: "load-data-csv.smk"
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
 
+print("HERHEHREE")
 
-def download_all():
-    #print([ d['download_path'] for d in file_info])
-    return([ d['download_path'] for d in file_info])
+def all_local_paths():
+    return(sample_info.get_local_path_list())
 
-rule all:
-    input: download_all()
+rule download_all:
+    input: all_local_paths()
 
-rule download_reads:
+rule download_file:
     output:
         output_path = "{download_type}/{sample}",
     params:
-        URL=lambda wildcards: URL_dict[wildcards.download_type + "/" + wildcards.sample],
+        URL=lambda wildcards: sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample),
         bookmark = BOOKMARK,
         download_path = "{download_type}/temp_{sample}",
         lftp_commands_file = "{download_type}/temp_{sample}.lftp.commands"
     threads: 1
+    wildcard_constraints:
+        download_type="(references|illumina_reads|nanopore_reads)"
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         connections=1
@@ -46,9 +50,9 @@ rule download_reads:
         """
         rm -f {params.download_path}
         echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
-        echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file} 
-        #cat {params.lftp_commands_file} 
+        echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file}
+        #cat {params.lftp_commands_file}
         lftp {params.bookmark} < {params.lftp_commands_file}
-        rm {params.lftp_commands_file} 
+        rm {params.lftp_commands_file}
         mv {params.download_path} {output.output_path}
-        """    
+        """

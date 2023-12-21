@@ -160,16 +160,17 @@ def main():
         command_to_run = "evaluate-breseq"
         valid_command_found = True 
 
+    # Set this globally
+    resource_options_list = ["connections=1"] + resource_options_list
+
     if command_to_run == "download-reads-lftp":
-        resource_options_list = ["connections=1"] + resource_options_list
         valid_command_found = True 
 
     if command_to_run == "download-data-lftp":
-        resource_options_list = ["connections=1"] + resource_options_list
         valid_command_found = True 
 
     if command_to_run == "assemble-flye":
-        smk_targets = smk_targets + [ "assemblies/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
+        smk_targets = []
         valid_command_found = True 
 
     if command_to_run == "assemble-unicycler":
