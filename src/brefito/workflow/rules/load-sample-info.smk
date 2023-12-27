@@ -22,6 +22,8 @@
 
 import csv
 import os
+import glob
+import copy
 
 class SampleInfo():
     file_info = []
@@ -29,19 +31,20 @@ class SampleInfo():
     sample_set = set({})
     sample_list = []
 
-    # Dictionaries with keys that are samples and entries that are download (local) paths
-    reference_lists = {}
-    illumina_SE_read_lists = {}
-    illumina_R1_read_lists = {}
-    illumina_R2_read_lists = {}
-    nanopore_read_lists = {}
+    # Dictionary of lists with keys that are types of data and then lists of files
+    file_lists_by_sample_by_type = {}
 
     # used to check for duplicates and deconflict
-    used_local_paths_set = set({})
-    used_remote_paths_set = set({})
+    remote_to_local_path_mapping = {}
 
-    # The class "constructor" - It's actually an initializer 
-    def __init__(self, sample_info_csv_name):
+    # The class constructor
+    def __init__(self, sample_info_csv_name=None):
+        if sample_info_csv_name != None:
+            self.init_from_CSV_file(sample_info_csv_name)
+        else:
+            self.init_from_directory_structure()
+
+    def init_from_CSV_file(self, sample_info_csv_name=None):
 
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
@@ -62,8 +65,8 @@ class SampleInfo():
                         'local_path' : local_path
                         })
 
-                elif (row['type'] == "illumina"):
-                    local_path = os.path.join("illumina_reads", simplified_read_name + ".fastq.gz")
+                elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
+                    local_path = os.path.join("illumina_reads", simplified_read_name + ".SE.fastq.gz")
                     self.append({ 
                         'sample' : row['sample'],
                         'type' : "illumina-SE", 
@@ -105,56 +108,204 @@ class SampleInfo():
                     print("Skipping row with unknown type:" + row['type'])
 
         self.sample_list = list(self.sample_set)
+        return True
 
-    ## Check to see if the user is going to clobber their own files
+    # Helper function for identifying valid input files
+    # Returns a dict with key as sample name determined from file
+    def find_matching_input_files(self, in_base_path, *in_file_endings):
+
+        matching_input_files = {}
+
+        for in_file_ending in in_file_endings:
+
+            existing_files = glob.glob(os.path.join(in_base_path, "*" + in_file_ending))
+
+            #print(os.path.join(base_path,"input", "*."+file_ending))
+            for this_input_file in existing_files:
+                this_file_name=os.path.basename(this_input_file)
+
+                #print(this_file_name)
+                short_name = re.findall("^(.+)" + re.escape(in_file_ending) + "$", this_file_name)
+                matching_input_files[short_name[0]] = this_input_file
+
+        return(matching_input_files)
+        
+
+    def init_from_directory_structure(self):
+         # What files are available?
+
+        assemblies_path = "assemblies"
+        references_path = "references"
+        nanopore_input_path = "nanopore_reads"
+        illumina_input_path = "illumina_reads"
+
+        print()
+        print("Nanopore read files found (*.fastq.gz) in " + nanopore_input_path)
+        print()
+
+        input_nanopore_files = self.find_matching_input_files(nanopore_input_path, ".fastq.gz")
+        for k in input_nanopore_files: print("    " + k)
+        if (len(input_nanopore_files.items()) == 0) : print("    " + "NONE FOUND")
+        for k, i in input_nanopore_files.items(): 
+            self.append({ 
+                        'sample' : k,
+                        'type' : "nanopore", 
+                        'file_type' : "nanopore", 
+                        'remote_path' : None,
+                        'local_path' : i
+                        })
+
+        print()
+        print("Paired-end Illumina read files found (*R(1|2)*.fastq.gz) in " + illumina_input_path)
+        print()
+
+        input_illumina_1_files = self.find_matching_input_files(illumina_input_path, ".R1.fastq.gz")
+        input_illumina_2_files = self.find_matching_input_files(illumina_input_path, ".R2.fastq.gz")
+
+        for key in set( list(input_illumina_1_files.keys()) + list(input_illumina_2_files.keys()) ):
+            if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
+            if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
+
+        input_illumina_PE_file_names = set({})
+        for k, i in input_illumina_1_files.items(): 
+            self.append({ 
+                        'sample' : k,
+                        'type' : "illumina-R1", 
+                        'file_type' : "illumina", 
+                        'remote_path' : None,
+                        'local_path' : i
+                        })
+            input_illumina_PE_file_names.add(i)
+
+        for k, i in input_illumina_2_files.items(): 
+            self.append({ 
+                        'sample' : k,
+                        'type' : "illumina-R2", 
+                        'file_type' : "illumina", 
+                        'remote_path' : None,
+                        'local_path' : i
+                        })
+            input_illumina_PE_file_names.add(i)
+
+
+
+        if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
+            print("    " + "NONE FOUND")
+
+        print()
+        print("Unpaired Illumina read files found (*.fastq.gz) in " + illumina_input_path)
+        print()
+
+        # We subtract the 
+        input_illumina_SE_files = self.find_matching_input_files(illumina_input_path, ".fastq.gz")
+        for k, i in input_illumina_SE_files.items():
+            if i in input_illumina_PE_file_names:
+                continue
+            self.append({ 
+                'sample' : k,
+                'type' : "illumina-SE", 
+                'file_type' : "illumina", 
+                'remote_path' : None,
+                'local_path' : i
+                })   
+            print("    " + k + " : " + i)
+
+
+
+        print()
+        print("Genome assembly files found (*.fasta) in " + assemblies_path)
+        print()
+        input_assembly_files = self.find_matching_input_files(assemblies_path, ".fasta", ".fna", ".fa")
+        for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
+        if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+        for k, i in input_assembly_files.items(): 
+            self.append({ 
+                        'sample' : k,
+                        'type' : "assembly", 
+                        'file_type' : "fasta", 
+                        'remote_path' : None,
+                        'local_path' : i
+                        })
+
+        input_main_reference_assembly_files = glob.glob("reference.fasta")
+        input_main_reference_assembly_file = None
+        input_main_reference_assembly_file_status = "UNKNOWN";
+        if (len(input_main_reference_assembly_files) == 1):
+            input_main_reference_assembly_file = input_main_reference_assembly_files[0]
+            input_main_reference_assembly_file_status = "FOUND"
+        else:
+            input_main_reference_assembly_file_status = "NOT FOUND"
+        print()
+        print("Main reference genome assembly file found (reference.fasta)? " + input_main_reference_assembly_file_status)
+        print()
+
+        print()
+        print("Reference genome assembly files found (*.fasta, *.fna, *.fa, *.genbank, *.gbk, *.gb, *.gff, *.gff3) in " + references_path)
+        print()
+
+        input_reference_files = self.find_matching_input_files(references_path, ".fasta", ".fna", ".fa", ".genbank", ".gbk", ".gb", ".gff", ".gff3")
+        for (k, v) in input_reference_files.items(): print("    " + k + " : " + v)
+        if (len(input_reference_files.items()) == 0) : print("    " + "NONE FOUND")
+
+        for k, i in input_reference_files.items(): 
+            self.append({ 
+                        'sample' : k,
+                        'type' : "reference", 
+                        'file_type' : "reference", 
+                        'remote_path' : None,
+                        'local_path' : i
+                        })
+
+
+    ## Checks to see if the user is going to clobber their own files
     ## by having multiple remote paths mapping to the same download path
 
     def append(self, row):
 
         # Do checks that lead to not adding to the list first
-        if self.remote_path_is_duplicate(row['remote_path']):
-            print("Duplicate remote path encountered. Skipping entry:")
+        #if row['remote_path']!= None and self.remote_path_is_duplicate(row['remote_path']):
+        #    print("Duplicate remote path encountered. Skipping entry:")
+        #    print(row)
+        #    return
+
+        # * means to apply to all previous entries
+        if row['sample'] == '*':
+            this_sample_list = list(self.sample_set)
+        else:
+            this_sample_list = [row['sample']]
+
+        row = self.deconflict_paths(row)
+
+        for this_sample in this_sample_list:
+
+            self.sample_set.add(this_sample)
+            row['sample'] = this_sample
+            self.file_info.append(copy.deepcopy(row))
+
+            print("Adding row")
             print(row)
-            return
 
-        self.sample_set.add(row['sample'])
-        row['local_path'] = self.deconflict_local_path(row['local_path'])
-        self.file_info.append(row)
+            if not this_sample in self.file_lists_by_sample_by_type.keys():
+                self.file_lists_by_sample_by_type[this_sample] = {}
+            if not row['type'] in self.file_lists_by_sample_by_type[this_sample].keys():
+                self.file_lists_by_sample_by_type[this_sample][row['type']] = []
+            self.file_lists_by_sample_by_type[this_sample][row['type']].append(row['local_path'])
 
-        print(row)
+    #makes sure that different remote paths aren't mapped to the same local path
+    def deconflict_paths(self, this_row):
+        new_row = this_row
+        if this_row['local_path'] in self.remote_to_local_path_mapping.keys():
+            if self.remote_to_local_path_mapping[this_row['local_path']] != this_row['remote_path']:
+                i=1
+                file_name, file_extension = os.path.splitext(this_row['local_path'])
+                while file_name + "_" + str(i) + file_extension in self.remote_to_local_path_mapping.keys():
+                    i = i + 1
+                this_row['local_path'] = file_name + "_" + str(i) + file_extension
 
-        sample = row['sample']
-        if row['type'] == "reference":
-            if not sample in self.reference_lists.keys():
-                self.reference_lists[sample] = []
-            self.reference_lists[sample].append(row['local_path'])
-        elif row['type'] == "nanopore":
-            if not sample in self.nanopore_read_lists.keys():
-                self.nanopore_read_lists[sample] = []
-            self.nanopore_read_lists[sample].append(row['local_path'])
-        elif row['type'] == "illumina":
-            if not sample in self.illumina_read_lists.keys():
-                self.illumina_SE_read_lists[sample] = []
-            self.illumina_SE_read_lists[sample].append(row['local_path'])
-        elif row['type'] == "illumina-R1":
-            if not sample in self.illumina_read_lists.keys():
-                self.illumina_R1_read_lists[sample] = []
-            self.illumina_R1_read_lists[sample].append(row['local_path'])
-        elif row['type'] == "illumina-R2":
-            if not sample in self.illumina_read_lists.keys():
-                self.illumina_R2_read_lists[sample] = []
-            self.illumina_R2_read_lists[sample].append(row['local_path'])
+        self.remote_to_local_path_mapping[this_row['local_path']] = this_row['remote_path']
 
-    def deconflict_local_path(self, this_local_path):
-        new_local_path = this_local_path
-        if (new_local_path in self.used_local_paths_set):
-            i=1
-            while new_local_path + "_" + str(i) in self.used_local_paths_set:
-                i = i + 1
-            new_local_path = new_local_path + "_" + str(i)
-        self.used_local_paths_set.add(new_local_path)
-        return new_local_path
-
+        return new_row
 
     def remote_path_is_duplicate(self, this_remote_path):
         if (this_remote_path in self.used_remote_paths_set):
@@ -165,22 +316,72 @@ class SampleInfo():
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
         new_read_name = in_read_name
-        new_read_name = new_read_name.replace("_R1", "").replace(".R1", "")
-        new_read_name = new_read_name.replace("_R2", "").replace(".R2", "")
+        new_read_name = new_read_name.replace("_1.", ".").replace("_1_", "_")
+        new_read_name = new_read_name.replace("_2.", ".").replace("_1_", "_")
+        new_read_name = new_read_name.replace("_R1.", ".").replace(".R1.", ".").replace("_R1_", "_")
+        new_read_name = new_read_name.replace("_R2.", ".").replace(".R2.", ".").replace("_R2_", "_")
         new_read_name = new_read_name.replace(".fastq", "").replace(".gz", "")
         return new_read_name
+
+    def get_file_list(self, in_sample, in_type):
+        #print(in_sample, in_type)
+        if not in_sample in self.file_lists_by_sample_by_type.keys(): return []
+        if not in_type in self.file_lists_by_sample_by_type[in_sample].keys(): return []
+        return self.file_lists_by_sample_by_type[in_sample][in_type]
+
+    def print_file_lists(self):
+        for this_sample in sorted(self.get_sample_list()):
+            print("Sample: " + this_sample)
+            for this_type in sorted(self.file_lists_by_sample_by_type[this_sample].keys()):
+                for this_item in self.file_lists_by_sample_by_type[this_sample][this_type]:
+                    print("  " + this_type + " : " + this_item)
+        print(self.remote_to_local_path_mapping)
 
     def get_nanopore_read_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item for item in self.nanopore_read_lists[sample]])
 
     def get_nanopore_read_list(self, sample):
-        return self.nanopore_read_lists[sample]
+        return self.get_file_list(sample, "nanopore")
+
+    def get_nanopore_read_base_list(self, sample):
+        return [os.path.split(n.replace(".fastq.gz", ""))[1] for n in self.get_file_list(sample, "nanopore")]
+
+    def get_illumina_read_list(self, sample, argument_prefix=''):
+        return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "llumina-R2")
+
+    def get_illumina_SE_read_base_list(self, sample):
+        return [os.path.split(i_se.replace(".SE.fastq.gz", ""))[1] for i_se in self.get_file_list(sample, "illumina-SE")]
 
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
-        return " ".join([argument_prefix + item for item in self.illumina_SE_read_lists[sample]])
+        return " ".join([argument_prefix + item] for item in self.get_file_list(sample, "illumina-SE"))
     
+    def get_illumina_PE_read_base_list(self, sample):
+        illumina_R1_read_list = sorted(self.get_file_list(sample, "illumina-R1"))
+        illumina_R2_read_list = sorted(self.get_file_list(sample, "illumina-R2"))
+
+        if len(illumina_R1_read_list) != len(illumina_R2_read_list):
+            print("Sample does not have an equal number of R1 and R2 entries: " + sample)
+            sys.exit(1)
+
+        read_base_list = []
+        for i in range(0,len(illumina_R1_read_list)):
+            illumina_R1_base = illumina_R1_read_list[i].replace(".R1.fastq.gz", "")
+            illumina_R2_base = illumina_R2_read_list[i].replace(".R2.fastq.gz", "")
+
+            print("HERE")
+            print(illumina_R1_base)
+
+            if (illumina_R1_base != illumina_R2_base):
+                print("R1 and R2 entries do not match: \n  " + illumina_R1_read_list[i] + "\n  " + illumina_R2_read_list[i])
+                sys.exit(1)
+            read_base_list.append(os.path.split(illumina_R1_base)[1])
+        return read_base_list
+
+
     def get_illumina_PE_read_arguments(self, sample, argument_R1_prefix='', argument_R2_prefix=''):
         args = ""
+        illumina_R1_read_lists = get_file_list(sample, "illumina-R1")
+        illumina_R2_read_lists = get_file_list(sample, "illumina-R2")
         if length(self.illumina_R1_read_lists[sample]) != length(self.illumina_R2_read_lists[sample]):
             print("Sample does not have an equal number of R1 and R2 entries: " + sample)
             sys.exit(1)
@@ -189,20 +390,23 @@ class SampleInfo():
         for i in range(1,length(self.illumina_R1_read_lists[sample])):
             arg_list.append(argument_R1_prefix + self.illumina_R1_read_lists[sample][i] + argument_R2_prefix + self.illumina_R2_read_lists[sample][i])
 
-        return " ".join([argument_prefix + item for item in self.reference_lists[sample]])
+        return " ".join([argument_prefix + item for item in arg_list])
 
-    def get_reference_arguments(self, argument_prefix=''):
-        return " ".join([argument_prefix + item for item in self.reference_lists[sample]])
+    def get_reference_arguments(self, sample, argument_prefix=''):
+        return " ".join([argument_prefix + item for item in self.get_file_list(sample, "reference")])
+
+    def get_reference_list(self, sample):
+        return self.get_file_list(sample, "reference")
 
     def get_local_path_list(self):
-        return [ d['local_path'] for d in self.file_info ]
+        return self.remote_to_local_path_mapping.keys()
 
     def get_remote_path_from_local_path(self, this_local_path):
-        print(this_local_path)
-        return [d['remote_path'] for d in self.file_info if d.get('local_path') == this_local_path]
-
+        return self.remote_to_local_path_mapping[this_local_path]
+        
     def get_sample_list(self):
-        return self.sample_list
+        return list(self.sample_list)
+    
 
 #### Initialize from config values
 print(config)
@@ -211,10 +415,26 @@ data_csv_name = 'data.csv'
 if "data_csv" in config:
     data_csv_name = config["data_csv"]
 
-print("Loading Sample Info from file: " + data_csv_name)
-sample_info = SampleInfo(data_csv_name)
+print("\nSAMPLE INFORMATION\n")
 
-print("CONFIG VARIABLES")
+sample_info = None
+
+if sample_info == None:
+    try:
+        print("Attempting to load Sample Info from CSV file: " + data_csv_name)
+        sample_info = SampleInfo(data_csv_name)
+    except FileNotFoundError:
+        print("  Could not find/load Sample Info file.")
+    except Exception as e:
+        print(f"Caught a general exception: {e}")
+
+if sample_info == None:
+    print("Attempting to load Sample Info from directory structure: " + data_csv_name)
+    sample_info = SampleInfo()
+
+sample_info.print_file_lists()
+
+print("\nCONFIG VARIABLES\n")
 
 REMOTE_BASE_PATH='.'
 if "remote_path" in config:
@@ -225,7 +445,3 @@ BOOKMARK = ""
 if "bookmark" in config.keys():
     BOOKMARK = config["bookmark"]
 print("  bookmark=" + BOOKMARK)
-
-
-
-

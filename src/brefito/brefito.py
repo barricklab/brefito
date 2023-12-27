@@ -49,6 +49,7 @@ def main():
     print("Config options: " + " ".join(config_options_list))
     print("Resource options: " + " ".join(resource_options_list))
 
+### BEGIN MOVED
 
     # What files are available?
 
@@ -89,9 +90,9 @@ def main():
         if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
         if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
-        if (command_to_run != "download-reads-lftp") and (command_to_run != "download-data-lftp"):
-            assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
-            assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
+        # if (command_to_run != "download-reads-lftp") and (command_to_run != "download-data-lftp"):
+        #     assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
+        #     assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
 
     if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
         print("    " + "NONE FOUND")
@@ -129,6 +130,8 @@ def main():
     input_sample_assembly_files = find_matching_input_files(sample_assemblies_path, "fasta")
     for (k, v) in input_sample_assembly_files.items(): print("    " + k + " : " + v)
     if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
+
+#### END MOVED
 
     snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
     if args.rerun_incomplete:
@@ -186,31 +189,35 @@ def main():
 
     if command_to_run == "predict-mutations-breseq":
 
-        input_illumina_1_files.keys()
-        input_read_file_set = set(input_illumina_1_files.keys()) | set(input_illumina_2_files.keys()) | set(input_nanopore_files.keys())
-
-        smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
+        #input_illumina_1_files.keys()
+        #input_read_file_set = set(input_illumina_1_files.keys()) | set(input_illumina_2_files.keys()) | set(input_nanopore_files.keys())
+        #smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
         valid_command_found = True 
 
     if command_to_run == "predict-mutations-breseq-csv":
        valid_command_found = True 
 
-    if command_to_run == "align-for-igv":
+    if command_to_run == "evaluate-aligned-reads" or command_to_run == "align-for-igv":
 
-        # Indexed FASTA
-        smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
+        command_to_run = "evaluate-aligned-reads"
+        # # Indexed FASTA
+        # smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
 
-        #  Indexed nanopore BAM
-        for key in input_assembly_files:
-            if (key in input_nanopore_files):
-                smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/nanopore.bam.bai".format(key) ]
+        # #  Indexed nanopore BAM
+        # for key in input_assembly_files:
+        #     if (key in input_nanopore_files):
+        #         smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/nanopore.bam.bai".format(key) ]
 
-        #  Indexed illumina BAM
-        for key in input_assembly_files:
-            if (key in input_illumina_1_files):
-                smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/illumina.bam.bai".format(key) ]
+        # #  Indexed illumina BAM
+        # for key in input_assembly_files:
+        #     if (key in input_illumina_1_files):
+        #         smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/illumina.bam.bai".format(key) ]
 
         valid_command_found = True 
+
+    if command_to_run == "merge-references":
+        valid_command_found = True 
+
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
     normalize_assembly_files = {}

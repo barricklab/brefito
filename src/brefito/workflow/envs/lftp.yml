@@ -1,8 +1,7 @@
-name: porechop
+name: lftp
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - porechop
-  - pigz
+  - lftp
