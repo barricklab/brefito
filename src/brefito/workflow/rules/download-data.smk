@@ -45,7 +45,7 @@ rule download_file:
         # This is an invented resource to prevent opening too many download connections at once!
         connections=1
     conda:
-        "../envs/lftp.yml"
+        "../envs/download.yml"
     shell:
         """
         rm -f {params.download_path}

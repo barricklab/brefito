@@ -1,3 +1,5 @@
+include: "download-data.smk"
+
 READ_NUMS = ["1", "2"]
 
 rule trim_PE_illumina_reads_with_fastp:

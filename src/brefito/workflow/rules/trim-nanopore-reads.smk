@@ -2,7 +2,7 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-include: "download-data-lftp.smk"
+include: "download-data.smk"
 
 # rule merge_nanopore_reads:
 #     input:

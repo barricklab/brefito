@@ -292,17 +292,36 @@ class SampleInfo():
                 self.file_lists_by_sample_by_type[this_sample][row['type']] = []
             self.file_lists_by_sample_by_type[this_sample][row['type']].append(row['local_path'])
 
+    # Looks for matches in a list and splits them off (to allow multile extensions)
+    def split_filename_and_extension(self, input_filename):
+        current_file_name = input_filename
+        extension_list = [""]
+        valid_extension_set = set({".gz", ".fastq", ".fasta", ".fna", ".fa", ".genbank", ".gbk", ".gb", ".gff3", ".gff", ".SE", ".R1", ".R2"})
+        valid_extension_found = True
+        while valid_extension_found:
+            current_file_name, next_file_extension = os.path.splitext(current_file_name)
+            print(current_file_name, "    ", next_file_extension)
+            if next_file_extension in valid_extension_set:
+                extension_list.append(next_file_extension)
+            else:
+                current_file_name = current_file_name + next_file_extension
+                valid_extension_found = False
+
+        print(reversed(extension_list))
+        return [current_file_name, "".join(reversed(extension_list)) ]
+
     #makes sure that different remote paths aren't mapped to the same local path
     def deconflict_paths(self, this_row):
         new_row = this_row
         if this_row['local_path'] in self.remote_to_local_path_mapping.keys():
             if self.remote_to_local_path_mapping[this_row['local_path']] != this_row['remote_path']:
                 i=1
-                file_name, file_extension = os.path.splitext(this_row['local_path'])
-                while file_name + "_" + str(i) + file_extension in self.remote_to_local_path_mapping.keys():
+                file_name, file_extension = self.split_filename_and_extension(this_row['local_path'])
+                while file_name + "-" + str(i) + file_extension in self.remote_to_local_path_mapping.keys():
                     i = i + 1
-                this_row['local_path'] = file_name + "_" + str(i) + file_extension
+                this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
+        print(this_row['local_path'])
         self.remote_to_local_path_mapping[this_row['local_path']] = this_row['remote_path']
 
         return new_row
