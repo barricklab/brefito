@@ -169,7 +169,7 @@ def main():
     if command_to_run == "download-reads-lftp":
         valid_command_found = True 
 
-    if command_to_run == "download-data-lftp":
+    if command_to_run == "download-data":
         valid_command_found = True 
 
     if command_to_run == "assemble-flye":

@@ -1,15 +1,20 @@
 # CONFIG OPTIONS
 #
 # bookmark = bookmark (REQUIRED)
-# data_csv = path to CSV file descring(default = 'data.csv')
+# data_csv = path to CSV file (default = 'data.csv')
 # remote_path = (default = '.')
 #
 # DATA_CSV
 #
 # This file must have the following columns:
 #  1 sample = main sample name, must match for reads that will be used together
-#  2 type = either 'nanopore', 'illumina_R1', 'illumina_R2'
-#  3 path = path for file on remote relative to remote_path
+#  2 type = either a file type: 'nanopore', 'illumina', 'illumina_R1', 'illumina_R2'
+#           or an option setting, like breseq_option
+#  3 setting = for file types, a way of downloading the file:
+#                 lftp@bookmark://path/to/file (if bookmark is present and refers to a location)
+#                 wget://example.com/path/to/file
+#              for others, the value of the setting
+#                 XXXXXXX
 #
 # SETUP BOOKMARK
 #
@@ -33,6 +38,7 @@ class SampleInfo():
 
     # Dictionary of lists with keys that are types of data and then lists of files
     file_lists_by_sample_by_type = {}
+    option_lists_by_sample_by_type = {}
 
     # used to check for duplicates and deconflict
     remote_to_local_path_mapping = {}
@@ -49,63 +55,80 @@ class SampleInfo():
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
             for row in data_reader:
-                print(row)
-                file_name = os.path.basename(row['path'])
-                base_file_name = os.path.basename(row['path'])
+                #print(row)
+
+                # Add 'path' for 'setting' for backwards compatibility
+                if 'path' in row:
+                    if ('setting' in row):
+                        print("Both 'path' and 'setting' found for row. Only using 'setting'.")
+                    else:
+                        row["setting"] = row["path"]
+
+                # Copy over certain paths to allow for some choices.
+                file_name = os.path.basename(row['setting'])
+                base_file_name = os.path.basename(row['setting'])
                 simplified_read_name = self.get_simplified_read_name(base_file_name)
                 file_name_without_extension = os.path.splitext(base_file_name)[0]
 
                 if (row['type'] == "nanopore"):
                     local_path = os.path.join("nanopore_reads", simplified_read_name + ".fastq.gz")
-                    self.append({ 
+                    self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "nanopore", 
                         'file_type' : "nanopore", 
-                        'remote_path' : row['path'],
+                        'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
 
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
                     local_path = os.path.join("illumina_reads", simplified_read_name + ".SE.fastq.gz")
-                    self.append({ 
+                    self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-SE", 
                         'file_type' : "illumina", 
-                        'remote_path' : row['path'],
+                        'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
 
                 elif (row['type'] == "illumina-R1"):
                     local_path = os.path.join("illumina_reads", simplified_read_name + ".R1.fastq.gz")
-                    self.append({ 
+                    self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R1", 
                         'file_type' : "illumina", 
-                        'remote_path' : row['path'],
+                        'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
 
                 elif (row['type'] == "illumina-R2"):
                     local_path = os.path.join("illumina_reads", simplified_read_name + ".R2.fastq.gz")
-                    self.append({ 
+                    self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R2", 
                         'file_type' : "illumina", 
-                        'remote_path' : row['path'],
+                        'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
 
                 elif (row['type'] == "reference"):
                     local_path = os.path.join("references", file_name)
-                    self.append({ 
+                    self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "reference", 
                         'file_type' : "reference", 
-                        'remote_path' : row['path'],
+                        'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
                 else:
-                    print("Skipping row with unknown type:" + row['type'])
+                    # add this to the options dictionary
+                    if not sample in option_lists_by_sample_by_type:
+                        option_lists_by_sample_by_type[row['sample']] = {}
+                    if not option in option_lists_by_sample_by_type[row['sample']]:
+                        option_lists_by_sample_by_type[row['sample']][row['option']] = []
+                    option_lists_by_sample_by_type[row['sample']][row['option']].append(row['setting'])
+
+                #else:
+                #    print("Skipping row with unknown type:" + row['type'])
 
         self.sample_list = list(self.sample_set)
         return True
@@ -147,7 +170,7 @@ class SampleInfo():
         for k in input_nanopore_files: print("    " + k)
         if (len(input_nanopore_files.items()) == 0) : print("    " + "NONE FOUND")
         for k, i in input_nanopore_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "nanopore", 
                         'file_type' : "nanopore", 
@@ -168,7 +191,7 @@ class SampleInfo():
 
         input_illumina_PE_file_names = set({})
         for k, i in input_illumina_1_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "illumina-R1", 
                         'file_type' : "illumina", 
@@ -178,7 +201,7 @@ class SampleInfo():
             input_illumina_PE_file_names.add(i)
 
         for k, i in input_illumina_2_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "illumina-R2", 
                         'file_type' : "illumina", 
@@ -257,11 +280,7 @@ class SampleInfo():
                         'local_path' : i
                         })
 
-
-    ## Checks to see if the user is going to clobber their own files
-    ## by having multiple remote paths mapping to the same download path
-
-    def append(self, row):
+    def add_file(self, row):
 
         # Do checks that lead to not adding to the list first
         #if row['remote_path']!= None and self.remote_path_is_duplicate(row['remote_path']):
@@ -283,8 +302,8 @@ class SampleInfo():
             row['sample'] = this_sample
             self.file_info.append(copy.deepcopy(row))
 
-            print("Adding row")
-            print(row)
+            #print("Adding row")
+            #print(row)
 
             if not this_sample in self.file_lists_by_sample_by_type.keys():
                 self.file_lists_by_sample_by_type[this_sample] = {}
@@ -300,14 +319,13 @@ class SampleInfo():
         valid_extension_found = True
         while valid_extension_found:
             current_file_name, next_file_extension = os.path.splitext(current_file_name)
-            print(current_file_name, "    ", next_file_extension)
+            #print(current_file_name, "    ", next_file_extension)
             if next_file_extension in valid_extension_set:
                 extension_list.append(next_file_extension)
             else:
                 current_file_name = current_file_name + next_file_extension
                 valid_extension_found = False
 
-        print(reversed(extension_list))
         return [current_file_name, "".join(reversed(extension_list)) ]
 
     #makes sure that different remote paths aren't mapped to the same local path
@@ -321,16 +339,10 @@ class SampleInfo():
                     i = i + 1
                 this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
-        print(this_row['local_path'])
+        #print(this_row['local_path'])
         self.remote_to_local_path_mapping[this_row['local_path']] = this_row['remote_path']
 
         return new_row
-
-    def remote_path_is_duplicate(self, this_remote_path):
-        if (this_remote_path in self.used_remote_paths_set):
-            return True
-        self.used_remote_paths_set.add(this_remote_path)
-        return False
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
@@ -386,9 +398,6 @@ class SampleInfo():
         for i in range(0,len(illumina_R1_read_list)):
             illumina_R1_base = illumina_R1_read_list[i].replace(".R1.fastq.gz", "")
             illumina_R2_base = illumina_R2_read_list[i].replace(".R2.fastq.gz", "")
-
-            print("HERE")
-            print(illumina_R1_base)
 
             if (illumina_R1_base != illumina_R2_base):
                 print("R1 and R2 entries do not match: \n  " + illumina_R1_read_list[i] + "\n  " + illumina_R2_read_list[i])
@@ -446,6 +455,8 @@ if sample_info == None:
         print("  Could not find/load Sample Info file.")
     except Exception as e:
         print(f"Caught a general exception: {e}")
+        import traceback
+        traceback.print_exc()
 
 if sample_info == None:
     print("Attempting to load Sample Info from directory structure: " + data_csv_name)
