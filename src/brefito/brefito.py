@@ -177,7 +177,6 @@ def main():
         valid_command_found = True 
 
     if command_to_run == "assemble-unicycler":
-        smk_targets = smk_targets + [ "assemblies_unicycler/{}.fasta".format(key) for key in input_nanopore_files.keys() ]
         valid_command_found = True 
 
     if command_to_run == "assemble-unicycler-csv":

@@ -55,7 +55,7 @@ class SampleInfo():
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
             for row in data_reader:
-                #print(row)
+                print(row)
 
                 # Add 'path' for 'setting' for backwards compatibility
                 if 'path' in row:
@@ -121,11 +121,11 @@ class SampleInfo():
                         })
                 else:
                     # add this to the options dictionary
-                    if not sample in option_lists_by_sample_by_type:
+                    if not row['sample'] in option_lists_by_sample_by_type:
                         option_lists_by_sample_by_type[row['sample']] = {}
-                    if not option in option_lists_by_sample_by_type[row['sample']]:
-                        option_lists_by_sample_by_type[row['sample']][row['option']] = []
-                    option_lists_by_sample_by_type[row['sample']][row['option']].append(row['setting'])
+                    if not row['type'] in option_lists_by_sample_by_type[row['sample']]:
+                        option_lists_by_sample_by_type[row['sample']][row['type']] = []
+                    option_lists_by_sample_by_type[row['sample']][row['type']].append(row['setting'])
 
                 #else:
                 #    print("Skipping row with unknown type:" + row['type'])
@@ -294,7 +294,13 @@ class SampleInfo():
         else:
             this_sample_list = [row['sample']]
 
-        row = self.deconflict_paths(row)
+        self.deconflict_paths(row)
+
+        # This stores a full local path
+        self.remote_to_local_path_mapping[row['local_path']] = row['remote_path']
+
+        # Now we want a base path for the file_lists_by_sample_by_type dict
+        row['local_path'] = os.path.split(row['local_path'])[1]
 
         for this_sample in this_sample_list:
 
@@ -330,7 +336,6 @@ class SampleInfo():
 
     #makes sure that different remote paths aren't mapped to the same local path
     def deconflict_paths(self, this_row):
-        new_row = this_row
         if this_row['local_path'] in self.remote_to_local_path_mapping.keys():
             if self.remote_to_local_path_mapping[this_row['local_path']] != this_row['remote_path']:
                 i=1
@@ -339,10 +344,7 @@ class SampleInfo():
                     i = i + 1
                 this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
-        #print(this_row['local_path'])
-        self.remote_to_local_path_mapping[this_row['local_path']] = this_row['remote_path']
-
-        return new_row
+        
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
@@ -369,7 +371,7 @@ class SampleInfo():
         print(self.remote_to_local_path_mapping)
 
     def get_nanopore_read_arguments(self, sample, argument_prefix=''):
-        return " ".join([argument_prefix + item for item in self.nanopore_read_lists[sample]])
+        return " ".join([argument_prefix + item for item in self.get_file_list(sample, "nanopore")])
 
     def get_nanopore_read_list(self, sample):
         return self.get_file_list(sample, "nanopore")
@@ -405,20 +407,29 @@ class SampleInfo():
             read_base_list.append(os.path.split(illumina_R1_base)[1])
         return read_base_list
 
+    def remove_prefix_from_all_entries_in_list(self, _list, _prefix):
+        result_list=[]
+        for i in _list:
+            if i.startswith(_prefix):
+                # Remove the prefix using slicing
+                result_list.append(i[len(_prefix):])
+            else:
+                # No match, keep the original string
+                result_list.append(i)
+        return result_list
 
     def get_illumina_PE_read_arguments(self, sample, argument_R1_prefix='', argument_R2_prefix=''):
-        args = ""
-        illumina_R1_read_lists = get_file_list(sample, "illumina-R1")
-        illumina_R2_read_lists = get_file_list(sample, "illumina-R2")
-        if length(self.illumina_R1_read_lists[sample]) != length(self.illumina_R2_read_lists[sample]):
+        illumina_R1_read_lists = self.get_file_list(sample, "illumina-R1")
+        illumina_R2_read_lists = self.get_file_list(sample, "illumina-R2")
+        if len(illumina_R1_read_lists) != len(illumina_R2_read_lists):
             print("Sample does not have an equal number of R1 and R2 entries: " + sample)
             sys.exit(1)
 
         arg_list = []
-        for i in range(1,length(self.illumina_R1_read_lists[sample])):
-            arg_list.append(argument_R1_prefix + self.illumina_R1_read_lists[sample][i] + argument_R2_prefix + self.illumina_R2_read_lists[sample][i])
-
-        return " ".join([argument_prefix + item for item in arg_list])
+        for i in range(0,len(illumina_R1_read_lists)):
+            arg_list.append(argument_R1_prefix + illumina_R1_read_lists[i])
+            arg_list.append(argument_R2_prefix + illumina_R2_read_lists[i])
+        return " ".join(arg_list)
 
     def get_reference_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item for item in self.get_file_list(sample, "reference")])
