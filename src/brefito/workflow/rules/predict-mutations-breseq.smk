@@ -19,8 +19,11 @@ AUTOMATIC_BRESEQ_ARGS = {}
 
 def find_available_read_files(wildcards):
 
-    nanopore_files = [os.path.join("nanopore_reads_trimmed", os.path.basename(d)) for d in sample_info.get_nanopore_read_list(wildcards.sample)]
-    illumina_files = [os.path.join("illumina_reads_trimmed", os.path.basename(d)) for d in sample_info.get_illumina_read_list(wildcards.sample)]
+    nanopore_files = [ "nanopore_reads_trimmed/" + d for d in sample_info.get_nanopore_read_list(wildcards.sample)]
+    #nanopore_files = [os.path.join("nanopore_reads_trimmed", os.path.basename(d)) for d in sample_info.get_nanopore_read_list(wildcards.sample)]
+ 
+    illumina_files = [ "illumina_reads_trimmed/" + d for d in sample_info.get_illumina_read_list(wildcards.sample)]
+    #illumina_files = [os.path.join("illumina_reads_trimmed", os.path.basename(d)) for d in sample_info.get_illumina_read_list(wildcards.sample)]
 
     AUTOMATIC_BRESEQ_ARGS[wildcards.sample] = "";
 
@@ -45,7 +48,7 @@ rule all:
 rule predict_mutations_breseq:
     input:
         reads = lambda wildcards: find_available_read_files(wildcards),
-        references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
+        references = lambda wildcards: [ "references/" + d for d in sample_info.get_reference_list(wildcards.sample)]
     output:
         breseq = directory("breseq/{sample}"),
         output = directory("output/{sample}"),
@@ -56,7 +59,7 @@ rule predict_mutations_breseq:
         "../envs/breseq.yml"
     params:
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),
-        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
+        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r references/')
     threads: 8
     shell:
         """

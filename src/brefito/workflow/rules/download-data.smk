@@ -59,6 +59,7 @@ def remote_path_to_shell_command(remote_path, download_path):
     return(shell_command)
 
 def all_local_paths():
+    #print(sample_info.get_local_path_list())
     return(sample_info.get_local_path_list())
 
 rule download_all:
