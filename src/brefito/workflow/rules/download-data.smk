@@ -25,7 +25,7 @@ except NameError:
     include: "load-sample-info.smk"
 
 def remote_path_to_shell_command(remote_path, download_path):
-    print("Downloading: " + remote_path)
+    #print("Downloading: " + remote_path)
 
     split_remote_path = remote_path.split('://', 1)
     method = None
@@ -55,12 +55,10 @@ def remote_path_to_shell_command(remote_path, download_path):
         #echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file}
         shell_command = "echo 'get \"{}\" -o \"{}\"' | lftp {} ".format(remote_path, download_path, bookmark)
 
-    print(shell_command)
+    #print(shell_command)
     return(shell_command)
 
 def all_local_paths():
-    print("HERE")
-    print(sample_info.get_local_path_list())
     return(sample_info.get_local_path_list())
 
 rule download_all:
