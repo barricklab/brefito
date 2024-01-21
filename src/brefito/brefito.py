@@ -217,6 +217,12 @@ def main():
     if command_to_run == "merge-references":
         valid_command_found = True 
 
+    if command_to_run == "merge-trimmed-reads":
+        valid_command_found = True 
+
+    if command_to_run == "merge-reads":
+        valid_command_found = True 
+
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
     normalize_assembly_files = {}

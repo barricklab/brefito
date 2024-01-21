@@ -77,7 +77,7 @@ Output files usually appear in directories of the form `output/*`
 
 ## Commands
 
-### `brefito download-reads-lftp`
+### `brefito download-data`
 
 Downloads the files specified in a sample
 
@@ -90,6 +90,28 @@ Options: --config data_csv=<path> (Default is data.csv)
 
 The `connections` resource controls how many simultaneous download jobs will be used. By default it is 1. Be careful to not make it too high and overload your system.
 
+### `brefito merge-reads`
+
+Merges the raw reads corresponding to each sample into one file per type of read.
+
+```
+Inputs: data.csv
+Outputs: merged_reads
+Options: <same options as download-data>
+         --config breseq_options="<breseq_options>"
+```
+
+### `brefito merge-trimmed-reads`
+
+Merges the trimmed reads corresponding to each sample into one file per type of read.
+
+```
+Inputs: data.csv
+Outputs: merged_reads_trimmed
+Options: <same options as download-data>
+         --config breseq_options="<breseq_options>"
+```
+
 ### `brefito predict-mutations-breseq`
 
 Runs `breseq` using the reference files and trimmed read files.
@@ -97,9 +119,7 @@ Runs `breseq` using the reference files and trimmed read files.
 ```
 Inputs: data.csv
 Outputs: breseq_output, output
-Options: <same options as download-reads-lftp>
+Options: <same options as download-data>
          --config breseq_options="<breseq_options>"
          --config no_default_breseq_options=<bool>
-        
-
 ```

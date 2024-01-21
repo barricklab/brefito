@@ -376,6 +376,9 @@ class SampleInfo():
     def get_nanopore_read_list(self, sample):
         return self.get_file_list(sample, "nanopore")
 
+    def get_samples_with_nanopore_reads(self):
+        return [sample for sample in self.get_sample_list() if len(self.get_nanopore_read_list(sample))]
+
     def get_illumina_read_list(self, sample, argument_prefix=''):
         return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "llumina-R2")
 
@@ -385,6 +388,9 @@ class SampleInfo():
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item] for item in self.get_file_list(sample, "illumina-SE"))
     
+    def get_samples_with_illumina_SE_reads(self):
+        return [sample for sample in self.get_sample_list() if len(self.get_illumina_SE_read_base_list(sample))]
+
     def get_illumina_PE_read_base_list(self, sample):
         illumina_R1_read_list = sorted(self.get_file_list(sample, "illumina-R1"))
         illumina_R2_read_list = sorted(self.get_file_list(sample, "illumina-R2"))
@@ -403,6 +409,9 @@ class SampleInfo():
                 sys.exit(1)
             read_base_list.append(os.path.split(illumina_R1_base)[1])
         return read_base_list
+
+    def get_samples_with_illumina_PE_reads(self):
+        return [sample for sample in self.get_sample_list() if len(self.get_illumina_PE_read_base_list(sample))]
 
     def remove_prefix_from_all_entries_in_list(self, _list, _prefix):
         result_list=[]
@@ -471,15 +480,3 @@ if sample_info == None:
     sample_info = SampleInfo()
 
 sample_info.print_file_lists()
-
-print("\nCONFIG VARIABLES\n")
-
-REMOTE_BASE_PATH='.'
-if "remote_path" in config:
-    REMOTE_BASE_PATH = config["remote_path"]
-print("  remote_path=" + REMOTE_BASE_PATH)
-
-BOOKMARK = ""
-if "bookmark" in config.keys():
-    BOOKMARK = config["bookmark"]
-print("  bookmark=" + BOOKMARK)
