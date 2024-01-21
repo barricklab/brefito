@@ -41,7 +41,7 @@ rule evaluate_all_aligned_reads:
 rule align_nanopore_reads:
     input:
         reads = "nanopore_reads_trimmed/{reads}.fastq.gz",
-        reference = "references_merged/{sample}.fasta"
+        reference = "merged_references/{sample}.fasta"
     output:
         temp("intermediates/aligned_reads/{sample}/nanopore_reads.{reads}.sam")
     conda:
@@ -53,7 +53,7 @@ rule align_nanopore_reads:
 rule align_PE_illumina_reads:
     input:
         reads = expand("illumina_reads_trimmed/{{reads}}.{read_num}.fastq.gz", read_num=["R1", "R2"]),
-        reference = "references_merged/{sample}.fasta"
+        reference = "merged_references/{sample}.fasta"
     output:
         temp("intermediates/aligned_reads/{sample}/illumina_reads.{reads}.PE.sam")
     conda:
@@ -72,7 +72,7 @@ rule align_PE_illumina_reads:
 rule align_SE_illumina_reads:
     input:
         reads = expand("illumina_reads_trimmed/{{reads}}.{read_num}.fastq.gz", read_num=["SE"]),
-        reference = "references_merged/{sample}.fasta"
+        reference = "merged_references/{sample}.fasta"
     output:
         temp("intermediates/aligned_reads/{sample}/illumina_reads.{reads}.SE.sam")
     conda:
@@ -128,8 +128,8 @@ rule samtools_bam_index:
 
 rule copy_references:
     input:
-        fasta = "references_merged/{sample}.fasta",
-        gff3 = "references_merged/{sample}.gff3"
+        fasta = "merged_references/{sample}.fasta",
+        gff3 = "merged_references/{sample}.gff3"
     output:
         fasta = "evaluate/aligned_reads/{sample}/reference.fasta",
         gff3 = "evaluate/aligned_reads/{sample}/reference.gff3"

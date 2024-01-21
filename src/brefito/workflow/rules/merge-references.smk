@@ -2,9 +2,9 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-rule merge_all_references:
+rule merge_all_reads:
     input:
-        ["references_merged/{}.fasta".format(s) for s in sample_info.get_sample_list()]
+        ["merged_references/{}.fasta".format(s) for s in sample_info.get_sample_list()]
     default_target: True
 
 # This merges all reference files for each sample into one FASTA file and one 
@@ -17,8 +17,8 @@ rule merge_references:
     input:
         references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
-        fasta = "references_merged/{sample}.fasta",
-        gff3 = "references_merged/{sample}.gff3"
+        fasta = "merged_references/{sample}.fasta",
+        gff3 = "merged_references/{sample}.gff3"
     conda:
         "../envs/breseq.yml"
     params:
@@ -26,7 +26,7 @@ rule merge_references:
     threads: 1
     shell:
         """
-        mkdir -p references_merged
+        mkdir -p merged_references
         breseq CONVERT-REFERENCE -o {output.fasta} -f FASTA {params.reference_arguments}
         breseq CONVERT-REFERENCE -o {output.gff3} --no-sequence -f GFF3 {params.reference_arguments} 
         """
