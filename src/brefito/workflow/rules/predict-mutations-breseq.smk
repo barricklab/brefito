@@ -40,31 +40,38 @@ def get_breseq_args(sample):
     #print(AUTOMATIC_BRESEQ_ARGS[sample])
     return AUTOMATIC_BRESEQ_ARGS[sample]
 
-rule all:
+rule all_predict_mutations_breseq:
     input:
-        ["breseq/" + s + "/output/output.done" for s in sample_info.get_sample_list()]
+        ["breseq_" + sample_info.get_reference_prefix() + "/html/" + s + "/output.done" for s in sample_info.get_sample_list()]
     default_target: True
 
 rule predict_mutations_breseq:
     input:
         reads = lambda wildcards: find_available_read_files(wildcards),
-        references = lambda wildcards: [ "references/" + d for d in sample_info.get_reference_list(wildcards.sample)]
+        references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
-        breseq = directory("breseq/{sample}"),
-        output = directory("output/{sample}"),
-        done_file = "breseq/{sample}/output/output.done"
+        breseq_dir = directory("breseq_" + sample_info.get_reference_prefix() + "/data/{sample}"),
+        html_dir = directory("breseq_" + sample_info.get_reference_prefix() + "/html/{sample}"),
+        done_file = "breseq_" + sample_info.get_reference_prefix() + "/html/{sample}/output.done",
+        gd_file = "breseq_" + sample_info.get_reference_prefix() + "/gd/{sample}.gd"
     log: 
-        "logs/evaluate_breseq_{sample}.log"
+        "logs/breseq_" + sample_info.get_reference_prefix() + "_{sample}.log"
     conda:
         "../envs/breseq.yml"
     params:
+        gd_dir = directory("breseq_" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),
-        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r references/')
+        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
     threads: 8
     shell:
         """
-        mkdir -p output
-        mkdir -p breseq
-        breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {params.reference_arguments} -o {output.breseq}  {input.reads} > {log} 2>&1
-        cp -r {output.breseq}/output {output.output}
+        # Create outer directories for moved files
+        mkdir -p {params.gd_dir}
+
+        breseq -j {threads} {params.automatic_breseq_args} {BRESEQ_OPTIONS} {params.reference_arguments} -o {output.breseq_dir}  {input.reads} > {log} 2>&1
+        
+        # Copy/move output files
+        cp {output.breseq_dir}/output/output.gd {output.gd_file}
+        rm -rf {output.html_dir}
+        mv {output.breseq_dir}/output {output.html_dir}
         """

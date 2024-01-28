@@ -22,13 +22,15 @@ def main():
                         epilog='')
 
     parser.add_argument('-p', '--path', default='.', type=str)      # option that takes a value
+    parser.add_argument('-r', '--reference', default='references', type=str) 
     parser.add_argument('--config', action='append', default=[])         
     parser.add_argument('--rerun-incomplete', action='store_true') 
     parser.add_argument('--unlock', action='store_true') 
     parser.add_argument('--no-temp', action='store_true') 
     parser.add_argument('--keep-going', action='store_true') 
-    parser.add_argument("--dry-run", '-r', action='store_true') 
-    parser.add_argument("--resources", action='append', default=[]) 
+    parser.add_argument('--dry-run', action='store_true') 
+    parser.add_argument('--resources', action='append', default=[]) 
+
     parser.add_argument('command', type=str)           # positional argument
     parser.add_argument('samples', nargs='?', type=str)           # positional argument
 
@@ -166,10 +168,13 @@ def main():
     # Set this globally
     resource_options_list = ["connections=1"] + resource_options_list
 
-    if command_to_run == "download-reads-lftp":
+    if command_to_run == "download-data":
         valid_command_found = True 
 
-    if command_to_run == "download-data":
+    if command_to_run == "trim-illumina-reads":
+        valid_command_found = True 
+
+    if command_to_run == "trim-nanopore-reads":
         valid_command_found = True 
 
     if command_to_run == "assemble-flye":
@@ -185,16 +190,25 @@ def main():
     if command_to_run == "annotate-references":
         smk_targets = smk_targets + [ "output/annotated_references/{}.gbk".format(key) for key in input_reference_assembly_files.keys() ]
         valid_command_found = True 
+    
 
-    if command_to_run == "predict-mutations-breseq":
+    match = check_command_list_with_references(
+        command_to_run, [
+            "predict-mutations-breseq",
+            "coverage-plots-breseq",
+            "align-reads",
+            "check-soft-clipping"
+            ]
+    )
+    if match['matched']:
+        valid_command_found = True
+        command_to_run = match['command_to_run']
+        config_options_list.append("references=" + match['references'])
+        command_to_run = match['command_to_run']
 
-        #input_illumina_1_files.keys()
-        #input_read_file_set = set(input_illumina_1_files.keys()) | set(input_illumina_2_files.keys()) | set(input_nanopore_files.keys())
-        #smk_targets = smk_targets + [ "output/{}".format(key) for key in input_read_file_set ]
-        valid_command_found = True 
+    if command_to_run == "check-soft-clipping":
+        config_options_list.append("brefito_package_path=" + str(brefito_package_path))
 
-    if command_to_run == "predict-mutations-breseq-csv":
-       valid_command_found = True 
 
     if command_to_run == "evaluate-aligned-reads" or command_to_run == "align-for-igv":
 
@@ -369,6 +383,30 @@ def main():
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
     elif command_to_run == "normalize-assemblies":
         copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
+
+def check_command_with_references(command_to_run, test_command_prefix):
+    return_dict = { 'matched' : False }
+
+    if command_to_run == test_command_prefix:
+        return_dict['matched'] = True
+        return_dict['references'] = "references"
+        return_dict['command_to_run'] = test_command_prefix
+    
+    if command_to_run.startswith(test_command_prefix + "-"):
+        return_dict['matched'] = True
+        return_dict['references'] = command_to_run[len(test_command_prefix + "-"):]
+        return_dict['command_to_run'] = test_command_prefix
+
+    return (return_dict)
+
+def check_command_list_with_references(command_to_run, test_command_prefix_list):
+
+    for p in test_command_prefix_list:
+        this_return_dict = check_command_with_references(command_to_run, p)
+        if (this_return_dict['matched']):
+            return (this_return_dict)
+
+    return ( { 'matched' : False } )
 
 
 if __name__ == "__main__":

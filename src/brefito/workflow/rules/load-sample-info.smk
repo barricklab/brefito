@@ -43,6 +43,8 @@ class SampleInfo():
     # used to check for duplicates and deconflict
     remote_to_local_path_mapping = {}
 
+    reference_prefix = "references"
+
     # The class constructor
     def __init__(self, sample_info_csv_name=None):
         if sample_info_csv_name != None:
@@ -376,11 +378,14 @@ class SampleInfo():
     def get_nanopore_read_list(self, sample):
         return self.get_file_list(sample, "nanopore")
 
+    def get_nanopore_read_base_list(self, sample):
+        return [os.path.split(n.replace(".fastq.gz", ""))[1] for n in self.get_file_list(sample, "nanopore")]
+
     def get_samples_with_nanopore_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_nanopore_read_list(sample))]
 
     def get_illumina_read_list(self, sample, argument_prefix=''):
-        return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "llumina-R2")
+        return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
     def get_illumina_SE_read_base_list(self, sample):
         return [os.path.split(i_se.replace(".SE.fastq.gz", ""))[1] for i_se in self.get_file_list(sample, "illumina-SE")]
@@ -437,11 +442,17 @@ class SampleInfo():
             arg_list.append(argument_R2_prefix + illumina_R2_read_lists[i])
         return " ".join(arg_list)
 
-    def get_reference_arguments(self, sample, argument_prefix=''):
-        return " ".join([argument_prefix + item for item in self.get_file_list(sample, "reference")])
+    def get_reference_arguments(self, sample, argument_prefix='', reference_suffix='fasta'):
+        if (self.reference_prefix == "references"):
+            return " ".join([argument_prefix + os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")])
+        else:
+            return argument_prefix + os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
 
-    def get_reference_list(self, sample):
-        return self.get_file_list(sample, "reference")
+    def get_reference_list(self, sample, reference_suffix='fasta'):
+        if (self.reference_prefix == "references"):
+            return [ os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")]
+        else:
+            return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix))
 
     def get_local_path_list(self):
         return self.remote_to_local_path_mapping.keys()
@@ -451,6 +462,18 @@ class SampleInfo():
         
     def get_sample_list(self):
         return list(self.sample_list)
+
+    def set_reference_prefix(self, in_reference_prefix):
+        self.reference_prefix = in_reference_prefix
+        print(self.reference_prefix)
+    
+    def get_reference_prefix(self):
+        return self.reference_prefix
+
+    def get_merged_reference_prefix(self):
+        if (self.reference_prefix == "references"):
+            return("merged_references")
+        return self.reference_prefix
     
 
 #### Initialize from config values
@@ -478,5 +501,9 @@ if sample_info == None:
 if sample_info == None:
     print("Attempting to load Sample Info from directory structure: " + data_csv_name)
     sample_info = SampleInfo()
+
+# Typically "references" or "assemblies" but can be overridden
+if 'references' in config.keys():
+    sample_info.set_reference_prefix(config['references'] )
 
 sample_info.print_file_lists()

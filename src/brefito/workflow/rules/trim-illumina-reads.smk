@@ -2,6 +2,16 @@ include: "download-data.smk"
 
 READ_NUMS = ["1", "2"]
 
+def all_trimmed_illumina_read_names():
+    l = [] 
+    for s in sample_info.get_sample_list():
+        l = l + ["illumina_reads_trimmed/" + r for r in sample_info.get_illumina_read_list(s) ]
+    return(l)
+
+rule trim_all_illimina_reads:
+    input:
+        all_trimmed_illumina_read_names()
+
 rule trim_PE_illumina_reads_with_fastp:
     input:
         expand("illumina_reads/{{dataset}}.R{read_num}.fastq.gz", read_num=READ_NUMS)
