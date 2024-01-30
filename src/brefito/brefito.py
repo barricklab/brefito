@@ -197,7 +197,8 @@ def main():
             "predict-mutations-breseq",
             "coverage-plots-breseq",
             "align-reads",
-            "check-soft-clipping"
+            "check-soft-clipping",
+            "mutate-genomes-gdtools"
             ]
     )
     if match['matched']:
