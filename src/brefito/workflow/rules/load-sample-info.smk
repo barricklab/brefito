@@ -57,7 +57,7 @@ class SampleInfo():
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
             for row in data_reader:
-                print(row)
+                #print(row)
 
                 # Add 'path' for 'setting' for backwards compatibility
                 if 'path' in row:
@@ -221,7 +221,6 @@ class SampleInfo():
         print("Unpaired Illumina read files found (*.fastq.gz) in " + illumina_input_path)
         print()
 
-        # We subtract the 
         input_illumina_SE_files = self.find_matching_input_files(illumina_input_path, ".fastq.gz")
         for k, i in input_illumina_SE_files.items():
             if i in input_illumina_PE_file_names:
@@ -366,11 +365,11 @@ class SampleInfo():
 
     def print_file_lists(self):
         for this_sample in sorted(self.get_sample_list()):
-            print("Sample: " + this_sample)
+            print("SAMPLE :: " + this_sample)
             for this_type in sorted(self.file_lists_by_sample_by_type[this_sample].keys()):
                 for this_item in self.file_lists_by_sample_by_type[this_sample][this_type]:
                     print("  " + this_type + " : " + this_item)
-        print(self.remote_to_local_path_mapping)
+        #print(self.remote_to_local_path_mapping)
 
     def get_nanopore_read_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item for item in self.get_file_list(sample, "nanopore")])
@@ -465,7 +464,6 @@ class SampleInfo():
 
     def set_reference_prefix(self, in_reference_prefix):
         self.reference_prefix = in_reference_prefix
-        print(self.reference_prefix)
     
     def get_reference_prefix(self):
         return self.reference_prefix
@@ -506,4 +504,6 @@ if sample_info == None:
 if 'references' in config.keys():
     sample_info.set_reference_prefix(config['references'] )
 
+print()
 sample_info.print_file_lists()
+print()
