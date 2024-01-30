@@ -48,8 +48,12 @@ def main():
     else:
         print("Samples: all")
     print("Base path: " + base_path)
-    print("Config options: " + " ".join(config_options_list))
-    print("Resource options: " + " ".join(resource_options_list))
+    print("Config options:")
+    for i in config_options_list:
+        print("  " + i)
+    print("Resource options:")
+    for i in resource_options_list:
+        print("  " + i)
 
 ### BEGIN MOVED
 
@@ -351,6 +355,7 @@ def main():
 
     print()
     print("RUNNING COMMAND")
+    print()
     print(" ".join(command))
 
     subprocess.run(command)

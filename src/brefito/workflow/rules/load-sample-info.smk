@@ -441,17 +441,45 @@ class SampleInfo():
             arg_list.append(argument_R2_prefix + illumina_R2_read_lists[i])
         return " ".join(arg_list)
 
-    def get_reference_arguments(self, sample, argument_prefix='', reference_suffix='fasta'):
+    #### The behavior of these functions depends on few factors
+    #
+    # MODE 1: argument prefix is 'references' - looks for files defined in data.csv (and uses their endings/format)
+    # MODE 2: argument prefix is  <anything else>  - looks for files ending with the provided suffix
+    #    If a suffix is not provided, then it will look specifically for files with endings in this order:
+    #       *.gb, *.gbk, *.genbank, *.gff3, *.gff, *.fa, *.fna, *.fasta
+    #    If none are found, it will default to 'fasta'
+    # In the future, it would be nice to expand this fuzzy matching to allow different endings within a requested family
+
+    preferred_reference_suffix_list = [
+        'gb', 'gbk', 'genbank', 'gff3', 'gff', 'fa', 'fna'
+    ]
+
+    def add_preferred_reference_suffix(self, base_name):
+        for prs in self.preferred_reference_suffix_list:
+            test_name = base_name + "." + prs
+            if (os.path.exists(test_name)):
+                return(test_name)
+
+        #Default if not found
+        return base_name + ".fasta"
+
+    def get_reference_arguments(self, sample, argument_prefix='', reference_suffix=None):
         if (self.reference_prefix == "references"):
             return " ".join([argument_prefix + os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")])
         else:
-            return argument_prefix + os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+            if reference_suffix != None:
+                return argument_prefix + os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+            else:
+                return argument_prefix + self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
-    def get_reference_list(self, sample, reference_suffix='fasta'):
+    def get_reference_list(self, sample, reference_suffix=None):
         if (self.reference_prefix == "references"):
             return [ os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")]
         else:
-            return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix))
+            if reference_suffix != None:
+                return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+            else:
+                return self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
     def get_local_path_list(self):
         return self.remote_to_local_path_mapping.keys()
@@ -467,15 +495,10 @@ class SampleInfo():
     
     def get_reference_prefix(self):
         return self.reference_prefix
-
-    def get_merged_reference_prefix(self):
-        if (self.reference_prefix == "references"):
-            return("merged_references")
-        return self.reference_prefix
     
 
 #### Initialize from config values
-print(config)
+#print(config)
 
 data_csv_name = 'data.csv'
 if "data_csv" in config:

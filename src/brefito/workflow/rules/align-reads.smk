@@ -4,7 +4,6 @@ except NameError:
 
 include: "trim-nanopore-reads.smk"
 include: "trim-illumina-reads.smk"
-include: "merge-references.smk"
 
 def get_all_output_files_list():
     all_output_files_list = []
@@ -27,8 +26,7 @@ def get_all_output_files_list():
             all_output_files_list.append("aligned_reads_" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam".format(i_pe))
             all_output_files_list.append("aligned_reads_" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam.bai".format(i_pe))
 
-    print(all_output_files_list)
-
+    #print(all_output_files_list)
     return all_output_files_list
 
 rule all_align_reads:
@@ -39,7 +37,7 @@ rule all_align_reads:
 rule align_nanopore_reads:
     input:
         reads = "nanopore_reads_trimmed/{reads}.fastq.gz",
-        reference = sample_info.get_merged_reference_prefix() + "/{sample}.fasta"
+        reference = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta"
     output:
         temp("aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads.{reads}.sam")
     conda:
@@ -51,7 +49,7 @@ rule align_nanopore_reads:
 rule align_PE_illumina_reads:
     input:
         reads = expand("illumina_reads_trimmed/{{reads}}.{read_num}.fastq.gz", read_num=["R1", "R2"]),
-        reference = sample_info.get_merged_reference_prefix() + "/{sample}.fasta"
+        reference = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta"
     output:
         temp("aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.PE.sam")
     conda:
@@ -61,7 +59,6 @@ rule align_PE_illumina_reads:
     threads: 12
     shell:
         """
-        mkdir -p aligned_reads/data/{wildcards.sample}
         bowtie2-build {input.reference} {params.bowtie2_index}
         bowtie2 --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output}
         rm {params.bowtie2_index}*
@@ -70,7 +67,7 @@ rule align_PE_illumina_reads:
 rule align_SE_illumina_reads:
     input:
         reads = expand("illumina_reads_trimmed/{{reads}}.{read_num}.fastq.gz", read_num=["SE"]),
-        reference = sample_info.get_merged_reference_prefix() + "/{sample}.fasta"
+        reference = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta"
     output:
         temp("aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.SE.sam")
     conda:
@@ -80,7 +77,6 @@ rule align_SE_illumina_reads:
     threads: 12
     shell:
         """
-        mkdir -p aligned_reads/data/{wildcards.sample}
         bowtie2-build {input.reference} {params.bowtie2_index}
         bowtie2 --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output}
         rm {params.bowtie2_index}*
@@ -124,17 +120,20 @@ rule samtools_bam_index:
         samtools index {input}
         """
 
-rule copy_references:
+rule copy_convert_references:
     input:
-        fasta = "merged_references/{sample}.fasta",
-        gff3 = "merged_references/{sample}.gff3"
+        references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
         fasta = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta",
-        gff3 = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.gff3"
+        gff3 = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.gff3",
+    params:
+        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample)
+    conda:
+        "../envs/breseq.yml"
     shell:
         """
-        cp {input.fasta} {output.fasta}
-        cp {input.gff3} {output.gff3}
+        breseq CONVERT-REFERENCE -o {output.fasta} -f FASTA {params.reference_arguments}
+        breseq CONVERT-REFERENCE -o {output.gff3} --no-sequence -f GFF3 {params.reference_arguments} 
         """
 
 rule samtools_fasta_index:
