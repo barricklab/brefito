@@ -189,12 +189,7 @@ def main():
         valid_command_found = True 
 
     if command_to_run == "assemble-unicycler-csv":
-        valid_command_found = True 
-
-    if command_to_run == "annotate-references":
-        smk_targets = smk_targets + [ "output/annotated_references/{}.gbk".format(key) for key in input_reference_assembly_files.keys() ]
-        valid_command_found = True 
-    
+        valid_command_found = True     
 
     match = check_command_list_with_references(
         command_to_run, [
@@ -202,7 +197,8 @@ def main():
             "coverage-plots-breseq",
             "align-reads",
             "check-soft-clipping",
-            "mutate-genomes-gdtools"
+            "mutate-genomes-gdtools",
+            "annotate-genomes"
             ]
     )
     if match['matched']:
