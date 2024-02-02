@@ -1,10 +1,14 @@
+# There are some bugs generating Genbank files
+# with versions of breseq < 0.38.3, 
+# which is why this makes GFF3 only right now!
+
 try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
 rule all_annotate_genomes:
     input:
-        ["annotated_" + sample_info.get_reference_prefix() + "/" + s + ".gbk" for s in sample_info.get_sample_list()]
+        ["annotated_" + sample_info.get_reference_prefix() + "/" + s + ".gff3" for s in sample_info.get_sample_list()]
     default_target: True
 
 #Convert the references to fasta format (so we can re-annotate if needed)
@@ -29,7 +33,7 @@ rule annotate_with_prokka:
         "annotated_" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta"
     output:
         dir = temp(directory("annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}")),
-        prokka_annotated_reference = temp("annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gbk")
+        prokka_annotated_reference = temp("annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff")
     log:
         "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_prokka.log"
     conda:
@@ -61,17 +65,17 @@ rule annotate_with_isescan:
 
 rule combine_annotation_with_breseq:
     input:
-        prokka = "annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gbk",
+        prokka = "annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff",
         isescan = "annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}/" +  "annotated_" + sample_info.get_reference_prefix() + "_fasta" + "/{sample}.fasta.csv",
         prokka_dir = "annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}",
         isescan_dir = "annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}"
     output:
-        "annotated_" + sample_info.get_reference_prefix() + "/{sample}.gbk"
+        "annotated_" + sample_info.get_reference_prefix() + "/{sample}.gff3"
     log:
         "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_combine_annotation_with_breseq.log"
     conda:
         "../envs/breseq.yml"
     shell:
         """
-        breseq CONVERT-REFERENCE -f GENBANK -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
+        breseq CONVERT-REFERENCE -f GFF3 -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
         """

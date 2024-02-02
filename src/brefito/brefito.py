@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--config', action='append', default=[])         
     parser.add_argument('--rerun-incomplete', action='store_true') 
     parser.add_argument('--unlock', action='store_true') 
-    parser.add_argument('--no-temp', action='store_true') 
+    parser.add_argument('--notemp', action='store_true') 
     parser.add_argument('--keep-going', action='store_true') 
     parser.add_argument('--dry-run', action='store_true') 
     parser.add_argument('--resources', action='append', default=[]) 
@@ -66,7 +66,7 @@ def main():
         for this_input_file in existing_files:
             this_file_name=os.path.basename(this_input_file)
             #print(this_file_name)
-            short_name = re.findall("(.+)\." + re.escape(in_file_ending), this_file_name)
+            short_name = re.findall(r'(.+)\.' + re.escape(in_file_ending), this_file_name)
             matching_input_files[short_name[0]] = this_input_file
 
         return(matching_input_files)
@@ -144,13 +144,12 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
     if args.unlock:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--unlock"]
-    if args.no_temp:
-        snakemake_plus_common_options = snakemake_plus_common_options + ["--no-temp"]
+    if args.notemp:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--notemp"]
     if args.keep_going:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--keep-going"]
     if args.dry_run:
         snakemake_plus_common_options = snakemake_plus_common_options + ["-r"]
-
 
     # What are appropriate targets for the command we are running?
     valid_command_found = False
