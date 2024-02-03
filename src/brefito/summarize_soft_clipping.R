@@ -49,7 +49,8 @@ Y = Y %>% filter(n>1)
 if (!is.na(plot_path)) {
   p = ggplot(Y, aes(x=bin_coord, y=n, color=direction)) +
     geom_point() +
-    theme_bw()
+    theme_bw() + 
+    ylim(0, max(Y$n) * 1.05)
   
   ggsave(plot_path, plot=p, width=12, height=6)
 }

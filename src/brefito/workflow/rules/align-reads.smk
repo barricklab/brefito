@@ -82,6 +82,8 @@ rule align_SE_illumina_reads:
         rm {params.bowtie2_index}*
         """
 
+ruleorder: samtools_view > samtools_sort
+
 rule samtools_view:
     input:
         "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.sam"

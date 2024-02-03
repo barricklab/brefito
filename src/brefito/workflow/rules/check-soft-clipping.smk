@@ -24,14 +24,15 @@ rule tabulate_all_soft_clipping:
     input:
         bam = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.bam",
         fasta = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta",
+        fai = "aligned_reads_" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta.fai",
     wildcard_constraints:
         technology = "nanopore_reads.*|illumina_reads.*.SE|illumina_reads.*.PE"
     output:
         csv = "aligned_reads_" + sample_info.get_reference_prefix() + "/soft_clipping/{sample}.{technology}.all.csv" 
     log:
         "logs/" + "check_soft_clipping_" + sample_info.get_reference_prefix() + "_{sample}.{technology}.log"
-#    conda:
-#        "../envs/breseq.yml"
+    conda:
+        "../envs/breseq.yml"
     threads: 1
     shell:
         """
