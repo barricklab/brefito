@@ -373,6 +373,7 @@ class SampleInfo():
 
     def print_file_lists(self):
         for this_sample in sorted(self.get_sample_list()):
+            print()
             print("SAMPLE :: " + this_sample)
             for this_type in sorted(self.file_lists_by_sample_by_type[this_sample].keys()):
                 for this_item in self.file_lists_by_sample_by_type[this_sample][this_type]:
@@ -554,6 +555,5 @@ if 'REFERENCES' in brefito_config.keys():
 if 'SAMPLES' in brefito_config.keys():
     sample_info.select_samples(brefito_config['SAMPLES'].split("_,_"))
 
-print()
 sample_info.print_file_lists()
 print()

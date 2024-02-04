@@ -24,7 +24,7 @@ def main():
     parser.add_argument('-p', '--path', default='.', type=str)
 
     #An additional way to specify these
-    parser.add_argument('-r', '--references', default='references', type=str)
+    parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
 
     #Snakemake passthroughs
     parser.add_argument('--config', action='append', default=[])
@@ -46,8 +46,6 @@ def main():
     base_path = args.path
     command_to_run = args.command.lower()
     samples_to_run = args.samples
-    print("HERE")
-    print(samples_to_run)
 
     config_options_list = args.config
     resource_options_list = args.resources
@@ -211,11 +209,16 @@ def main():
         valid_command_found = True
 
         if match['references'] != None:
-            if match['references'] != references_argument:
+            if references_argument != None:
+                print()
                 print("OPTIONS WARNING")
                 print("  Workflow suffix specified reference: " + match['references'])
                 print("  Overrides command line option references " + references_argument)
                 references_argument = match['references']
+
+        # If not specified at command line or in workflow, set to default        
+        if references_argument == None:
+            references_argument = 'references';
 
         command_to_run = match['command_to_run']
 
