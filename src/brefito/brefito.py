@@ -214,7 +214,7 @@ def main():
                 print("OPTIONS WARNING")
                 print("  Workflow suffix specified reference: " + match['references'])
                 print("  Overrides command line option references " + references_argument)
-                references_argument = match['references']
+            references_argument = match['references']
 
         # If not specified at command line or in workflow, set to default        
         if references_argument == None:
