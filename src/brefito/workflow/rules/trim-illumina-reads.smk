@@ -5,7 +5,7 @@ READ_NUMS = ["1", "2"]
 def all_trimmed_illumina_read_names():
     l = [] 
     for s in sample_info.get_sample_list():
-        l = l + ["illumina_reads_trimmed/" + r for r in sample_info.get_illumina_read_list(s) ]
+        l = l + ["illumina-reads-trimmed/" + r for r in sample_info.get_illumina_read_list(s) ]
     return(l)
 
 rule trim_all_illimina_reads:
@@ -14,9 +14,9 @@ rule trim_all_illimina_reads:
 
 rule trim_PE_illumina_reads_with_fastp:
     input:
-        expand("illumina_reads/{{dataset}}.R{read_num}.fastq.gz", read_num=READ_NUMS)
+        expand("illumina-reads/{{dataset}}.R{read_num}.fastq.gz", read_num=READ_NUMS)
     output:
-        expand("illumina_reads_trimmed/{{dataset}}.R{read_num}.fastq.gz", read_num=READ_NUMS)
+        expand("illumina-reads-trimmed/{{dataset}}.R{read_num}.fastq.gz", read_num=READ_NUMS)
     conda:
         "../envs/fastp.yml"
     log:
@@ -31,9 +31,9 @@ rule trim_PE_illumina_reads_with_fastp:
 
 rule trim_SE_illumina_reads_with_fastp:
     input:
-        "illumina_reads/{dataset}.SE.fastq.gz"
+        "illumina-reads/{dataset}.SE.fastq.gz"
     output:
-        "illumina_reads_trimmed/{dataset}.SE.fastq.gz"
+        "illumina-reads-trimmed/{dataset}.SE.fastq.gz"
     conda:
         "../envs/fastp.yml"
     log:

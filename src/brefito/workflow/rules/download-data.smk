@@ -59,7 +59,6 @@ def remote_path_to_shell_command(remote_path, download_path):
     return(shell_command)
 
 def all_local_paths():
-    #print(sample_info.get_local_path_list())
     return(sample_info.get_local_path_list())
 
 rule download_all:
@@ -74,7 +73,7 @@ rule download_file:
         shell_command = lambda wildcards:  remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample)
     threads: 1
     wildcard_constraints:
-        download_type="(references|illumina_reads|nanopore_reads)"
+        download_type="(references|illumina-reads|nanopore-reads)"
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         connections=1

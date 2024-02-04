@@ -14,7 +14,7 @@ rule mutate_genomes_gdtools:
     output:
         "mutants/{sample}.gff3"
     log: 
-        "logs/mutate_genomes_gdtools_" + sample_info.get_reference_prefix() + "_{sample}.log"
+        "logs/mutate-genomes-gdtools-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
         "../envs/breseq.yml"
     params:

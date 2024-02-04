@@ -37,8 +37,12 @@ _brefito_ is a wrapper to make running several related snakemake pipelines easie
 ## Usage
 
 ```
-usage: brefito command
+usage: brefito <workflow> [sample1 sample2, ...]
 ```
+
+Different workflows are described below. 
+
+Providing any `sample` parameters will restrict running the workflow to just those samples.
 
 _brefito_ has several options that are pass-throughs to snakemake.
 
@@ -49,10 +53,10 @@ _brefito_ has several options that are pass-throughs to snakemake.
   --unlock
   --keep-going
   --dry-run
+  --notemp
 ```
-These can allow you to change certain resources or configuration variables (described below for each workflow).
 
-They can also allow you to resume and control execution after failed/interrupted runs.
+These can allow you to change certain resources or configuration variables (described below for each workflow). They can also allow you to resume and control execution after failed/interrupted runs.
 
 ## Specifying Input Data
 
@@ -84,7 +88,7 @@ Downloads the files specified in a sample
 
 ```
 Inputs: data.csv
-Outputs: nanopore_reads, illumina_reads
+Outputs: nanopore-reads, illumina-reads
 Options: --config data_csv=<path> (Default is data.csv)
          --resources connections=<int>
 ```
@@ -97,7 +101,7 @@ Merges the raw reads corresponding to each sample into one file per type of read
 
 ```
 Inputs: data.csv
-Outputs: merged_reads
+Outputs: merged-reads
 Options: <same options as download-data>
          --config breseq_options="<breseq_options>"
 ```
@@ -108,7 +112,7 @@ Merges the trimmed reads corresponding to each sample into one file per type of 
 
 ```
 Inputs: data.csv
-Outputs: merged_reads_trimmed
+Outputs: merged-reads-trimmed
 Options: <same options as download-data>
          --config breseq_options="<breseq_options>"
 ```
@@ -119,7 +123,7 @@ Runs `breseq` using the reference files and trimmed read files.
 
 ```
 Inputs: data.csv
-Outputs: breseq_reference/data, breseq_reference/html, breseq_reference/gd 
+Outputs: breseq-references/data, breseq-references/html, breseq-references/gd 
 Options: <same options as download-data>
          --config breseq_options="<breseq_options>
             Options that get passed to breseq
@@ -132,8 +136,8 @@ Options: <same options as download-data>
 Runs `breseq BAM2COV` to create coverage plots tiling the reference genome.
 
 ```
-inputs: breseq_reference/data, breseq_reference/html, breseq_reference/gd
-Outputs: breseq_reference/cov
+inputs: breseq-references/data
+Outputs: breseq-references/cov
 Options: <same options as download-data>
          --config breseq_options="<breseq_options>
             Options that get passed to breseq
@@ -147,7 +151,7 @@ Generates files that can be loaded in IGV to view sequences (FASTA/FAI), reads (
 
 ```
 Inputs: data.csv
-Outputs: align_reads_reference/data
+Outputs: align-reads-references/data
 Options: <same options as download-data>
 ```
 
@@ -156,8 +160,8 @@ Options: <same options as download-data>
 Analyzes and plots soft-clipped reads after mapping.
 
 ```
-Inputs: align_reads_reference/data
-Outputs: align_reads_reference/soft-clipping
+Inputs: align-reads-references/data
+Outputs: align-reads-reference/soft-clipping
 Options: <same options as download-data>
 ```
 
@@ -166,7 +170,7 @@ Options: <same options as download-data>
 Uses `gdtools` from _breseq_ to apply the GenomeDiff files in `genome_diff` to generate updated reference genomes that include those mutations. One GenomeDiff file is expected per sample with the `*.gd` file ending. These could be copied from a `breseq-*/gd` directory and then manually edited to curate the mutations they describe.
 
 ```
-Inputs: data.csv, genome_diffs/*.gd
+Inputs: data.csv, genome-diffs/*.gd
 Outputs: mutants
 Options: <same options as download-data>
 ```
@@ -176,8 +180,8 @@ Options: <same options as download-data>
 Combines annotations of genes from `prokka` with annotations of IS elements from `isescan` into a final Genbank file for each sample.
 
 ```
-Inputs: data.csv
-Outputs: annotated_references
+Inputs: data.csv, references
+Outputs: annotated-references
 Options: <same options as download-data>
 ```
 
@@ -189,4 +193,4 @@ In this case you can use the normal command with another dash and the desired di
 
 These commands will also work on input directories other than `assemblies` or `mutants`, just replace the same part of the command with your input folder name.
 
-For example, you can "chain" execution of `annotate-genomes-assemblies` and `predict-mutations-breseq-annotated_assemblies` to use annotated assemblies as the reference sequences for running _breseq_.
+For example, you can "chain" execution of `annotate-genomes-assemblies` and `predict-mutations-breseq-annotated-assemblies` to use annotated assemblies as the reference sequences for running _breseq_.

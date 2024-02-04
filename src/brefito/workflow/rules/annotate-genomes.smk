@@ -8,7 +8,7 @@ except NameError:
 
 rule all_annotate_genomes:
     input:
-        ["annotated_" + sample_info.get_reference_prefix() + "/" + s + ".gff3" for s in sample_info.get_sample_list()]
+        ["annotated-" + sample_info.get_reference_prefix() + "/" + s + ".gff3" for s in sample_info.get_sample_list()]
     default_target: True
 
 #Convert the references to fasta format (so we can re-annotate if needed)
@@ -16,9 +16,9 @@ rule convert_references:
     input:
         references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
-        fasta = temp("annotated_" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta")
+        fasta = temp("annotated-" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta")
     log:
-        "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_convert_references.log"
+        "logs/" + "annotated-" + sample_info.get_reference_prefix() + "_{sample}_convert_references.log"
     params:
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample),
     conda:
@@ -30,12 +30,12 @@ rule convert_references:
 
 rule annotate_with_prokka:
     input:
-        "annotated_" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta"
+        "annotated-" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta"
     output:
-        dir = temp(directory("annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}")),
-        prokka_annotated_reference = temp("annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff")
+        dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "_prokka/{sample}")),
+        prokka_annotated_reference = temp("annotated-" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff")
     log:
-        "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_prokka.log"
+        "logs/" + "annotated-" + sample_info.get_reference_prefix() + "_{sample}_prokka.log"
     conda:
         "../envs/prokka.yml"
     threads: 4
@@ -46,10 +46,10 @@ rule annotate_with_prokka:
 
 rule annotate_with_isescan:
     input:
-        "annotated_" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta"
+        "annotated-" + sample_info.get_reference_prefix() + "_fasta/{sample}.fasta"
     output:
-        dir = temp(directory("annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}")),
-        isescan_annotated_csv = temp("annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}/" +  "annotated_" + sample_info.get_reference_prefix() + "_fasta" + "/{sample}.fasta.csv")
+        dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "_isescan/{sample}")),
+        isescan_annotated_csv = temp("annotated-" + sample_info.get_reference_prefix() + "_isescan/{sample}/" +  "annotated_" + sample_info.get_reference_prefix() + "_fasta" + "/{sample}.fasta.csv")
     log:
         "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_isescan.log"
     conda:
@@ -65,14 +65,14 @@ rule annotate_with_isescan:
 
 rule combine_annotation_with_breseq:
     input:
-        prokka = "annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff",
-        isescan = "annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}/" +  "annotated_" + sample_info.get_reference_prefix() + "_fasta" + "/{sample}.fasta.csv",
-        prokka_dir = "annotated_" + sample_info.get_reference_prefix() + "_prokka/{sample}",
-        isescan_dir = "annotated_" + sample_info.get_reference_prefix() + "_isescan/{sample}"
+        prokka = "annotated-" + sample_info.get_reference_prefix() + "_prokka/{sample}/reference.gff",
+        isescan = "annotated-" + sample_info.get_reference_prefix() + "_isescan/{sample}/" +  "annotated_" + sample_info.get_reference_prefix() + "_fasta" + "/{sample}.fasta.csv",
+        prokka_dir = "annotated-" + sample_info.get_reference_prefix() + "_prokka/{sample}",
+        isescan_dir = "annotated-" + sample_info.get_reference_prefix() + "_isescan/{sample}"
     output:
-        "annotated_" + sample_info.get_reference_prefix() + "/{sample}.gff3"
+        "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gff3"
     log:
-        "logs/" + "annotated_" + sample_info.get_reference_prefix() + "_{sample}_combine_annotation_with_breseq.log"
+        "logs/" + "annotated-" + sample_info.get_reference_prefix() + "_{sample}_combine_annotation_with_breseq.log"
     conda:
         "../envs/breseq.yml"
     shell:
