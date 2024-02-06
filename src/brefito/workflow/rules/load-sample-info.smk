@@ -41,7 +41,10 @@ class SampleInfo():
     option_lists_by_sample_by_type = {}
 
     # used to check for duplicates and deconflict
-    remote_to_local_path_mapping = {}
+    local_to_remote_path_mapping = {}
+
+    # keeps track of all samples that use a local path
+    local_paths_by_sample = {}
 
     reference_prefix = "references"
 
@@ -73,7 +76,7 @@ class SampleInfo():
                 file_name_without_extension = os.path.splitext(base_file_name)[0]
 
                 if (row['type'] == "nanopore"):
-                    local_path = os.path.join("nanopore_reads", simplified_read_name + ".fastq.gz")
+                    local_path = os.path.join("nanopore-reads", simplified_read_name + ".fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "nanopore", 
@@ -83,7 +86,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
-                    local_path = os.path.join("illumina_reads", simplified_read_name + ".SE.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_name + ".SE.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-SE", 
@@ -161,8 +164,8 @@ class SampleInfo():
 
         assemblies_path = "assemblies"
         references_path = "references"
-        nanopore_input_path = "nanopore_reads"
-        illumina_input_path = "illumina_reads"
+        nanopore_input_path = "nanopore-reads"
+        illumina_input_path = "illumina-reads"
 
         print()
         print("Nanopore read files found (*.fastq.gz) in " + nanopore_input_path)
@@ -298,7 +301,13 @@ class SampleInfo():
         self.deconflict_paths(row)
 
         # This stores a full local path
-        self.remote_to_local_path_mapping[row['local_path']] = row['remote_path']
+        self.local_to_remote_path_mapping[row['local_path']] = row['remote_path']
+
+        # This stores which local path belongs with which sample
+        for this_sample in this_sample_list:
+            if not this_sample in self.local_paths_by_sample.keys():
+                self.local_paths_by_sample[this_sample] = []
+            self.local_paths_by_sample[this_sample].append(row['local_path'])
 
         # Now we want a base path for the file_lists_by_sample_by_type dict
         row['local_path'] = os.path.split(row['local_path'])[1]
@@ -337,15 +346,14 @@ class SampleInfo():
 
     #makes sure that different remote paths aren't mapped to the same local path
     def deconflict_paths(self, this_row):
-        if this_row['local_path'] in self.remote_to_local_path_mapping.keys():
-            if self.remote_to_local_path_mapping[this_row['local_path']] != this_row['remote_path']:
+        if this_row['local_path'] in self.local_to_remote_path_mapping.keys():
+            if self.local_to_remote_path_mapping[this_row['local_path']] != this_row['remote_path']:
                 i=1
                 file_name, file_extension = self.split_filename_and_extension(this_row['local_path'])
-                while file_name + "-" + str(i) + file_extension in self.remote_to_local_path_mapping.keys():
+                while file_name + "-" + str(i) + file_extension in self.local_to_remote_path_mapping.keys():
                     i = i + 1
                 this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
-        
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
@@ -365,11 +373,12 @@ class SampleInfo():
 
     def print_file_lists(self):
         for this_sample in sorted(self.get_sample_list()):
+            print()
             print("SAMPLE :: " + this_sample)
             for this_type in sorted(self.file_lists_by_sample_by_type[this_sample].keys()):
                 for this_item in self.file_lists_by_sample_by_type[this_sample][this_type]:
                     print("  " + this_type + " : " + this_item)
-        #print(self.remote_to_local_path_mapping)
+        #print(self.local_to_remote_path_mapping)
 
     def get_nanopore_read_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item for item in self.get_file_list(sample, "nanopore")])
@@ -482,10 +491,10 @@ class SampleInfo():
                 return self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
     def get_local_path_list(self):
-        return self.remote_to_local_path_mapping.keys()
+        return self.local_to_remote_path_mapping.keys()
 
     def get_remote_path_from_local_path(self, this_local_path):
-        return self.remote_to_local_path_mapping[this_local_path]
+        return self.local_to_remote_path_mapping[this_local_path]
         
     def get_sample_list(self):
         return list(self.sample_list)
@@ -495,10 +504,25 @@ class SampleInfo():
     
     def get_reference_prefix(self):
         return self.reference_prefix
-    
+
+    def select_samples(self, sample_list):
+
+        # Do this to avoid duplicates
+        self.sample_set = set(sample_list)
+        self.sample_list = list(self.sample_set)
+        self.option_lists_by_sample_by_type = {key: self.option_lists_by_sample_by_type[key] for key in sample_list if key in self.option_lists_by_sample_by_type}
+        self.file_lists_by_sample_by_type = {key: self.file_lists_by_sample_by_type[key] for key in sample_list if key in self.file_lists_by_sample_by_type}
+
+        # Must also prune local_paths to avoid downloads
+        local_path_set = set({})
+        for this_sample in sample_list:
+            if this_sample in self.local_paths_by_sample.keys():
+                local_path_set.update(self.local_paths_by_sample[this_sample])
+
+        self.local_to_remote_path_mapping = {key: self.local_to_remote_path_mapping[key] for key in local_path_set if key in self.local_to_remote_path_mapping}
 
 #### Initialize from config values
-#print(config)
+brefito_config = {key.upper(): value for key, value in config.items()}
 
 data_csv_name = 'data.csv'
 if "data_csv" in config:
@@ -524,9 +548,12 @@ if sample_info == None:
     sample_info = SampleInfo()
 
 # Typically "references" or "assemblies" but can be overridden
-if 'references' in config.keys():
-    sample_info.set_reference_prefix(config['references'] )
+if 'REFERENCES' in brefito_config.keys():
+    sample_info.set_reference_prefix(brefito_config['REFERENCES'])
 
-print()
+# Now set exactly which samples to use if option is provided
+if 'SAMPLES' in brefito_config.keys():
+    sample_info.select_samples(brefito_config['SAMPLES'].split("_,_"))
+
 sample_info.print_file_lists()
 print()

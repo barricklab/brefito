@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - breseq
+  - breseq>=0.38.3

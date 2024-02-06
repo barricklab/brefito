@@ -21,9 +21,13 @@ def main():
                         description='wrapper for bacterial reference genome assembly, polishing, and annotation',
                         epilog='')
 
-    parser.add_argument('-p', '--path', default='.', type=str)      # option that takes a value
-    parser.add_argument('-r', '--reference', default='references', type=str) 
-    parser.add_argument('--config', action='append', default=[])         
+    parser.add_argument('-p', '--path', default='.', type=str)
+
+    #An additional way to specify these
+    parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
+
+    #Snakemake passthroughs
+    parser.add_argument('--config', action='append', default=[])
     parser.add_argument('--rerun-incomplete', action='store_true') 
     parser.add_argument('--unlock', action='store_true') 
     parser.add_argument('--notemp', action='store_true') 
@@ -31,20 +35,26 @@ def main():
     parser.add_argument('--dry-run', action='store_true') 
     parser.add_argument('--resources', action='append', default=[]) 
 
-    parser.add_argument('command', type=str)           # positional argument
-    parser.add_argument('samples', nargs='?', type=str)           # positional argument
+    # REQUIRED positional argument
+    parser.add_argument('command', type=str)
+
+     # OPTIONAL positional arguments
+    parser.add_argument('samples', nargs='*', type=str)
 
     args = parser.parse_args()
+
     base_path = args.path
     command_to_run = args.command.lower()
     samples_to_run = args.samples
+
     config_options_list = args.config
     resource_options_list = args.resources
+    references_argument = args.references
 
     # What command did we run?
     print("Command: " + command_to_run)
     if (samples_to_run != None):
-        print("Samples:" + samples_to_run)
+        print("Samples:" + str(samples_to_run))
     else:
         print("Samples: all")
     print("Base path: " + base_path)
@@ -55,7 +65,7 @@ def main():
     for i in resource_options_list:
         print("  " + i)
 
-### BEGIN MOVED
+### BEGIN TODELETE WHEN MIGRATION COMPLETE
 
     # What files are available?
 
@@ -137,7 +147,7 @@ def main():
     for (k, v) in input_sample_assembly_files.items(): print("    " + k + " : " + v)
     if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
-#### END MOVED
+#### END TODELETE WHEN MIGRATION COMPLETE
 
     snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
     if args.rerun_incomplete:
@@ -159,16 +169,7 @@ def main():
         valid_command_found = True 
         smk_targets = [ d + ".polished" for d in input_assembly_files.values() ]
 
-    # We use one smk with different targets for these three
-    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-nanopore-reads":
-        smk_targets = smk_targets + [ "evaluate/breseq_output/{}_nanopore_reads".format(key) for key in input_assembly_files.keys() ]
-    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads":
-        smk_targets = smk_targets + [ "evaluate/breseq_output/{}_illumina_reads".format(key) for key in input_assembly_files.keys() ]
-    if command_to_run == "evaluate-breseq" or command_to_run == "evaluate-breseq-illumina-reads" or command_to_run == "evaluate-breseq-nanopore-reads":
-        command_to_run = "evaluate-breseq"
-        valid_command_found = True 
-
-    # Set this globally
+    # Set this globally, putting it first means it can be overridden
     resource_options_list = ["connections=1"] + resource_options_list
 
     if command_to_run == "download-data":
@@ -190,6 +191,8 @@ def main():
     if command_to_run == "assemble-unicycler-csv":
         valid_command_found = True     
 
+    # List longer overlapping matches first, so they are preferred
+    # For example,  "align-reads-merged", then "align-reads".
     match = check_command_list_with_references(
         command_to_run, [
             "predict-mutations-breseq",
@@ -200,33 +203,30 @@ def main():
             "annotate-genomes"
             ]
     )
+
     if match['matched']:
+
         valid_command_found = True
-        command_to_run = match['command_to_run']
-        config_options_list.append("references=" + match['references'])
+
+        if match['references'] != None:
+            if references_argument != None:
+                print()
+                print("OPTIONS WARNING")
+                print("  Workflow suffix specified reference: " + match['references'])
+                print("  Overrides command line option references " + references_argument)
+            references_argument = match['references']
+
+        # If not specified at command line or in workflow, set to default        
+        if references_argument == None:
+            references_argument = 'references';
+
         command_to_run = match['command_to_run']
 
     if command_to_run == "check-soft-clipping":
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
 
 
-    if command_to_run == "evaluate-aligned-reads" or command_to_run == "align-for-igv":
-
-        command_to_run = "evaluate-aligned-reads"
-        # # Indexed FASTA
-        # smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/reference.fasta.fai".format(key) for key in input_assembly_files ]
-
-        # #  Indexed nanopore BAM
-        # for key in input_assembly_files:
-        #     if (key in input_nanopore_files):
-        #         smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/nanopore.bam.bai".format(key) ]
-
-        # #  Indexed illumina BAM
-        # for key in input_assembly_files:
-        #     if (key in input_illumina_1_files):
-        #         smk_targets = smk_targets + [ "evaluate/aligned_reads/{}/illumina.bam.bai".format(key) ]
-
-        valid_command_found = True 
+    ## Separate commands that don't take references args
 
     if command_to_run == "merge-references":
         valid_command_found = True 
@@ -237,6 +237,7 @@ def main():
     if command_to_run == "merge-reads":
         valid_command_found = True 
 
+    ## Commands that haven't yet been updated below --->
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
     normalize_assembly_files = {}
@@ -323,10 +324,19 @@ def main():
         smk_targets = [ "assemblies/" + d + ".fasta" for d in input_nanopore_files.keys() ]
 
     #################################################
+        
+    ### <---- Commands that haven't yet been updated above
+
     assert valid_command_found, "Command not recognized: " + command_to_run + "\nRun brefito -h to see valid options!"
 
     smk_file_path = os.path.join(rules_path, command_to_run + ".smk")
     target_options = ["-s", smk_file_path]
+
+    config_options_list.append("references=" + references_argument)
+
+    if samples_to_run != None and len(samples_to_run)>0:
+        config_options_list.append("samples=" + "_,_".join(samples_to_run))
+
 
     config_options = []
     if len(config_options_list) > 0:
@@ -390,7 +400,7 @@ def check_command_with_references(command_to_run, test_command_prefix):
 
     if command_to_run == test_command_prefix:
         return_dict['matched'] = True
-        return_dict['references'] = "references"
+        return_dict['references'] = None
         return_dict['command_to_run'] = test_command_prefix
     
     if command_to_run.startswith(test_command_prefix + "-"):
