@@ -96,7 +96,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R1"):
-                    local_path = os.path.join("illumina_reads", simplified_read_name + ".R1.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R1.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R1", 
@@ -106,7 +106,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R2"):
-                    local_path = os.path.join("illumina_reads", simplified_read_name + ".R2.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R2.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R2", 

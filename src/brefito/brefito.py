@@ -216,14 +216,14 @@ def main():
                 print("  Overrides command line option references " + references_argument)
             references_argument = match['references']
 
-        # If not specified at command line or in workflow, set to default        
-        if references_argument == None:
-            references_argument = 'references';
-
         command_to_run = match['command_to_run']
 
     if command_to_run == "check-soft-clipping":
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
+
+    # If not specified at command line or in workflow, set to default        
+    if references_argument == None:
+        references_argument = 'references';
 
 
     ## Separate commands that don't take references args

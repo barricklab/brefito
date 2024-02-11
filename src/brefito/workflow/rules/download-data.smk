@@ -31,7 +31,8 @@ def remote_path_to_shell_command(remote_path, download_path):
     method = None
     bookmark = ''
     if (len(split_remote_path) == 1):
-        sys.exit ('  FAILED: URL with :// not found.') 
+        shell_command = "echo \"Not downloading file that does not have a valid URL: " + remote_path + "\"\n"
+        return(shell_command)
     else: 
         # lftp@utbox://path/from/bookmark
         split_protocol = split_remote_path[0].split('@', 1)
