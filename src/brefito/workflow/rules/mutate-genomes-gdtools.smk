@@ -22,5 +22,5 @@ rule mutate_genomes_gdtools:
     threads: 8
     shell:
         """
-        gdtools APPLY -o {output} {params.reference_arguments} -f GFF3 {input.genomediff} > {log} 2>&1
+        gdtools APPLY -o {output} {params.reference_arguments} -f GFF3 {input.genomediff} -r {input.references} > {log} 2>&1
         """
