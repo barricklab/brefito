@@ -15,9 +15,9 @@ rule merge_all_trimmed_reads:
 
 rule merge_nanopore_reads:
     input:
-        lambda wildcards: [ "nanopore_reads_trimmed/" + d for d in sample_info.get_nanopore_read_list(wildcards.sample)]
+        lambda wildcards: [ "nanopore-reads-trimmed/" + d for d in sample_info.get_nanopore_read_list(wildcards.sample)]
     output:
-        "merged_reads_trimmed/{sample}.nanopore.fastq.gz"
+        "merged-reads-trimmed/{sample}.nanopore.fastq.gz"
     threads: 1
     shell:
         """
