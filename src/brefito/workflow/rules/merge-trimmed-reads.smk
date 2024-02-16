@@ -7,7 +7,7 @@ include: "trim-illumina-reads.smk"
 
 rule merge_all_trimmed_reads:
     input:
-        nanopore_reads = ["merged_reads_trimmed/{}.nanopore.fastq.gz".format(s) for s in sample_info.get_samples_with_nanopore_reads()],
+        nanopore-reads = ["merged-reads-trimmed/{}.nanopore.fastq.gz".format(s) for s in sample_info.get_samples_with_nanopore_reads()],
         illumina_SE_reads = ["merged_reads_trimmed/{}.illumina.SE.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_SE_reads()],
         illumina_R1_reads = ["merged_reads_trimmed/{}.illumina.R1.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_PE_reads()],
         illumina_R2_reads = ["merged_reads_trimmed/{}.illumina.R2.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_PE_reads()]
