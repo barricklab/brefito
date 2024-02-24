@@ -4,8 +4,6 @@ except NameError:
 
 include: "annotate-genomes.smk"
 
-sample_info.set_reference_prefix("annotated-references")
-
 BRESEQ_OPTIONS = "--max-displayed-reads 40 --junction-score-cutoff 0 --junction-minimum-pos-hash-score 10 --brief-html-output"
 if 'BRESEQ_OPTIONS' in brefito_config.keys():
     BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
