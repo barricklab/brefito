@@ -115,6 +115,35 @@ class SampleInfo():
                         'local_path' : local_path
                         })
 
+                elif (row['type'] == "illumina-pair") or (row['type'] == "illumina-PE"):
+                    #Must have {1/2} in the name
+                    if not "{1|2}" in row['setting']:
+                        print("Did not find {1|2} in name of illumina-PE entry:" + row['setting'])
+                        print("Skipping this entry.")
+                        continue
+
+                    simplified_read_name_1 = self.get_simplified_read_name(simplified_read_name.replace("{1|2}", "1"))
+                    simplified_read_name_2 = self.get_simplified_read_name(simplified_read_name.replace("{1|2}", "2"))
+
+                    remote_path_1 = row['setting'].replace("{1|2}", "1")
+                    remote_path_2 = row['setting'].replace("{1|2}", "2")
+
+                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R2.fastq.gz")
+                    self.add_file({ 
+                        'sample' : row['sample'],
+                        'type' : "illumina-R1",
+                        'file_type' : "illumina", 
+                        'remote_path' : remote_path_1,
+                        'local_path' : os.path.join("illumina-reads", simplified_read_name_1 + ".R1.fastq.gz")
+                        })
+                    self.add_file({ 
+                        'sample' : row['sample'],
+                        'type' : "illumina-R2", 
+                        'file_type' : "illumina", 
+                        'remote_path' : remote_path_2,
+                        'local_path' : os.path.join("illumina-reads", simplified_read_name_2 + ".R2.fastq.gz")
+                        })
+
                 elif (row['type'] == "reference"):
                     local_path = os.path.join("references", file_name)
                     self.add_file({ 
