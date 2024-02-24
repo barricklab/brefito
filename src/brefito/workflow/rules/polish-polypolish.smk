@@ -1,16 +1,18 @@
 include: "trim-illumina-reads.smk"
 
+@@@ BROKEN - needs to merge trimmed illumina reads
+
 rule polish_with_polypolish:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = expand("01_trimmed_illumina_reads/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
+        reads = expand("illumina-reads-trimmed/{{sample}}.R{read_num}.fastq.gz", read_num=["1", "2"])
     output:
         path = temp(directory("06_polypolish/{sample}")),
         polished_fasta = "06_polypolish/{sample}.fasta.polished.temp"
     conda:
         "../envs/polypolish.yml"
     log:
-        "logs/polis_polypolish_{sample}.log"
+        "logs/polish_polypolish_{sample}.log"
     threads: 16
     shell:
       """

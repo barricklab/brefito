@@ -181,6 +181,12 @@ def main():
     if command_to_run == "trim-nanopore-reads":
         valid_command_found = True 
 
+    if command_to_run == "filter-nanopore-reads":
+        valid_command_found = True 
+
+    if command_to_run == "subsample-nanopore-reads":
+        valid_command_found = True 
+
     if command_to_run == "assemble-flye":
         smk_targets = []
         valid_command_found = True 

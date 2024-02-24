@@ -1,3 +1,7 @@
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
+
 # Does all steps through assembly and clustering
 
 include: "subsample-nanopore-reads.smk"
@@ -18,14 +22,18 @@ FULL_FASTQ_IDS = ["25", "26", "27", "28", "29"]
 
 ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLISH_RESAMPLED_IDS + CANU_RESAMPLED_IDS + NECAT_RESAMPLED_IDS + UNICYCLER_RESAMPLED_IDS
 
-# Could copy but trying ln to save space
+rule all_trycycler_cluster:
+    input:
+        ["trycycler/" + s + "/done" for s in sample_info.get_sample_list() ]
+    default_target: True
+
 rule copy_full_fastq:
     input:
-        "02_filtered_nanopore_reads/{dataset}.fastq"
+        "nanopore-reads-filtered/{dataset}.fastq"
     wildcard_constraints:
         assembly_id="|".join(FULL_FASTQ_IDS),
     output:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     threads: 1
     shell:
         "cp {input} {output}"
@@ -33,28 +41,28 @@ rule copy_full_fastq:
 
 rule assemble_with_flye:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(FLYE_RESAMPLED_IDS),
     output:
-        "04_assemblies/{dataset}/assembly_{assembly_id}.fasta"
+        "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta"
     log:
         "logs/{dataset}/flye_{assembly_id}.log"
     conda:
         "../envs/flye.yml"
     threads: 16
     shell:
-        "mkdir -p 03_assembly_intermediates/{wildcards.dataset}/assembly_{wildcards.assembly_id} && flye --nano-raw {input} --threads {threads} --out-dir 03_assembly_intermediates/{wildcards.dataset}/assembly_{wildcards.assembly_id} > {log} 2>&1 && cp 03_assembly_intermediates/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly.fasta {output} && cp 03_assembly_intermediates/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly_graph.gfa 03_assembly_intermediates/{wildcards.dataset}/assembly_{wildcards.assembly_id}_01.gfa"
+        "mkdir -p intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} && flye --nano-raw {input} --threads {threads} --out-dir intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} > {log} 2>&1 && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly.fasta {output} && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly_graph.gfa intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}_01.gfa"
 
 
 rule assemble_with_miniasm_minipolish:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(MINIASM_MINIPOLISH_RESAMPLED_IDS),
     output:
-        assembly = "04_assemblies/{dataset}/assembly_{assembly_id}.fasta",
-        graph = "04_assemblies/{dataset}/assembly_{assembly_id}.gfa"
+        assembly = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta",
+        graph = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.gfa"
     log:
         "logs/{dataset}/miniasm_minipolish_{assembly_id}.log"
     conda:
@@ -84,24 +92,24 @@ rule assemble_with_miniasm_minipolish:
 
 rule assemble_with_raven:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(RAVEN_RESAMPLED_IDS),
     output:
-        "04_assemblies/{dataset}/assembly_{assembly_id}.fasta"
+        "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta"
     log:
         "logs/{dataset}/raven_{assembly_id}.log"
     conda:
         "../envs/raven.yml"
     threads: 16
     shell:
-        "raven --threads {threads} --disable-checkpoints --graphical-fragment-assembly 04_assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}.gfa {input} > {output} 2> {log}"
+        "raven --threads {threads} --disable-checkpoints --graphical-fragment-assembly intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}.gfa {input} > {output} 2> {log}"
 
 
 rule assemble_with_canu:
     priority: 2
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(CANU_RESAMPLED_IDS),
     output:
@@ -123,7 +131,7 @@ rule trim_canu_assembly:
     wildcard_constraints:
         assembly_id="|".join(CANU_RESAMPLED_IDS),
     output:
-        "04_assemblies/{dataset}/assembly_{assembly_id}.fasta"
+        "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta"
     shell:
         """
         echo "Executing...\n"
@@ -137,11 +145,11 @@ rule trim_canu_assembly:
 
 rule assemble_with_necat:
     input:
-        "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq"
+        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
         assembly_id="|".join(NECAT_RESAMPLED_IDS),
     output:
-        assembly_fasta = "04_assemblies/{dataset}/assembly_{assembly_id}.fasta",
+        assembly_fasta = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta",
 #        assembly_directory = temp(directory("03_necat_assembly_temp/{dataset}/{assembly_id}"))
 #    resources:
 #        necats=1
@@ -192,13 +200,13 @@ READ_NUMS = ["1", "2"]
 rule assemble_with_unicycler:
     priority: 1
     input:
-        long_reads = "03_subsampled_nanopore_reads/{dataset}/sample_{assembly_id}.fastq",
+        long_reads = "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq",
         short_reads = expand("03_subsampled_illumina_reads/{{dataset}}/sample_{{assembly_id}}_R{read_num}.fastq.gz", read_num=READ_NUMS)
     wildcard_constraints:
         assembly_id="|".join(UNICYCLER_RESAMPLED_IDS),
     output:
-        assembly_fasta = "04_assemblies/{dataset}/assembly_{assembly_id}.fasta",
-        assembly_gfa = "04_assemblies/{dataset}/assembly_{assembly_id}.gfa",
+        assembly_fasta = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta",
+        assembly_gfa = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.gfa",
         assembly_directory = directory("03_unicycler_assembly_temp/{dataset}/{assembly_id}")
     log:
         "logs/{dataset}/unicycler_{assembly_id}.log"
@@ -214,16 +222,16 @@ rule assemble_with_unicycler:
 
 rule trycycler_cluster:
     input:
-        reads = "02_filtered_nanopore_reads/{dataset}.fastq",
-        assemblies = expand("04_assemblies/{{dataset}}/assembly_{assembly_id}.fasta", assembly_id=ALL_RESAMPLED_IDS)
+        reads = "nanopore-reads-filtered/{dataset}.fastq",
+        assemblies = expand("intermediate-assemblies/{{dataset}}/assembly_{assembly_id}.fasta", assembly_id=ALL_RESAMPLED_IDS)
     output:
-        output_directory = directory("05_trycycler/{dataset}"),
-        done_file = "05_trycycler/{dataset}/done"
+        output_directory = directory("trycycler/{dataset}"),
+        done_file = "trycycler/{dataset}/done"
     log:
         "logs/{dataset}/tricycler_cluster_{dataset}.log"
     conda:
         "../envs/trycycler.yml"
     threads: 16
     shell:
-        "trycycler cluster --threads {threads} --assemblies {input.assemblies} --reads {input.reads} --out_dir 05_trycycler/{wildcards.dataset} > {log} 2>&1 && touch {output.done_file}"
+        "trycycler cluster --threads {threads} --assemblies {input.assemblies} --reads {input.reads} --out_dir trycycler/{wildcards.dataset} > {log} 2>&1 && touch {output.done_file}"
 
