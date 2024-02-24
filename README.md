@@ -30,6 +30,11 @@ It's also *highly recommended* that you set up a common location for snakemake t
 export SNAKEMAKE_CONDA_PREFIX=$HOME/snakemake_conda_envs
 ```
 
+If you are developing for _brefito_, it's easiest to do an editable install. In this case, you won't need to keep installing each time you edit the code!
+```
+pip install --editable .
+```
+
 ## Overview
 
 _brefito_ is a wrapper to make running several related snakemake pipelines easier!
