@@ -401,6 +401,14 @@ class SampleInfo():
         return self.file_lists_by_sample_by_type[in_sample][in_type]
 
     def print_file_lists(self):
+
+        print()
+        main_reference_file_path = self.get_main_reference_file()
+        if os.path.isfile(main_reference_file_path):
+            print("MAIN REFERENCE FILE :: " + main_reference_file_path)
+        else:
+            print("MAIN REFERENCE FILE :: NOT FOUND")
+
         for this_sample in sorted(self.get_sample_list()):
             print()
             print("SAMPLE :: " + this_sample)
@@ -518,6 +526,12 @@ class SampleInfo():
                 return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
             else:
                 return self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
+
+    def get_main_reference_file(self, reference_suffix=None):
+        if reference_suffix != None:
+            return "reference.{}".format(reference_suffix)
+        else:
+            return self.add_preferred_reference_suffix("reference")
 
     def get_local_path_list(self):
         return self.local_to_remote_path_mapping.keys()

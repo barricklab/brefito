@@ -243,6 +243,9 @@ def main():
     if command_to_run == "merge-reads":
         valid_command_found = True 
 
+    if command_to_run == "compare-assemblies-breseq":
+        valid_command_found = True 
+
     ## Commands that haven't yet been updated below --->
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
@@ -365,7 +368,7 @@ def main():
     command = snakemake_plus_common_options + target_options + smk_targets + config_options + resource_options
 
     print()
-    print("RUNNING COMMAND")
+    print("RUNNING SNAKEMAKE COMMAND")
     print()
     print(" ".join(command))
 
