@@ -9,11 +9,11 @@ rule all:
 
 rule assemble_with_flye:
     input:
-        "02_filtered_nanopore_reads/{sample}.fastq"
+        "nanopore-reads-filtered/{sample}.fastq"
     output:
         fasta = "assemblies/{sample}.fasta",
         gfa = "assemblies/{sample}.gfa",
-        tmpdir = temp(directory("04_flye_assembly/{sample}"))
+        tmpdir = temp(directory("flye_assembly/{sample}"))
     log:
         "logs/flye_{sample}.log"
     conda:

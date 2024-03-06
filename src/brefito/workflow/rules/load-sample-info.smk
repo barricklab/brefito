@@ -387,6 +387,8 @@ class SampleInfo():
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
         new_read_name = in_read_name
+        if new_read_name.endswith("_1") or new_read_name.endswith("_2"):
+            new_read_name=new_read_name[:-2]
         new_read_name = new_read_name.replace("_1.", ".").replace("_1_", "_")
         new_read_name = new_read_name.replace("_2.", ".").replace("_1_", "_")
         new_read_name = new_read_name.replace("_R1.", ".").replace(".R1.", ".").replace("_R1_", "_")
