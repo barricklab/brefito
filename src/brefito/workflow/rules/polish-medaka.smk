@@ -1,4 +1,4 @@
-include: "trim-nanopore-reads.smk"
+include: "filter-nanopore-reads.smk"
 
 rule polish_with_medaka:
     input:

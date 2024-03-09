@@ -520,14 +520,17 @@ class SampleInfo():
             else:
                 return argument_prefix + self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
-    def get_reference_list(self, sample, reference_suffix=None):
-        if (self.reference_prefix == "references"):
-            return [ os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")]
+    def get_specified_reference_list(self, reference_prefix, sample, reference_suffix=None):
+        if (reference_prefix== "references"):
+            return [ os.path.join(reference_prefix, item) for item in self.get_file_list(sample, "reference")]
         else:
             if reference_suffix != None:
-                return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+                return os.path.join(reference_prefix, "{}.{}".format(sample, reference_suffix)) 
             else:
-                return self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
+                return self.add_preferred_reference_suffix(os.path.join(reference_prefix, sample))
+
+    def get_reference_list(self, sample, reference_suffix=None):
+        return self.get_specified_reference_list(self.reference_prefix, sample, reference_suffix)
 
     def get_main_reference_file(self, reference_suffix=None):
         if reference_suffix != None:

@@ -4,10 +4,10 @@ except NameError:
 
 include: "trim-illumina-reads.smk"
 
-
+# Only runs on samples that have paried reads
 rule all_polish_polypolish:
     input:
-        ["assemblies/" + s + ".fasta.polished" for s in sample_info.get_sample_list() ]
+        ["assemblies/" + s + ".fasta.polished" for s in sample_info.get_samples_with_illumina_PE_reads() ]
     default_target: True
 
 # Merge the trimmed PE reads so that we use all that were provided
