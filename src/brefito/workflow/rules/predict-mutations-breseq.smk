@@ -7,6 +7,10 @@ include: "trim-illumina-reads.smk"
 
 import os.path
 
+BRESEQ_THREADS = ""
+if 'BRESEQ_THREADS' in brefito_config.keys():
+    BRESEQ_THREADS = int(brefito_config['BRESEQ_THREADS'])
+
 BRESEQ_OPTIONS = ""
 if 'BRESEQ_OPTIONS' in brefito_config.keys():
     BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
@@ -58,7 +62,7 @@ rule predict_mutations_breseq:
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
-    threads: 8
+    threads: BRESEQ_THREADS
     shell:
         """
         # Create outer directories for moved files
