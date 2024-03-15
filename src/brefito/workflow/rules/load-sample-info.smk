@@ -257,7 +257,7 @@ class SampleInfo():
         for k, i in input_illumina_SE_files.items():
             if i in input_illumina_PE_file_names:
                 continue
-            self.append({ 
+            self.add_file({ 
                 'sample' : k,
                 'type' : "illumina-SE", 
                 'file_type' : "illumina", 
@@ -276,7 +276,7 @@ class SampleInfo():
         if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
         for k, i in input_assembly_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "assembly", 
                         'file_type' : "fasta", 
@@ -305,7 +305,7 @@ class SampleInfo():
         if (len(input_reference_files.items()) == 0) : print("    " + "NONE FOUND")
 
         for k, i in input_reference_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "reference", 
                         'file_type' : "reference", 

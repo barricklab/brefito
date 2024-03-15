@@ -5,7 +5,7 @@ except NameError:
 include: "filter-nanopore-reads.smk"
 
 rule all:
-    input: [ "assemblies/{}.fasta".format(d) for d in sample_info.get_sample_list()]
+    input: [ "assemblies/{}.fasta".format(d) for d in sample_info.get_samples_with_nanopore_reads()]
 
 rule assemble_with_flye:
     input:

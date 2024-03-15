@@ -7,7 +7,7 @@ include: "trim-illumina-reads.smk"
 
 import os.path
 
-BRESEQ_THREADS = ""
+BRESEQ_THREADS = 8
 if 'BRESEQ_THREADS' in brefito_config.keys():
     BRESEQ_THREADS = int(brefito_config['BRESEQ_THREADS'])
 
