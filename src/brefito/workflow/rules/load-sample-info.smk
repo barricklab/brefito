@@ -431,10 +431,13 @@ class SampleInfo():
     def get_samples_with_nanopore_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_nanopore_read_list(sample))]
 
-    def get_illumina_read_list(self, sample, argument_prefix=''):
+    def get_illumina_read_list(self, sample):
         return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
     def get_illumina_SE_read_base_list(self, sample):
+        return self.get_file_list(sample, "illumina-SE")
+
+    def get_illumina_SE_read_list(self, sample):
         return [os.path.split(i_se.replace(".SE.fastq.gz", ""))[1] for i_se in self.get_file_list(sample, "illumina-SE")]
 
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
@@ -442,6 +445,9 @@ class SampleInfo():
     
     def get_samples_with_illumina_SE_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_illumina_SE_read_base_list(sample))]
+
+    def get_illumina_PE_read_list(self, sample):
+        return self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
     def get_illumina_PE_read_base_list(self, sample):
         illumina_R1_read_list = sorted(self.get_file_list(sample, "illumina-R1"))

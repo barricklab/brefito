@@ -175,6 +175,9 @@ def main():
     if command_to_run == "download-data":
         valid_command_found = True 
 
+    if command_to_run == "data-to-sra":
+        valid_command_found = True 
+
     if command_to_run == "trim-illumina-reads":
         valid_command_found = True 
 
