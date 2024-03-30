@@ -15,7 +15,7 @@ def get_bam_for_sample(sample):
     for r in sample_info.get_illumina_SE_read_base_list(sample):
         bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/illumina_reads." + r + ".SE.bam"]
     for r in sample_info.get_illumina_PE_read_base_list(sample):
-        bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/illumina_reads." + r + "PE.bam"]
+        bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/illumina_reads." + r + ".PE.bam"]
     return (bam_list)
 
 # We use the breseq files to get the average coverage

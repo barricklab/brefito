@@ -2,7 +2,7 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-rule all_trycycler_cluster:
+rule all_normalize_assemblies
     input:
         ["assemblies/" + s + ".fasta.normalized" for s in sample_info.get_sample_list() ]
     default_target: True

@@ -257,7 +257,7 @@ class SampleInfo():
         for k, i in input_illumina_SE_files.items():
             if i in input_illumina_PE_file_names:
                 continue
-            self.append({ 
+            self.add_file({ 
                 'sample' : k,
                 'type' : "illumina-SE", 
                 'file_type' : "illumina", 
@@ -276,7 +276,7 @@ class SampleInfo():
         if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
         for k, i in input_assembly_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "assembly", 
                         'file_type' : "fasta", 
@@ -305,7 +305,7 @@ class SampleInfo():
         if (len(input_reference_files.items()) == 0) : print("    " + "NONE FOUND")
 
         for k, i in input_reference_files.items(): 
-            self.append({ 
+            self.add_file({ 
                         'sample' : k,
                         'type' : "reference", 
                         'file_type' : "reference", 
@@ -387,6 +387,8 @@ class SampleInfo():
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
         new_read_name = in_read_name
+        if new_read_name.endswith("_1") or new_read_name.endswith("_2"):
+            new_read_name=new_read_name[:-2]
         new_read_name = new_read_name.replace("_1.", ".").replace("_1_", "_")
         new_read_name = new_read_name.replace("_2.", ".").replace("_1_", "_")
         new_read_name = new_read_name.replace("_R1.", ".").replace(".R1.", ".").replace("_R1_", "_")
@@ -429,10 +431,13 @@ class SampleInfo():
     def get_samples_with_nanopore_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_nanopore_read_list(sample))]
 
-    def get_illumina_read_list(self, sample, argument_prefix=''):
+    def get_illumina_read_list(self, sample):
         return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
     def get_illumina_SE_read_base_list(self, sample):
+        return self.get_file_list(sample, "illumina-SE")
+
+    def get_illumina_SE_read_list(self, sample):
         return [os.path.split(i_se.replace(".SE.fastq.gz", ""))[1] for i_se in self.get_file_list(sample, "illumina-SE")]
 
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
@@ -440,6 +445,9 @@ class SampleInfo():
     
     def get_samples_with_illumina_SE_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_illumina_SE_read_base_list(sample))]
+
+    def get_illumina_PE_read_list(self, sample):
+        return self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
     def get_illumina_PE_read_base_list(self, sample):
         illumina_R1_read_list = sorted(self.get_file_list(sample, "illumina-R1"))
@@ -518,14 +526,17 @@ class SampleInfo():
             else:
                 return argument_prefix + self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
-    def get_reference_list(self, sample, reference_suffix=None):
-        if (self.reference_prefix == "references"):
-            return [ os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")]
+    def get_specified_reference_list(self, reference_prefix, sample, reference_suffix=None):
+        if (reference_prefix== "references"):
+            return [ os.path.join(reference_prefix, item) for item in self.get_file_list(sample, "reference")]
         else:
             if reference_suffix != None:
-                return os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+                return os.path.join(reference_prefix, "{}.{}".format(sample, reference_suffix)) 
             else:
-                return self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
+                return self.add_preferred_reference_suffix(os.path.join(reference_prefix, sample))
+
+    def get_reference_list(self, sample, reference_suffix=None):
+        return self.get_specified_reference_list(self.reference_prefix, sample, reference_suffix)
 
     def get_main_reference_file(self, reference_suffix=None):
         if reference_suffix != None:
