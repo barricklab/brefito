@@ -1,16 +1,25 @@
 import glob
 import os.path
 
-def find_available_files(wildcards):
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
+
+rule all_trycycler_consensus:
+    input:
+        ["assemblies/" + s + ".fasta" for s in sample_info.get_sample_list() ]
+    default_target: True
+
+def find_all_contigs_for_sample(wildcards):
    from glob import glob
-   path = "05_trycycler/{dataset}/cluster_{cluster_id}"
+   path = "trycycler/{dataset}/cluster_{cluster_id}"
    files = glob(path.format(dataset=wildcards.dataset, cluster_id="*"))
    files = [s + "/7_final_consensus.fasta" for s in files]
    return files
 
 rule cat_contigs:
     input:
-        find_available_files
+        find_all_contigs_for_sample
     output:
         "assemblies/{dataset}.fasta"
     shell:
@@ -26,40 +35,40 @@ rule cat_contigs:
         """
 rule trycycler_msa:
     input:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta",
+        "trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta",
     output:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
+        "trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
     conda:
         "../envs/trycycler.yml"
     log: 
-        "05_trycycler/{dataset}/cluster_{cluster_id}/msa.log"
+        "trycycler/{dataset}/cluster_{cluster_id}/msa.log"
     threads: 16
     shell:
-        "trycycler msa --threads {threads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
+        "trycycler msa --threads {threads} --cluster_dir trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
 
 rule trycycler_partition:
     input:
-        reads = "02_filtered_nanopore_reads/{dataset}.fastq",
-        all_seqs = "05_trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
+        reads = "nanopore-reads-filtered/{dataset}.fastq",
+        all_seqs = "trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
     output:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
+        "trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
     conda:
         "../envs/trycycler.yml"
     log: 
-        "05_trycycler/{dataset}/cluster_{cluster_id}/partition.log"
+        "trycycler/{dataset}/cluster_{cluster_id}/partition.log"
     threads: 32
     shell:
-        "trycycler partition --threads {threads} --reads {input.reads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
+        "trycycler partition --threads {threads} --reads {input.reads} --cluster_dir trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
 
 rule trycycler_consensus:
     input:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
+        "trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"
     output:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/7_final_consensus.fasta"
+        "trycycler/{dataset}/cluster_{cluster_id}/7_final_consensus.fasta"
     conda:
         "../envs/trycycler.yml"
     log: 
-        "05_trycycler/{dataset}/cluster_{cluster_id}/consensus.log"
+        "trycycler/{dataset}/cluster_{cluster_id}/consensus.log"
     threads: 32
     shell:
-        "trycycler consensus --threads {threads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
+        "trycycler consensus --threads {threads} --cluster_dir trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"

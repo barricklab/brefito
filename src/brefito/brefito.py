@@ -165,7 +165,7 @@ def main():
     valid_command_found = False
     smk_targets = []
 
-    if command_to_run == "polish-polypolish" or command_to_run == "polish-polca" or command_to_run == "polish-medaka":
+    if command_to_run in ["polish-breseq", "polish-polypolish", "polish-polca", "polish-medaka"]:
         valid_command_found = True 
         smk_targets = [ d + ".polished" for d in input_assembly_files.values() ]
 
@@ -175,10 +175,19 @@ def main():
     if command_to_run == "download-data":
         valid_command_found = True 
 
+    if command_to_run == "data-to-sra":
+        valid_command_found = True 
+
     if command_to_run == "trim-illumina-reads":
         valid_command_found = True 
 
     if command_to_run == "trim-nanopore-reads":
+        valid_command_found = True 
+
+    if command_to_run == "filter-nanopore-reads":
+        valid_command_found = True 
+
+    if command_to_run == "subsample-nanopore-reads":
         valid_command_found = True 
 
     if command_to_run == "assemble-flye":
@@ -235,6 +244,9 @@ def main():
         valid_command_found = True 
 
     if command_to_run == "merge-reads":
+        valid_command_found = True 
+
+    if command_to_run == "compare-assemblies-breseq":
         valid_command_found = True 
 
     ## Commands that haven't yet been updated below --->
@@ -359,7 +371,7 @@ def main():
     command = snakemake_plus_common_options + target_options + smk_targets + config_options + resource_options
 
     print()
-    print("RUNNING COMMAND")
+    print("RUNNING SNAKEMAKE COMMAND")
     print()
     print(" ".join(command))
 
@@ -385,7 +397,8 @@ def main():
                 subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
                 subprocess.run(["mv", a + "." + in_ending_to_remove, a])
 
-
+    if command_to_run == "polish-breseq":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "breseq")
     if command_to_run == "polish-polypolish":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
     elif command_to_run == "polish-polca":

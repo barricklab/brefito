@@ -1,4 +1,6 @@
-BRESEQ_OPTIONS = ""
+import glob
+import os.path
+
 if "trycycler_options" in config.keys():
     TRYCYCLER_OPTIONS = config["trycycler_options"]
 else:
@@ -11,16 +13,28 @@ print ("Add something like this to your brefito command line to override these o
 print ("   --config \"trycycler_options= --min_1kbp_identity 15 --max_add_seq 50000 --max_add_seq_percent 5\"")
 print()
 
+def get_all_trycycler_reconcile_outputs():
+    smk_targets = []
+    input_files=glob.glob("trycycler/*/cluster_*")
+    for this_input_file in input_files:
+        smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
+    return(smk_targets)
+
+rule all_trycycler_reconcile:
+    input:
+        get_all_trycycler_reconcile_outputs()
+    default_target: True
+
 rule trycycler_reconcile:
     input:
-        reads = "02_filtered_nanopore_reads/{dataset}.fastq",
+        reads = "nanopore-reads-filtered/{dataset}.fastq",
     output:
-        "05_trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta"
+        "trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta"
     conda:
         "../envs/trycycler.yml"
     log: 
-        "05_trycycler/{dataset}/cluster_{cluster_id}/reconcile.log"
+        "trycycler/{dataset}/cluster_{cluster_id}/reconcile.log"
     threads: 12
     shell:
-        "trycycler reconcile {TRYCYCLER_OPTIONS} --threads {threads} --reads {input.reads} --cluster_dir 05_trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
+        "trycycler reconcile {TRYCYCLER_OPTIONS} --threads {threads} --reads {input.reads} --cluster_dir trycycler/{wildcards.dataset}/cluster_{wildcards.cluster_id} 2> {log}"
 

@@ -1,11 +1,11 @@
-include: "trim-nanopore-reads.smk"
+include: "filter-nanopore-reads.smk"
 
 rule polish_with_medaka:
     input:
         reference = "assemblies/{sample}.fasta",
-        reads = "02_filtered_nanopore_reads/{sample}.fastq"
+        reads = "nanopore-reads-filtered/{sample}.fastq"
     output:
-        path = temp(directory("06_medaka_polish/{sample}")),
+        path = temp(directory("medaka-polish/{sample}")),
         fasta = "assemblies/{sample}.fasta.polished"
     log: 
         "logs/polish_medaka_{sample}.log"
