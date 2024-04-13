@@ -2,16 +2,16 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-include: "annotate-genomes.smk"
+#include: "annotate-genomes.smk"
 
 BRESEQ_OPTIONS = "--max-displayed-reads 40 --junction-score-cutoff 0 --junction-minimum-pos-hash-score 10 --brief-html-output"
 if 'BRESEQ_OPTIONS' in brefito_config.keys():
     BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
 
 
-rule convert_references_to_genbank:
+rule convert_annotated_references_to_genbank:
     input:
-        references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
+        references = "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gff3"
     output:
         genbank = "annotated-" + sample_info.get_reference_prefix() + "-genbank/{sample}.gbk"
     log: 
