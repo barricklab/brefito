@@ -53,7 +53,7 @@ def main():
             short_name_j = input_files[j].replace('_2.fastq.gz', '')
 
             if (short_name_i == short_name_j):
-                line_list.append([short_name_i, 'illumina-PE', output_prefix +  short_name_i + '{1|2}.fastq.gz'])
+                line_list.append([short_name_i, 'illumina-PE', output_prefix +  short_name_i + '_{1|2}.fastq.gz'])
                 i+=1
                 written = True
 
