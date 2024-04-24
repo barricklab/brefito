@@ -18,8 +18,8 @@ brefito check-soft-clipping
 
 # Run breseq on the genome with the predicted mutations applied
 #Copies over the generated genome_diff so we can apply it
-mkdir -p genome_diffs
-cp breseq_references/gd/Ara-1_50000gen_11331.gd genome_diffs
+mkdir -p genome-diffs
+cp breseq-references/gd/Ara-1_50000gen_11331.gd genome-diffs
 brefito mutate-genomes-gdtools
 
 # Run commands on new reference generated in "mutants"
