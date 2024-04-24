@@ -115,7 +115,7 @@ class SampleInfo():
                         'local_path' : local_path
                         })
 
-                elif (row['type'] == "illumina-pair") or (row['type'] == "illumina-PE"):
+                elif (row['type'] == "illumina-pair") or (row['type'] == "illumina-paired") or (row['type'] == "illumina-PE"):
                     #Must have {1/2} in the name
                     if not "{1|2}" in row['setting']:
                         print("Did not find {1|2} in name of illumina-PE entry:" + row['setting'])
@@ -155,11 +155,11 @@ class SampleInfo():
                         })
                 else:
                     # add this to the options dictionary
-                    if not row['sample'] in option_lists_by_sample_by_type:
-                        option_lists_by_sample_by_type[row['sample']] = {}
-                    if not row['type'] in option_lists_by_sample_by_type[row['sample']]:
-                        option_lists_by_sample_by_type[row['sample']][row['type']] = []
-                    option_lists_by_sample_by_type[row['sample']][row['type']].append(row['setting'])
+                    if not row['sample'] in self.option_lists_by_sample_by_type:
+                        self.option_lists_by_sample_by_type[row['sample']] = {}
+                    if not row['type'] in self.option_lists_by_sample_by_type[row['sample']]:
+                        self.option_lists_by_sample_by_type[row['sample']][row['type']] = []
+                    self.option_lists_by_sample_by_type[row['sample']][row['type']].append(row['setting'])
 
                 #else:
                 #    print("Skipping row with unknown type:" + row['type'])
