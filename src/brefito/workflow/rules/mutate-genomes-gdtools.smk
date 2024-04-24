@@ -9,7 +9,7 @@ rule all_mutate_genomes_gdtools:
 
 rule mutate_genomes_gdtools:
     input:
-        genomediff = "genome_diffs/{sample}.gd",
+        genomediff = "genome-diffs/{sample}.gd",
         references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
         "mutants/{sample}.gff3"
