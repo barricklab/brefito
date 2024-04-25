@@ -15,11 +15,20 @@ def main():
     brefito_package_path = importlib.resources.files(brefito)
     rules_path = os.path.join(brefito_package_path, "workflow", "rules")
 
+    # Find all of the *.smk files in rules_path
+    # These are valid by default
+    valid_workflows = glob.glob(os.path.join(rules_path, "*.smk"))
+    valid_workflows = sorted([os.path.basename(f).replace(".smk", "") for f in valid_workflows])
+
+    valid_workflow_help = "Valid workflows are:\n" + "\n  ".join(valid_workflows)
+
     # What command did we choose
     parser = argparse.ArgumentParser(
                         prog='brefito',
-                        description='wrapper for bacterial reference genome assembly, polishing, and annotation',
-                        epilog='')
+                        description='Wrapper script for Snakemake bacterial reference genome assembly, polishing, and annotation workflows.',
+                        epilog=valid_workflow_help,
+                        formatter_class=argparse.RawDescriptionHelpFormatter
+                        )
 
     parser.add_argument('-p', '--path', default='.', type=str)
 
@@ -27,16 +36,16 @@ def main():
     parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
 
     #Snakemake passthroughs
-    parser.add_argument('--config', action='append', default=[])
-    parser.add_argument('--rerun-incomplete', action='store_true') 
-    parser.add_argument('--unlock', action='store_true') 
-    parser.add_argument('--notemp', action='store_true') 
-    parser.add_argument('--keep-going', action='store_true') 
-    parser.add_argument('--dry-run', action='store_true') 
-    parser.add_argument('--resources', action='append', default=[]) 
+    parser.add_argument('--config', action='append', default=[], help='--config argument passed through to Snakemake. Individual workflows support different settings.')
+    parser.add_argument('--resources', action='append', default=[], help='--resources argument passed through to Snakemake. Individual workflows support different settings.')
+    parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
+    parser.add_argument('--unlock', action='store_true', help='argument passed through to Snakemake') 
+    parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
+    parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
+    parser.add_argument('--dry-run', action='store_true', help='argument passed through to Snakemake')
 
     # REQUIRED positional argument
-    parser.add_argument('command', type=str)
+    parser.add_argument('workflow', type=str)
 
      # OPTIONAL positional arguments
     parser.add_argument('samples', nargs='*', type=str)
@@ -44,15 +53,49 @@ def main():
     args = parser.parse_args()
 
     base_path = args.path
-    command_to_run = args.command.lower()
+    workflow_to_run = args.workflow.lower()
     samples_to_run = args.samples
 
     config_options_list = args.config
     resource_options_list = args.resources
     references_argument = args.references
 
-    # What command did we run?
-    print("Command: " + command_to_run)
+    # Is the workflow valid?
+
+    # First check for workflows that take -* wildcards specifying 
+    # the references and update the workflow and references accordingly
+
+    # List longer overlapping matches first, so they are preferred
+    # For example,  "align-reads-merged", then "align-reads".
+    match = check_command_list_with_references(
+        workflow_to_run, [
+            "predict-mutations-breseq",
+            "compare-mutations-breseq",
+            "coverage-plots-breseq",
+            "align-reads",
+            "check-soft-clipping",
+            "mutate-genomes-gdtools",
+            "annotate-genomes"
+            ]
+    )
+
+    if match['matched']:
+
+        if match['references'] != None:
+            if references_argument != None:
+                print()
+                print("OPTIONS WARNING")
+                print("  Workflow suffix specified reference: " + match['references'])
+                print("  Overrides command line option references " + references_argument)
+            references_argument = match['references']
+
+        workflow_to_run = match['workflow_to_run']
+
+    # Now check whether it is valid
+    assert workflow_to_run in valid_workflows, "Workflow not recognized: " + workflow_to_run + "\n" + valid_workflow_help
+
+    # Print out some details to help users debug bad command lines
+    print("Workflow: " + workflow_to_run)
     if (samples_to_run != None):
         print("Samples:" + str(samples_to_run))
     else:
@@ -64,6 +107,8 @@ def main():
     print("Resource options:")
     for i in resource_options_list:
         print("  " + i)
+
+
 
 ### BEGIN TODELETE WHEN MIGRATION COMPLETE
 
@@ -106,7 +151,7 @@ def main():
         if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
         if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
-        # if (command_to_run != "download-reads-lftp") and (command_to_run != "download-data-lftp"):
+        # if (workflow_to_run != "download-reads-lftp") and (workflow_to_run != "download-data-lftp"):
         #     assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
         #     assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
 
@@ -161,73 +206,16 @@ def main():
     if args.dry_run:
         snakemake_plus_common_options = snakemake_plus_common_options + ["-r"]
 
-    # What are appropriate targets for the command we are running?
-    valid_command_found = False
+    # What are appropriate targets for the workflow we are running?
     smk_targets = []
 
-    if command_to_run in ["polish-breseq", "polish-polypolish", "polish-polca", "polish-medaka"]:
-        valid_command_found = True 
+    if workflow_to_run in ["polish-breseq", "polish-polypolish", "polish-polca", "polish-medaka"]:
         smk_targets = [ d + ".polished" for d in input_assembly_files.values() ]
 
     # Set this globally, putting it first means it can be overridden
     resource_options_list = ["connections=1"] + resource_options_list
 
-    if command_to_run == "download-data":
-        valid_command_found = True 
-
-    if command_to_run == "data-to-sra":
-        valid_command_found = True 
-
-    if command_to_run == "trim-illumina-reads":
-        valid_command_found = True 
-
-    if command_to_run == "trim-nanopore-reads":
-        valid_command_found = True 
-
-    if command_to_run == "filter-nanopore-reads":
-        valid_command_found = True 
-
-    if command_to_run == "subsample-nanopore-reads":
-        valid_command_found = True 
-
-    if command_to_run == "assemble-flye":
-        smk_targets = []
-        valid_command_found = True 
-
-    if command_to_run == "assemble-unicycler":
-        valid_command_found = True 
-
-    if command_to_run == "assemble-unicycler-csv":
-        valid_command_found = True     
-
-    # List longer overlapping matches first, so they are preferred
-    # For example,  "align-reads-merged", then "align-reads".
-    match = check_command_list_with_references(
-        command_to_run, [
-            "predict-mutations-breseq",
-            "coverage-plots-breseq",
-            "align-reads",
-            "check-soft-clipping",
-            "mutate-genomes-gdtools",
-            "annotate-genomes"
-            ]
-    )
-
-    if match['matched']:
-
-        valid_command_found = True
-
-        if match['references'] != None:
-            if references_argument != None:
-                print()
-                print("OPTIONS WARNING")
-                print("  Workflow suffix specified reference: " + match['references'])
-                print("  Overrides command line option references " + references_argument)
-            references_argument = match['references']
-
-        command_to_run = match['command_to_run']
-
-    if command_to_run == "check-soft-clipping":
+    if workflow_to_run == "check-soft-clipping":
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
 
     # If not specified at command line or in workflow, set to default        
@@ -235,25 +223,11 @@ def main():
         references_argument = 'references';
 
 
-    ## Separate commands that don't take references args
-
-    if command_to_run == "merge-references":
-        valid_command_found = True 
-
-    if command_to_run == "merge-trimmed-reads":
-        valid_command_found = True 
-
-    if command_to_run == "merge-reads":
-        valid_command_found = True 
-
-    if command_to_run == "compare-assemblies-breseq":
-        valid_command_found = True 
-
     ## Commands that haven't yet been updated below --->
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
     normalize_assembly_files = {}
-    if command_to_run == "normalize-assemblies":
+    if workflow_to_run == "normalize-assemblies":
         from Bio import SeqIO
         assert input_main_reference_assembly_file != None, "Main reference assembly required for this command!" 
         input_main_reference_seqs = []
@@ -271,77 +245,62 @@ def main():
                 normalize_assembly_files[input_assembly_file_key] = input_assembly_file
         valid_command_found = True 
 
-    if command_to_run == "compare-syri":
+    if workflow_to_run == "compare-syri":
         for s in input_sample_assembly_files.keys():
             for r in input_reference_assembly_files.keys():
                 smk_targets = smk_targets + [ "comparisons/" + r + "/" + s + ".pdf" ]
-        valid_command_found = True 
 
-    if command_to_run == "compare-mummer":
-        command_to_run = "compare-syri"
+    if workflow_to_run == "compare-mummer":
+        workflow_to_run = "compare-syri"
         for s in input_sample_assembly_files.keys():
             for r in input_reference_assembly_files.keys():
                 smk_targets = smk_targets + [ "02_mummer_results/" + r + "/" + s + ".coords" ]
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-nanopore-reads":
+    if workflow_to_run == "evaluate-nanopore-reads":
         smk_targets = smk_targets + [ "nanopore_read_stats/{}".format(key) for key in input_nanopore_files ]
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-inspector":
+    if workflow_to_run == "evaluate-inspector":
         smk_targets = smk_targets + [ "inspector_assembly_evaluation/{}".format(key) for key in input_assembly_files ]
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-coverage":
+    if workflow_to_run == "evaluate-coverage":
         smk_targets = smk_targets + [ "evaluate/coverage_plots/nanopore/{}".format(key) for key in input_assembly_files ]
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-breseq-coverage":
+    if workflow_to_run == "evaluate-breseq-coverage":
         smk_targets = smk_targets + [ "evaluate/coverage_plots/breseq_nanopore/{}".format(key) for key in input_assembly_files ]
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-isescan":
+    if workflow_to_run == "evaluate-isescan":
         smk_targets = smk_targets + [ "evaluate/isescan/{}.csv".format(key) for key in input_assembly_files ]
-        valid_command_found = True 
     
-    if command_to_run == "evaluate-soft-clipping":
-
+    if workflow_to_run == "evaluate-soft-clipping":
         smk_targets = smk_targets + [ "evaluate/soft_clipping_summary/nanopore/{}_soft_clipping_summary.csv".format(key) for key in input_assembly_files ]
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
-        valid_command_found = True 
 
-    if command_to_run == "evaluate-redotable":
+    if workflow_to_run == "evaluate-redotable":
         smk_targets = smk_targets + [ "evaluate/dot_plot/{}.svg".format(key) for key in input_assembly_files ]
         #config_options_list.append("brefito_package_path=" + str(brefito_package_path))
-        valid_command_found = True 
 
 
     #################################################
     ### trycycler trifecta
     #################################################
 
-    if command_to_run == "trycycler-assemble":
-        valid_command_found = True 
+    if workflow_to_run == "trycycler-assemble":
         smk_targets = [ "05_trycycler/" + d + "/done" for d in input_nanopore_files.keys() ]
         #resource_options_list = resource_options_list + ["necats=4"]
 
-    if command_to_run == "trycycler-reconcile":
-        valid_command_found = True 
+    if workflow_to_run == "trycycler-reconcile":
         input_files=glob.glob("05_trycycler/*/cluster_*")
         for this_input_file in input_files:
             smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
 
-    if command_to_run == "trycycler-consensus":
-        valid_command_found = True 
+    if workflow_to_run == "trycycler-consensus":
         smk_targets = [ "assemblies/" + d + ".fasta" for d in input_nanopore_files.keys() ]
 
     #################################################
         
     ### <---- Commands that haven't yet been updated above
 
-    assert valid_command_found, "Command not recognized: " + command_to_run + "\nRun brefito -h to see valid options!"
-
-    smk_file_path = os.path.join(rules_path, command_to_run + ".smk")
+    smk_file_path = os.path.join(rules_path, workflow_to_run + ".smk")
     target_options = ["-s", smk_file_path]
 
     config_options_list.append("references=" + references_argument)
@@ -397,36 +356,36 @@ def main():
                 subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
                 subprocess.run(["mv", a + "." + in_ending_to_remove, a])
 
-    if command_to_run == "polish-breseq":
+    if workflow_to_run == "polish-breseq":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "breseq")
-    if command_to_run == "polish-polypolish":
+    if workflow_to_run == "polish-polypolish":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
-    elif command_to_run == "polish-polca":
+    elif workflow_to_run == "polish-polca":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polca")
-    elif command_to_run == "polish-medaka":
+    elif workflow_to_run == "polish-medaka":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
-    elif command_to_run == "normalize-assemblies":
+    elif workflow_to_run == "normalize-assemblies":
         copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
 
-def check_command_with_references(command_to_run, test_command_prefix):
+def check_command_with_references(workflow_to_run, test_command_prefix):
     return_dict = { 'matched' : False }
 
-    if command_to_run == test_command_prefix:
+    if workflow_to_run == test_command_prefix:
         return_dict['matched'] = True
         return_dict['references'] = None
-        return_dict['command_to_run'] = test_command_prefix
+        return_dict['workflow_to_run'] = test_command_prefix
     
-    if command_to_run.startswith(test_command_prefix + "-"):
+    if workflow_to_run.startswith(test_command_prefix + "-"):
         return_dict['matched'] = True
-        return_dict['references'] = command_to_run[len(test_command_prefix + "-"):]
-        return_dict['command_to_run'] = test_command_prefix
+        return_dict['references'] = workflow_to_run[len(test_command_prefix + "-"):]
+        return_dict['workflow_to_run'] = test_command_prefix
 
     return (return_dict)
 
-def check_command_list_with_references(command_to_run, test_command_prefix_list):
+def check_command_list_with_references(workflow_to_run, test_command_prefix_list):
 
     for p in test_command_prefix_list:
-        this_return_dict = check_command_with_references(command_to_run, p)
+        this_return_dict = check_command_with_references(workflow_to_run, p)
         if (this_return_dict['matched']):
             return (this_return_dict)
 
