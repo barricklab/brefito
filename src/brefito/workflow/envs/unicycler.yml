@@ -3,5 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - unicycler =0.4.8
+  - unicycler =0.5.0
 name: unicycler

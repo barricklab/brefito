@@ -4,5 +4,9 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - biopython
+  - biopython =1.83
   - snakemake
+  - pip
+  - pip:
+  # works for regular pip packages
+    - snakedeploy

@@ -1,8 +1,8 @@
-name: masurca
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - masurca=4.1.1
-  - bwa=0.7.18
+  - masurca =4.1.1
+  - bwa =0.7.18
+name: masurca
