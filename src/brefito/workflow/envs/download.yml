@@ -1,8 +1,8 @@
-name: lftp
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - lftp
-  - wget
+  - lftp =4.9.2
+  - wget =1.21.4
+name: lftp

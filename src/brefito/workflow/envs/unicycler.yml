@@ -1,7 +1,7 @@
-name: unicycler
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - unicycler
+  - unicycler =0.4.8
+name: unicycler

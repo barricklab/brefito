@@ -4,4 +4,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - necat
+  - necat=0.0.1_update20200803

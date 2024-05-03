@@ -1,4 +1,3 @@
-name: pilon
 channels:
   - conda-forge
   - bioconda
@@ -7,4 +6,5 @@ dependencies:
   - bowtie2
   - minimap2
   - samtools
-  - pilon
+  - pilon =1.24
+name: pilon

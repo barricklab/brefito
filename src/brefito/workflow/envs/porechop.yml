@@ -1,8 +1,8 @@
-name: porechop
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - porechop
-  - pigz
+  - porechop =0.2.4
+  - pigz =2.8
+name: porechop

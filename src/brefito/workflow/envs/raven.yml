@@ -1,7 +1,7 @@
-name: raven
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - raven-assembler
+  - raven-assembler =1.8.3
+name: raven
