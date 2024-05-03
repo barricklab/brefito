@@ -1,0 +1,27 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/osx-64/ca-certificates-2024.2.2-h8857fd0_0.conda#f2eacee8c33c43692f1ccfd33d0f50b1
+https://conda.anaconda.org/conda-forge/osx-64/libasprintf-0.22.5-h5ff76d1_2.conda#ad803793d7168331f1395685cbdae212
+https://conda.anaconda.org/conda-forge/osx-64/libcxx-16.0.6-hd57cbcb_0.conda#7d6972792161077908b62971802f289a
+https://conda.anaconda.org/conda-forge/osx-64/libexpat-2.6.2-h73e2aa4_0.conda#3d1d51c8f716d97c864d12f7af329526
+https://conda.anaconda.org/conda-forge/osx-64/libiconv-1.17-hd75f5a5_2.conda#6c3628d047e151efba7cf08c5e54d1ca
+https://conda.anaconda.org/conda-forge/osx-64/libunistring-0.9.10-h0d85af4_0.tar.bz2#40f27dc16f73256d7b93e53c4f03d92f
+https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.2.13-h8a1eda9_5.conda#4a3ad23f6e16f99c04e166767193d700
+https://conda.anaconda.org/conda-forge/osx-64/ncurses-6.4.20240210-h73e2aa4_0.conda#50f28c512e9ad78589e3eab34833f762
+https://conda.anaconda.org/conda-forge/osx-64/xz-5.2.6-h775f41a_0.tar.bz2#a72f9d4ea13d55d745ff1ed594747f10
+https://conda.anaconda.org/conda-forge/osx-64/expat-2.6.2-h73e2aa4_0.conda#dc0882915da2ec74696ad87aa2350f27
+https://conda.anaconda.org/conda-forge/osx-64/libasprintf-devel-0.22.5-h5ff76d1_2.conda#c7182eda3bc727384e2f98f4d680fa7d
+https://conda.anaconda.org/conda-forge/osx-64/libintl-0.22.5-h5ff76d1_2.conda#3fb6774cb8cdbb93a6013b67bcf9716d
+https://conda.anaconda.org/conda-forge/osx-64/openssl-3.3.0-hd75f5a5_0.conda#eb8c33aa7929a7714eab8b90c1d88afe
+https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h9e318b2_1.conda#f17f77f2acf4d344734bda76829ce14e
+https://conda.anaconda.org/conda-forge/osx-64/zlib-1.2.13-h8a1eda9_5.conda#75a8a98b1c4671c5d2897975731da42d
+https://conda.anaconda.org/conda-forge/osx-64/gettext-tools-0.22.5-h5ff76d1_2.conda#37e1cb0efeff4d4623a6357e37e0105d
+https://conda.anaconda.org/conda-forge/osx-64/libgettextpo-0.22.5-h5ff76d1_2.conda#54cc9d12c29c2f0516f2ef4987de53ae
+https://conda.anaconda.org/conda-forge/osx-64/libintl-devel-0.22.5-h5ff76d1_2.conda#ea0a07e556d6b238db685cae6e3585d0
+https://conda.anaconda.org/conda-forge/osx-64/libgettextpo-devel-0.22.5-h5ff76d1_2.conda#1e0384c52cd8b54812912e7234e66056
+https://conda.anaconda.org/conda-forge/osx-64/gettext-0.22.5-h5ff76d1_2.conda#c09b3dcf2adc5a2a32d11ab90289b8fa
+https://conda.anaconda.org/conda-forge/osx-64/lftp-4.9.2-h7ba908e_1.tar.bz2#722960ad48c6353a1e6fe0334aa2aacf
+https://conda.anaconda.org/conda-forge/osx-64/libidn2-2.3.7-h10d778d_0.conda#a985867eae03167666bba45c2a297da1
+https://conda.anaconda.org/conda-forge/osx-64/wget-1.21.4-hca547e6_0.conda#479910a14056bea9c36bbb867c3f1471

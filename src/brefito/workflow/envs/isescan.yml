@@ -1,7 +1,7 @@
-name: isescan
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - isescan
+  - isescan =1.7.2.3
+name: isescan

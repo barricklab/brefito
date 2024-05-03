@@ -1,7 +1,7 @@
-name: nanoplot
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - nanoplot
+  - nanoplot =1.42.0
+name: nanoplot
