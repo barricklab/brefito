@@ -200,12 +200,15 @@ def main():
     if command_to_run == "assemble-unicycler-csv":
         valid_command_found = True     
 
+    if command_to_run == "coverage-table-breseq":
+        valid_command_found = True
     # List longer overlapping matches first, so they are preferred
     # For example,  "align-reads-merged", then "align-reads".
     match = check_command_list_with_references(
         command_to_run, [
             "predict-mutations-breseq",
             "coverage-plots-breseq",
+            "coverage-table-breseq"
             "align-reads",
             "check-soft-clipping",
             "mutate-genomes-gdtools",
