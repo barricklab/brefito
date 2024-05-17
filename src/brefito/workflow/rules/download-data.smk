@@ -55,7 +55,11 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
             if (len(split_protocol) == 2): 
                 bookmark = split_protocol[1]
             remote_path = split_remote_path[1]
-        # ftp://server.com/path/to/file
+        # ncbi://accession
+        elif (split_protocol[0] == 'ncbi'):
+            method = 'ncbi'
+            remote_path = split_remote_path[1]
+        # ftp://server.com/path/to/file or https://server.com/path/to/file etc.
         else:
             method = 'wget'
 
@@ -69,7 +73,9 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
         #echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
         #echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file}
         shell_command = "echo 'get \"{}\" -o \"{}\"' | lftp {} ".format(remote_path, download_path, bookmark)
-    
+    elif method == 'ncbi':
+        shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)
+
     ## Move the temp download path to the final path
     shell_command = shell_command + " && mv " + download_path + " " + output_path
 

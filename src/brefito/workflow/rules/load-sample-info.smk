@@ -30,6 +30,12 @@ import os
 import glob
 import copy
 
+def rreplace(s, old, new, maxreplace):
+    return(new.join(s.rsplit(old, maxreplace)))
+
+def rreplace1(s, old, new):
+    return(rreplace(s,old,new,1))
+
 class SampleInfo():
     file_info = []
 
@@ -122,13 +128,12 @@ class SampleInfo():
                         print("Skipping this entry.")
                         continue
 
-                    simplified_read_name_1 = self.get_simplified_read_name(simplified_read_name.replace("{1|2}", "1"))
-                    simplified_read_name_2 = self.get_simplified_read_name(simplified_read_name.replace("{1|2}", "2"))
+                    simplified_read_name_1 = self.get_simplified_read_name(base_file_name.replace("{1|2}", "1"))
+                    simplified_read_name_2 = self.get_simplified_read_name(base_file_name.replace("{1|2}", "2"))
 
                     remote_path_1 = row['setting'].replace("{1|2}", "1")
                     remote_path_2 = row['setting'].replace("{1|2}", "2")
 
-                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R2.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R1",
@@ -383,17 +388,43 @@ class SampleInfo():
                     i = i + 1
                 this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
-
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_name(self, in_read_name):
         new_read_name = in_read_name
-        if new_read_name.endswith("_1") or new_read_name.endswith("_2"):
-            new_read_name=new_read_name[:-2]
-        new_read_name = new_read_name.replace("_1.", ".").replace("_1_", "_")
-        new_read_name = new_read_name.replace("_2.", ".").replace("_1_", "_")
-        new_read_name = new_read_name.replace("_R1.", ".").replace(".R1.", ".").replace("_R1_", "_")
-        new_read_name = new_read_name.replace("_R2.", ".").replace(".R2.", ".").replace("_R2_", "_")
-        new_read_name = new_read_name.replace(".fastq", "").replace(".gz", "")
+
+        # These conditionals make sure we only remove one instance!!
+        if new_read_name==in_read_name:
+            if new_read_name.endswith("_1"):
+                new_read_name=new_read_name[:-2]
+        if new_read_name==in_read_name:
+            if new_read_name.endswith("_2"):
+                new_read_name=new_read_name[:-2]
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_1.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_2.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_1_", "_")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_2_", "_")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_R1.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_R2.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, ".R1.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, ".R2.", ".")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_R1_", "_")
+        if new_read_name==in_read_name:
+            new_read_name = rreplace1(new_read_name, "_R2_", "_")
+
+        new_read_name = rreplace1(new_read_name, ".gz", "")
+        new_read_name = rreplace1(new_read_name, ".fastq", "")
+
+
+        print(new_read_name)
         return new_read_name
 
     def get_file_list(self, in_sample, in_type):

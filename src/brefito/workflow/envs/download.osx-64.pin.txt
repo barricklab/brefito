@@ -4,16 +4,17 @@
 @EXPLICIT
 https://conda.anaconda.org/conda-forge/osx-64/ca-certificates-2024.2.2-h8857fd0_0.conda#f2eacee8c33c43692f1ccfd33d0f50b1
 https://conda.anaconda.org/conda-forge/osx-64/libasprintf-0.22.5-h5ff76d1_2.conda#ad803793d7168331f1395685cbdae212
-https://conda.anaconda.org/conda-forge/osx-64/libcxx-16.0.6-hd57cbcb_0.conda#7d6972792161077908b62971802f289a
+https://conda.anaconda.org/conda-forge/osx-64/libcxx-17.0.6-h88467a6_0.conda#0fe355aecb8d24b8bc07c763209adbd9
 https://conda.anaconda.org/conda-forge/osx-64/libexpat-2.6.2-h73e2aa4_0.conda#3d1d51c8f716d97c864d12f7af329526
 https://conda.anaconda.org/conda-forge/osx-64/libiconv-1.17-hd75f5a5_2.conda#6c3628d047e151efba7cf08c5e54d1ca
 https://conda.anaconda.org/conda-forge/osx-64/libunistring-0.9.10-h0d85af4_0.tar.bz2#40f27dc16f73256d7b93e53c4f03d92f
 https://conda.anaconda.org/conda-forge/osx-64/libzlib-1.2.13-h8a1eda9_5.conda#4a3ad23f6e16f99c04e166767193d700
-https://conda.anaconda.org/conda-forge/osx-64/ncurses-6.4.20240210-h73e2aa4_0.conda#50f28c512e9ad78589e3eab34833f762
+https://conda.anaconda.org/conda-forge/osx-64/ncurses-6.5-h5846eda_0.conda#02a888433d165c99bf09784a7b14d900
 https://conda.anaconda.org/conda-forge/osx-64/xz-5.2.6-h775f41a_0.tar.bz2#a72f9d4ea13d55d745ff1ed594747f10
 https://conda.anaconda.org/conda-forge/osx-64/expat-2.6.2-h73e2aa4_0.conda#dc0882915da2ec74696ad87aa2350f27
 https://conda.anaconda.org/conda-forge/osx-64/libasprintf-devel-0.22.5-h5ff76d1_2.conda#c7182eda3bc727384e2f98f4d680fa7d
 https://conda.anaconda.org/conda-forge/osx-64/libintl-0.22.5-h5ff76d1_2.conda#3fb6774cb8cdbb93a6013b67bcf9716d
+https://conda.anaconda.org/conda-forge/osx-64/ncbi-datasets-cli-16.15.0-h694c41f_2.conda#e2602cb900b9f3acdf1f9a7006df0619
 https://conda.anaconda.org/conda-forge/osx-64/openssl-3.3.0-hd75f5a5_0.conda#eb8c33aa7929a7714eab8b90c1d88afe
 https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h9e318b2_1.conda#f17f77f2acf4d344734bda76829ce14e
 https://conda.anaconda.org/conda-forge/osx-64/zlib-1.2.13-h8a1eda9_5.conda#75a8a98b1c4671c5d2897975731da42d
@@ -25,3 +26,4 @@ https://conda.anaconda.org/conda-forge/osx-64/gettext-0.22.5-h5ff76d1_2.conda#c0
 https://conda.anaconda.org/conda-forge/osx-64/lftp-4.9.2-h7ba908e_1.tar.bz2#722960ad48c6353a1e6fe0334aa2aacf
 https://conda.anaconda.org/conda-forge/osx-64/libidn2-2.3.7-h10d778d_0.conda#a985867eae03167666bba45c2a297da1
 https://conda.anaconda.org/conda-forge/osx-64/wget-1.21.4-hca547e6_0.conda#479910a14056bea9c36bbb867c3f1471
+https://conda.anaconda.org/bioconda/osx-64/entrez-direct-21.6-h193322a_0.tar.bz2#1af56db93d43670f250addaefe84ef2c
