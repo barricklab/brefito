@@ -1,0 +1,8 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+@EXPLICIT
+https://conda.anaconda.org/conda-forge/osx-64/isa-l-2.31.0-h10d778d_1.conda#7bc74b4264dc68658d177c8904e69cfa
+https://conda.anaconda.org/conda-forge/osx-64/libcxx-16.0.6-hd57cbcb_0.conda#7d6972792161077908b62971802f289a
+https://conda.anaconda.org/conda-forge/osx-64/libdeflate-1.20-h49d49c5_0.conda#d46104f6a896a0bc6a1d37b88b2edf5c
+https://conda.anaconda.org/bioconda/osx-64/fastp-0.23.4-h5712c04_3.tar.bz2#4bd912eecaaf1d4025b1e2762628193f

@@ -1,8 +1,8 @@
-name: nextdenovo_nextpolish
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - nextdenovo
-  - nextpolish
+  - nextdenovo =2.5.2
+  - nextpolish =1.4.1
+name: nextdenovo_nextpolish

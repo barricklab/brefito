@@ -24,14 +24,28 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-def remote_path_to_shell_command(remote_path, download_path):
+import os
+
+def remote_path_to_shell_command(remote_path, download_path, output_path):
     #print("Downloading: " + remote_path)
 
     split_remote_path = remote_path.split('://', 1)
     method = None
     bookmark = ''
     if (len(split_remote_path) == 1):
-        shell_command = "echo \"Not downloading file that does not have a valid URL: " + remote_path + "\"\n"
+        #Check that the file exists to give better error messages
+        if not os.path.exists(remote_path):
+            sys.exit ('  FAILED: Local file does not exist: ' + remote_path)
+
+        #create a symbolic link... 
+        shell_command = "echo \"Creating local symbolic link for file that does not have a download URL: " + remote_path + "\""
+
+        if os.path.isabs(remote_path):
+            shell_command = shell_command + " && ln -s " + remote_path + " " + output_path
+        else: #Add ../ to move down a level if it is a local path
+            shell_command = shell_command + " && ln -s ../" + remote_path + " " + output_path
+
+        #print(shell_command)
         return(shell_command)
     else: 
         # lftp@utbox://path/from/bookmark
@@ -41,7 +55,11 @@ def remote_path_to_shell_command(remote_path, download_path):
             if (len(split_protocol) == 2): 
                 bookmark = split_protocol[1]
             remote_path = split_remote_path[1]
-        # ftp://server.com/path/to/file
+        # ncbi://accession
+        elif (split_protocol[0] == 'ncbi'):
+            method = 'ncbi'
+            remote_path = split_remote_path[1]
+        # ftp://server.com/path/to/file or https://server.com/path/to/file etc.
         else:
             method = 'wget'
 
@@ -55,6 +73,11 @@ def remote_path_to_shell_command(remote_path, download_path):
         #echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
         #echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file}
         shell_command = "echo 'get \"{}\" -o \"{}\"' | lftp {} ".format(remote_path, download_path, bookmark)
+    elif method == 'ncbi':
+        shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)
+
+    ## Move the temp download path to the final path
+    shell_command = shell_command + " && mv " + download_path + " " + output_path
 
     #print(shell_command)
     return(shell_command)
@@ -71,7 +94,7 @@ rule download_file:
     params:
         remote_path = lambda wildcards: sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample),
         download_path = "{download_type}/temp_{sample}",
-        shell_command = lambda wildcards:  remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample)
+        shell_command = lambda wildcards:  remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample, wildcards.download_type + "/" + wildcards.sample)
     threads: 1
     wildcard_constraints:
         download_type="(references|illumina-reads|nanopore-reads)"
@@ -85,5 +108,4 @@ rule download_file:
         # Clear any stale output
         rm -f {params.download_path}
         {params.shell_command}
-        mv {params.download_path} {output.output_path}
         """

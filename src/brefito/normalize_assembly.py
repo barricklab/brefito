@@ -58,7 +58,7 @@ def main():
     parser.add_argument("-s", "--sort", help="Sort contigs, longest to shortest. Sorting happens before renaming", action='store_true')
     parser.add_argument("-c", "--copy-names", help="Rename contig names to match the reference in order.", action='store_true')
     parser.add_argument("-n", "--new-names", help="Rename contigs with  this prefix followed by their index in the file", action="store")
-    parser.add_argument("-x", "--reindex", help="Reindex (rotate) contigs so they start with the same bases as the reference", action='store_true')
+    parser.add_argument("-x", "--reindex-reference", help="Reindex (rotate) contigs so they start with the same bases as the provided reference", action='store_true')
     parser.add_argument("-y", "--reindex-initial-bases", help="Reindex (rotate) contigs in so they start with the same number of identical nucleotides to the reference", action="store", type=int, default=24)
     parser.add_argument("-z", "--reindex-sequence", help="Reindex (rotate) all contigs to begin with this sequence if possible", action="store")
     parser.add_argument("-?", "--info", help="Print extra information about contigs after performing operations", action="store_true")
@@ -112,7 +112,7 @@ def main():
                 item['id'] = args.new_names + "_" + str(i+1) 
 
     # Reindex
-    if (args.reindex):
+    if (args.reindex_reference):
         print("REINDEXING TO REFERENCE")
         assert args.reference != None, "Must provide reference for this operation."
         number_of_bases_to_match = args.reindex_initial_bases

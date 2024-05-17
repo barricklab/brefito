@@ -1,7 +1,7 @@
-name: breseq
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - breseq>=0.38.3
+  - breseq =0.38.3
+name: breseq

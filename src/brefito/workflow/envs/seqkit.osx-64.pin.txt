@@ -1,0 +1,5 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+@EXPLICIT
+https://conda.anaconda.org/bioconda/osx-64/seqkit-2.8.1-h527b516_0.tar.bz2#513c49bc13b17a41c92c76f574426d53
