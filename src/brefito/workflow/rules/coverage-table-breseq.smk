@@ -11,7 +11,6 @@ rule coverage_table_breseq:
     input:
         bam = "breseq-" + sample_info.get_reference_prefix() + "/data/{sample}/data/reference.bam",
         fasta = "breseq-" + sample_info.get_reference_prefix() + "/data/{sample}/data/reference.fasta",
-        breseq_summary_json = "breseq-" + sample_info.get_reference_prefix() + "/data/{sample}/data/summary.json"
     output:
         output_path = directory("breseq-" + sample_info.get_reference_prefix() + "/coverage_table/{sample}"),
         done_file = "breseq-" + sample_info.get_reference_prefix() + "/coverage_table/{sample}/coverage_table.done"
@@ -22,6 +21,6 @@ rule coverage_table_breseq:
     threads: 1
     shell:
         """
-        breseq bam2cov -b {input.bam} -f {input.fasta} -o {output.output_path} -t --resolution 0 -j {input.breseq_summary_json}  > {log} 2>&1
+        breseq bam2cov -b {input.bam} -f {input.fasta} -o {output.output_path} -t --resolution 0 > {log} 2>&1
         touch {output.done_file}
         """
