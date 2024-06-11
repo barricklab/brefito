@@ -19,7 +19,7 @@ rule mutate_genomes_gdtools:
         "../envs/breseq.yml"
     params:
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
-    threads: 8
+    threads: 1
     shell:
         """
         gdtools APPLY -o {output} {params.reference_arguments} -f GFF3 {input.genomediff} -r {input.references} > {log} 2>&1

@@ -20,7 +20,7 @@ def main():
     valid_workflows = glob.glob(os.path.join(rules_path, "*.smk"))
     valid_workflows = sorted([os.path.basename(f).replace(".smk", "") for f in valid_workflows])
 
-    valid_workflow_help = "Valid workflows are:\n" + "\n  ".join(valid_workflows)
+    valid_workflow_help = "Valid workflows are:\n  " + "\n  ".join(valid_workflows)
 
     # What command did we choose
     parser = argparse.ArgumentParser(
