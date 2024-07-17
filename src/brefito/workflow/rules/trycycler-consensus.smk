@@ -26,7 +26,7 @@ rule cat_contigs:
         """
         ARG={input}
         if [[ -z "$ARG" ]]; then
-            echo "No inut files found for generating {output}"
+            echo "No input files found for generating {output}"
             touch {output}
         else
             cat {input} > {output}

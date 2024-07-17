@@ -68,6 +68,11 @@ class SampleInfo():
             for row in data_reader:
                 #print(row)
 
+                #Ignore commented rows, where first item begins with #
+                if 'sample' in row:
+                    if row['sample'][0]=='#':
+                        continue
+
                 # Add 'path' for 'setting' for backwards compatibility
                 if 'path' in row:
                     if ('setting' in row):
