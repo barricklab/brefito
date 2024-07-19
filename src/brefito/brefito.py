@@ -95,10 +95,33 @@ def main():
     # Now check whether it is valid
     assert workflow_to_run in valid_workflows, "Workflow not recognized: " + workflow_to_run + "\n" + valid_workflow_help
 
-    # Take the first unnamed argument
-    input_config_option = ""
+    # For search-blast-* Take the last unnamed argument, and there has to be one!
+    # Use it to create the input file if it is not a file name
+    search_query_option = ""
     if (workflow_to_run=="search-blast"):
-        input_config_option = samples_to_run.pop(0)
+        if len(samples_to_run)==0:
+            print("For the search-blast-* command, you must provide at least one unnamed argument, which is either a DNA sequence or a FASTA file of DNA sequences.")
+            return
+        search_query_option = samples_to_run.pop(0)
+
+        # User provided a raw sequence. Create a file with the default name
+        if not os.path.exists(search_query_option):
+            output_path = "blast"
+            if references_argument:
+                output_path += "-" + references_argument
+            else:
+                output_path += "-references"
+            os.makedirs(output_path, exist_ok=True)
+            default_filename = os.path.join(output_path, "query_sequence.fasta")
+            with open(default_filename, 'w') as sequence_file:
+                sequence_file.write(">input\n")
+                sequence_file.write(search_query_option + "\n")
+                search_query_option = default_filename
+        
+        # Delete old output files
+        for s in samples_to_run:
+            subprocess.run(["rm", os.path.join(output_path, "blast_" + s + "_output.html")])
+
 
     # Print out some details to help users debug bad command lines
     print("Workflow: " + workflow_to_run)
@@ -322,8 +345,8 @@ def main():
             si = i.split('=')
             config_options = config_options + [si[0] + '="' + si[1] + '"']
 
-    if input_config_option!="":
-        config_options = config_options + ["INPUT" + '="' + input_config_option + '"']
+    if workflow_to_run=="search-blast":
+        config_options = config_options + ["QUERY_FILE_PATH" + '="' + search_query_option + '"']
 
     # This lets us replace defaults with user specified resource settings
     resource_options = []
@@ -348,6 +371,24 @@ def main():
     ## Cleanup
 
     def copy_and_rename_assemblies(in_input_assembly_files, in_ending_to_remove, in_ending_to_add):
+        for a in in_input_assembly_files:
+            
+            # Check for new file
+            if os.path.isfile(a + "." + in_ending_to_remove):
+
+                # Check if we are the original file
+                if not os.path.isfile(a + ".1.original"):
+                    subprocess.run(["cp", a, a + ".1.original"])
+
+                # Rename the new one and replace the main one so we can iterate
+                i=1
+                while len(glob.glob(a + "." + str(i) + ".*")) == 1:
+                    i = i + 1
+
+                subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
+                subprocess.run(["mv", a + "." + in_ending_to_remove, a])
+
+    def copy_and_rename_blast_results(in_input_assembly_files, in_ending_to_remove, in_ending_to_add):
         for a in in_input_assembly_files:
             
             # Check for new file
