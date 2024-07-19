@@ -75,7 +75,8 @@ def main():
             "align-reads",
             "check-soft-clipping",
             "mutate-genomes-gdtools",
-            "annotate-genomes"
+            "annotate-genomes",
+            "search-blast"
             ]
     )
 
@@ -93,6 +94,11 @@ def main():
 
     # Now check whether it is valid
     assert workflow_to_run in valid_workflows, "Workflow not recognized: " + workflow_to_run + "\n" + valid_workflow_help
+
+    # Take the first unnamed argument
+    input_config_option = ""
+    if (workflow_to_run=="search-blast"):
+        input_config_option = samples_to_run.pop(0)
 
     # Print out some details to help users debug bad command lines
     print("Workflow: " + workflow_to_run)
@@ -315,6 +321,9 @@ def main():
         for i in config_options_list:
             si = i.split('=')
             config_options = config_options + [si[0] + '="' + si[1] + '"']
+
+    if input_config_option!="":
+        config_options = config_options + ["INPUT" + '="' + input_config_option + '"']
 
     # This lets us replace defaults with user specified resource settings
     resource_options = []

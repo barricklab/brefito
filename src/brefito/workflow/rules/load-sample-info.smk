@@ -429,7 +429,7 @@ class SampleInfo():
         new_read_name = rreplace1(new_read_name, ".fastq", "")
 
 
-        print(new_read_name)
+        #print(new_read_name)
         return new_read_name
 
     def get_file_list(self, in_sample, in_type):
@@ -573,6 +573,13 @@ class SampleInfo():
 
     def get_reference_list(self, sample, reference_suffix=None):
         return self.get_specified_reference_list(self.reference_prefix, sample, reference_suffix)
+
+    def get_all_reference_list(self, reference_suffix=None):
+        reference_arguments = dict()
+        for s in sample_info.get_sample_list():
+            for r in self.get_reference_list(s, reference_suffix):
+                reference_arguments[r] = 1
+        return reference_arguments.keys()
 
     def get_main_reference_file(self, reference_suffix=None):
         if reference_suffix != None:
