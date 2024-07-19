@@ -104,13 +104,14 @@ def main():
             return
         search_query_option = samples_to_run.pop(0)
 
+        output_path = "blast"
+        if references_argument:
+            output_path += "-" + references_argument
+        else:
+            output_path += "-references"
+
         # User provided a raw sequence. Create a file with the default name
         if not os.path.exists(search_query_option):
-            output_path = "blast"
-            if references_argument:
-                output_path += "-" + references_argument
-            else:
-                output_path += "-references"
             os.makedirs(output_path, exist_ok=True)
             default_filename = os.path.join(output_path, "query_sequence.fasta")
             with open(default_filename, 'w') as sequence_file:
@@ -387,35 +388,6 @@ def main():
 
                 subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
                 subprocess.run(["mv", a + "." + in_ending_to_remove, a])
-
-    def copy_and_rename_blast_results(in_input_assembly_files, in_ending_to_remove, in_ending_to_add):
-        for a in in_input_assembly_files:
-            
-            # Check for new file
-            if os.path.isfile(a + "." + in_ending_to_remove):
-
-                # Check if we are the original file
-                if not os.path.isfile(a + ".1.original"):
-                    subprocess.run(["cp", a, a + ".1.original"])
-
-                # Rename the new one and replace the main one so we can iterate
-                i=1
-                while len(glob.glob(a + "." + str(i) + ".*")) == 1:
-                    i = i + 1
-
-                subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
-                subprocess.run(["mv", a + "." + in_ending_to_remove, a])
-
-    if workflow_to_run == "polish-breseq":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "breseq")
-    if workflow_to_run == "polish-polypolish":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
-    elif workflow_to_run == "polish-polca":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polca")
-    elif workflow_to_run == "polish-medaka":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
-    elif workflow_to_run == "normalize-assemblies":
-        copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
 
 def check_command_with_references(workflow_to_run, test_command_prefix):
     return_dict = { 'matched' : False }
