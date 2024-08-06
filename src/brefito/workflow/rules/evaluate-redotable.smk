@@ -1,5 +1,5 @@
 if not "redotable_path" in config.keys():
-    print("You must supply a path to redotoable!")
+    print("You must supply a path to redotoable!\n Like this: --config redotable_path=/path/to/redotable\n")
 
 REDOTABLE_PATH = config["redotable_path"]
 
