@@ -77,7 +77,8 @@ def main():
             "check-soft-clipping",
             "mutate-genomes-gdtools",
             "annotate-genomes",
-            "search-blast"
+            "search-blast",
+            "tabulate-ssrs-breseq"
             ]
     )
 
