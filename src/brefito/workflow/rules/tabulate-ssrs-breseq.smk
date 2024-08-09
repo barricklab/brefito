@@ -4,9 +4,35 @@ except NameError:
 
 include: "predict-mutations-breseq.smk"
 
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
+
+print("Config options for workflow :: tabulate-ssrs-breseq-*")
+print()
 SSR_MINIMUM_LENGTH = 6
 if 'SSR_MINIMUM_LENGTH' in brefito_config.keys():
     SSR_MINIMUM_LENGTH = brefito_config['SSR_MINIMUM_LENGTH'] 
+    print("  User set --minimum-length " + str(SSR_MINIMUM_LENGTH))
+else:
+    print("  Using default --minimum-length " + str(SSR_MINIMUM_LENGTH))
+    print("  (You can change this using --config SSR_MINIMUM_LENGTH=<int>")
+
+print()
+SSR_STRICT_MODE = True
+if 'SSR_STRICT_MODE' in brefito_config.keys():
+    SSR_STRICT_MODE = str2bool(brefito_config['SSR_STRICT_MODE'])
+else:
+    print("  Using default mode (no --strict mode option)")
+    print("  You can change this using --config SSR_STRICT_MODE=True")
+
+SSR_STRICT_MODE_ARG = ""
+if (SSR_STRICT_MODE):
+    print("  User set --strict mode")
+    SSR_STRICT_MODE_ARG= "--strict"
+else:
+    print("  User did not set --strict mode")
+
+print()
 
 import os.path
 
@@ -31,5 +57,5 @@ rule tabulate_ssrs_breseq:
     threads: 1
     shell:
         """
-        breseq CL-TABULATE --strict -m {SSR_MINIMUM_LENGTH} -o {output} --bam {input.bam} --fasta {input.fasta} {params.reference_arguments} > {log} 2>&1
+        breseq CL-TABULATE {SSR_STRICT_MODE_ARG} --minimum-length {SSR_MINIMUM_LENGTH} -o {output} --bam {input.bam} --fasta {input.fasta} {params.reference_arguments} > {log} 2>&1
         """
