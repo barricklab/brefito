@@ -2,6 +2,8 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
+include: "download-data.smk"
+
 #from os import system
 #system("rm blast-" + sample_info.get_reference_prefix() + "/blast_output*")
 
