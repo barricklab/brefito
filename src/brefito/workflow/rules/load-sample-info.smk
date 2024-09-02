@@ -83,11 +83,12 @@ class SampleInfo():
                 # Copy over certain paths to allow for some choices.
                 file_name = os.path.basename(row['setting'])
                 base_file_name = os.path.basename(row['setting'])
-                simplified_read_name = self.get_simplified_read_name(base_file_name)
-                file_name_without_extension = os.path.splitext(base_file_name)[0]
+
+                #And then also remove .fastq here
+                simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
 
                 if (row['type'] == "nanopore"):
-                    local_path = os.path.join("nanopore-reads", simplified_read_name + ".fastq.gz")
+                    local_path = os.path.join("nanopore-reads", simplified_read_file_base_name + ".fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "nanopore", 
@@ -97,7 +98,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
-                    local_path = os.path.join("illumina-reads", simplified_read_name + ".SE.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".SE.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-SE", 
@@ -107,7 +108,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R1"):
-                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R1.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R1.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R1", 
@@ -117,7 +118,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R2"):
-                    local_path = os.path.join("illumina-reads", simplified_read_name + ".R2.fastq.gz")
+                    local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R2.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R2", 
@@ -133,8 +134,9 @@ class SampleInfo():
                         print("Skipping this entry.")
                         continue
 
-                    simplified_read_name_1 = self.get_simplified_read_name(base_file_name.replace("{1|2}", "1"))
-                    simplified_read_name_2 = self.get_simplified_read_name(base_file_name.replace("{1|2}", "2"))
+                    # Don't do the automatic read name simplification step
+                    simplified_read_file_base_name_1 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "1"))
+                    simplified_read_file_base_name_2 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "2"))
 
                     remote_path_1 = row['setting'].replace("{1|2}", "1")
                     remote_path_2 = row['setting'].replace("{1|2}", "2")
@@ -144,14 +146,14 @@ class SampleInfo():
                         'type' : "illumina-R1",
                         'file_type' : "illumina", 
                         'remote_path' : remote_path_1,
-                        'local_path' : os.path.join("illumina-reads", simplified_read_name_1 + ".R1.fastq.gz")
+                        'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_1 + ".R1.fastq.gz")
                         })
                     self.add_file({ 
                         'sample' : row['sample'],
                         'type' : "illumina-R2", 
                         'file_type' : "illumina", 
                         'remote_path' : remote_path_2,
-                        'local_path' : os.path.join("illumina-reads", simplified_read_name_2 + ".R2.fastq.gz")
+                        'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_2 + ".R2.fastq.gz")
                         })
 
                 elif (row['type'] == "reference"):
@@ -394,40 +396,51 @@ class SampleInfo():
                 this_row['local_path'] = file_name + "-" + str(i) + file_extension
 
     ## We want the read names to be standardized... this should do it in most cases
-    def get_simplified_read_name(self, in_read_name):
-        new_read_name = in_read_name
+    def get_simplified_read_file_base_name(self, in_read_name):
+        
+        no_ending_read_name = in_read_name
+
+        # We remove the last extension no matter what it is. Usually it is *.gz
+        # This may not be necessary or might even cause problem...
+        no_ending_read_name = os.path.splitext(no_ending_read_name)[0]
+        #new_read_name = rreplace1(new_read_name, ".gz", "")
+
+        # Then, remove multiple line endings, but only of certain formats
+        no_ending_read_name = rreplace1(no_ending_read_name, ".fastq", "")
+
+        # Now, remove the first of these that we encounter.
+        # The idea is that if we do this to the file names for
+        # each read in a pair, we will have the SAME name afterward
 
         # These conditionals make sure we only remove one instance!!
-        if new_read_name==in_read_name:
+        new_read_name = no_ending_read_name
+
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, "_R1.", ".")
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, "_R2.", ".")
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, ".R1.", ".")
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, ".R2.", ".")
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, "_R1_", "_")
+        if new_read_name==no_ending_read_name:
+            new_read_name = rreplace1(new_read_name, "_R2_", "_")
+        if new_read_name==no_ending_read_name:
             if new_read_name.endswith("_1"):
                 new_read_name=new_read_name[:-2]
-        if new_read_name==in_read_name:
+        if new_read_name==no_ending_read_name:
             if new_read_name.endswith("_2"):
                 new_read_name=new_read_name[:-2]
-        if new_read_name==in_read_name:
+        if new_read_name==no_ending_read_name:
             new_read_name = rreplace1(new_read_name, "_1.", ".")
-        if new_read_name==in_read_name:
+        if new_read_name==no_ending_read_name:
             new_read_name = rreplace1(new_read_name, "_2.", ".")
-        if new_read_name==in_read_name:
+        if new_read_name==no_ending_read_name:
             new_read_name = rreplace1(new_read_name, "_1_", "_")
-        if new_read_name==in_read_name:
+        if new_read_name==no_ending_read_name:
             new_read_name = rreplace1(new_read_name, "_2_", "_")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, "_R1.", ".")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, "_R2.", ".")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, ".R1.", ".")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, ".R2.", ".")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, "_R1_", "_")
-        if new_read_name==in_read_name:
-            new_read_name = rreplace1(new_read_name, "_R2_", "_")
-
-        new_read_name = rreplace1(new_read_name, ".gz", "")
-        new_read_name = rreplace1(new_read_name, ".fastq", "")
-
 
         #print(new_read_name)
         return new_read_name
