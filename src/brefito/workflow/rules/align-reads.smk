@@ -5,6 +5,17 @@ except NameError:
 include: "trim-nanopore-reads.smk"
 include: "trim-illumina-reads.smk"
 
+BOWTIE2_OPTIONS = ""
+if 'BOWTIE2_OPTIONS' in brefito_config.keys():
+    BOWTIE2_OPTIONS = brefito_config['BOWTIE2_OPTIONS'] 
+
+BOWTIE2_PE_OPTIONS = ""
+if 'BOWTIE2_PE_OPTIONS' in brefito_config.keys():
+    BOWTIE2_PE_OPTIONS = brefito_config['BOWTIE2_PE_OPTIONS'] 
+
+BOWTIE2_SE_OPTIONS = ""
+if 'BOWTIE2_SE_OPTIONS' in brefito_config.keys():
+    BOWTIE2_SE_OPTIONS = brefito_config['BOWTIE2_SE_OPTIONS'] 
 
 def get_all_output_files_list():
     all_output_files_list = []
@@ -65,7 +76,7 @@ rule align_PE_illumina_reads:
     shell:
         """
         bowtie2-build {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
+        bowtie2 {BOWTIE2_PE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 
@@ -85,7 +96,7 @@ rule align_SE_illumina_reads:
     shell:
         """
         bowtie2-build {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
+        bowtie2 {BOWTIE2_SE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 

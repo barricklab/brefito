@@ -408,7 +408,7 @@ class SampleInfo():
         # Then, remove multiple line endings, but only of certain formats
         no_ending_read_name = rreplace1(no_ending_read_name, ".fastq", "")
 
-        # Now, remove the first of these that we encounter.
+        # Now, remove the first of these that we encounter. 
         # The idea is that if we do this to the file names for
         # each read in a pair, we will have the SAME name afterward
 
@@ -427,6 +427,17 @@ class SampleInfo():
             new_read_name = rreplace1(new_read_name, "_R1_", "_")
         if new_read_name==no_ending_read_name:
             new_read_name = rreplace1(new_read_name, "_R2_", "_")
+        if new_read_name==no_ending_read_name:
+            if new_read_name.endswith("_R1"):
+                new_read_name=new_read_name[:-3]
+        if new_read_name==no_ending_read_name:
+            if new_read_name.endswith("_R2"):
+                new_read_name=new_read_name[:-3]
+            if new_read_name.endswith(".R1"):
+                new_read_name=new_read_name[:-3]
+        if new_read_name==no_ending_read_name:
+            if new_read_name.endswith(".R2"):
+                new_read_name=new_read_name[:-3]
         if new_read_name==no_ending_read_name:
             if new_read_name.endswith("_1"):
                 new_read_name=new_read_name[:-2]
