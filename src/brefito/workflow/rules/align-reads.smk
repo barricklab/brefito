@@ -5,6 +5,29 @@ except NameError:
 include: "trim-nanopore-reads.smk"
 include: "trim-illumina-reads.smk"
 
+# Different options
+MERGED = 0
+SORTED = 1
+INDEXED = 0
+
+if 'SORTED' in brefito_config.keys():
+    SORTED = brefito_config['SORTED']
+
+if 'MERGED' in brefito_config.keys():
+    MERGED = brefito_config['MERGED']
+
+if 'INDEXED' in brefito_config.keys():
+    INDEXED = brefito_config['INDEXED']
+
+## We skip sorting steps using this logic
+if not SORTED:
+    ruleorder: samtools_view > samtools_view_with_sort
+    ruleorder: samtools_view_grouped > samtools_view_grouped_with_sort
+else:
+    ruleorder: samtools_view_with_sort > samtools_view
+    ruleorder: samtools_view_grouped_with_sort > samtools_view
+
+
 BOWTIE2_OPTIONS = ""
 if 'BOWTIE2_OPTIONS' in brefito_config.keys():
     BOWTIE2_OPTIONS = brefito_config['BOWTIE2_OPTIONS'] 
@@ -17,26 +40,40 @@ BOWTIE2_SE_OPTIONS = ""
 if 'BOWTIE2_SE_OPTIONS' in brefito_config.keys():
     BOWTIE2_SE_OPTIONS = brefito_config['BOWTIE2_SE_OPTIONS'] 
 
+## The output files change depending on the options
+
+# If not merged, then they are in a folder and named according to
+
 def get_all_output_files_list():
     all_output_files_list = []
 
     for s in sample_info.get_sample_list():
 
         all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.fasta")
-        all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.fasta.fai")
+        if INDEXED:
+            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.fasta.fai")
         all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.gff3")
         
-        for n in sample_info.get_nanopore_read_base_list(s):
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam".format(n))
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam.bai".format(n))
+        if not MERGED:
+            for n in sample_info.get_nanopore_read_base_list(s):
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam".format(n))
+                if INDEXED:
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam.bai".format(n))
 
-        for i_se in sample_info.get_illumina_SE_read_base_list(s):
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam".format(i_se))
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam.bai".format(i_se))
+            for i_se in sample_info.get_illumina_SE_read_base_list(s):
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam".format(i_se))
+                if INDEXED:
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam.bai".format(i_se))
 
-        for i_pe in sample_info.get_illumina_PE_read_base_list(s):
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam".format(i_pe))
-            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam.bai".format(i_pe))
+            for i_pe in sample_info.get_illumina_PE_read_base_list(s):
+                if INDEXED:
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam".format(i_pe))
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam.bai".format(i_pe))
+
+        else: # MERGED
+            all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + s ".bam")
+            if INDEXED:
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + s + ".bam.bai")
 
     #print(all_output_files_list)
     return all_output_files_list
@@ -102,7 +139,7 @@ rule align_SE_illumina_reads:
 
 ruleorder: samtools_view > samtools_sort
 
-rule samtools_view:
+rule samtools_view_with_sort:
     input:
         "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.sam"
     output:
@@ -111,9 +148,25 @@ rule samtools_view:
         "logs/samtools-view-" + sample_info.get_reference_prefix() + "-{sample}-{technology}.log"
     conda:
         "../envs/samtools.yml"
+    threads: 12
     shell:
         """
         samtools view -bS {input} -o {output} > {log} 2>&1
+        """
+
+rule samtools_view:
+    input:
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.sam"
+    output:
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.bam"
+    log:
+        "logs/samtools-view-" + sample_info.get_reference_prefix() + "-{sample}-{technology}.log"
+    conda:
+        "../envs/samtools.yml"
+    threads: 12
+    shell:
+        """
+        samtools view --threads {threads} -bS {input} -o {output} > {log} 2>&1
         """
 
 rule samtools_sort:
@@ -131,6 +184,20 @@ rule samtools_sort:
         samtools sort --threads {threads} {input} -o {output} > {log} 2>&1
         """
 
+rule samtools_merge:
+    input:
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.unsorted.bam"
+    output:
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{technology}.bam"
+    log:
+        "logs/samtools-sort-" + sample_info.get_reference_prefix() + "-{sample}-{technology}.log"
+    conda:
+        "../envs/samtools.yml"
+    threads: 12
+    shell:
+        """
+        samtools merge --threads {threads} {input} -o {output} > {log} 2>&1
+        """
 
 rule samtools_bam_index:
     input:
@@ -141,9 +208,10 @@ rule samtools_bam_index:
         "logs/samtools-index-" + sample_info.get_reference_prefix() + "-{sample}-{technology}.log"
     conda:
         "../envs/samtools.yml"
+    threads: 12
     shell:
         """
-        samtools index {input} > {log} 2>&1
+        samtools -@ {threads} index {input} > {log} 2>&1
         """
 
 rule copy_convert_references:
