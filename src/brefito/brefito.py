@@ -391,6 +391,17 @@ def main():
                 subprocess.run(["cp", a + "." + in_ending_to_remove, a + "." + str(i) + "." + in_ending_to_add])
                 subprocess.run(["mv", a + "." + in_ending_to_remove, a])
 
+    if command_to_run == "polish-breseq":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "breseq")
+    if command_to_run == "polish-polypolish":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
+    elif command_to_run == "polish-polca":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polca")
+    elif command_to_run == "polish-medaka":
+        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
+    elif command_to_run == "normalize-assemblies":
+        copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
+
 def check_command_with_references(workflow_to_run, test_command_prefix):
     return_dict = { 'matched' : False }
 
