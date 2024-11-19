@@ -471,6 +471,9 @@ class SampleInfo():
         else:
             print("MAIN REFERENCE FILE :: NOT FOUND")
 
+        print()
+        print("NUMBER OF SAMPLES :: " + str(len(self.get_sample_list())))
+
         for this_sample in sorted(self.get_sample_list()):
             print()
             print("SAMPLE :: " + this_sample)
