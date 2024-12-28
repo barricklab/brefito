@@ -48,7 +48,6 @@ rule subsample_illumina_reads:
         "../envs/seqkit.yml"
     shell:
         """
-        conda env export > {output.env}
         echo "subsample-illumina-reads" > {log}
         echo "Provided assembly size: {config[genome_size]}" >> {log}
         NOMINALDEPTH=80
