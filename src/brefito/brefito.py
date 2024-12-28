@@ -104,6 +104,7 @@ def main():
         if len(samples_to_run)==0:
             print("For the search-blast-* command, you must provide at least one unnamed argument, which is either a DNA sequence or a FASTA file of DNA sequences.")
             return
+        
         search_query_option = samples_to_run.pop(0)
 
         output_path = "blast"

@@ -37,7 +37,7 @@ def get_gd_list_from_output_name(output_name):
     key_index = output_name_to_key_index(output_name)
     sample_list = sample_lists_by_references[sorted_keys[key_index]]
     gd_list = ["breseq-" + sample_info.get_reference_prefix() + "/gd/" + s + ".gd" for s in sample_list]
-    return(gd_list)
+    return(sorted(gd_list))
 
 def get_reference_files_list_from_output_name(output_name):
     key_index = output_name_to_key_index(output_name)
