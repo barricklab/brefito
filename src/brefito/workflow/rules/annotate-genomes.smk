@@ -8,7 +8,7 @@ except NameError:
 
 rule all_annotate_genomes:
     input:
-        ["annotated-" + sample_info.get_reference_prefix() + "/" + s + ".gff3" for s in sample_info.get_sample_list()]
+        ["annotated-" + sample_info.get_reference_prefix() + "/" + s + ".gbk" for s in sample_info.get_sample_list()]
     default_target: True
 
 #Convert the references to fasta format (so we can re-annotate if needed)
@@ -70,12 +70,12 @@ rule combine_annotation_with_breseq:
         prokka_dir = "annotated-" + sample_info.get_reference_prefix() + "-prokka/{sample}",
         isescan_dir = "annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}"
     output:
-        "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gff3"
+        "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gbk"
     log:
         "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-combine-annotation-with-breseq.log"
     conda:
         "../envs/breseq.yml"
     shell:
         """
-        breseq CONVERT-REFERENCE -f GFF3 -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
+        breseq CONVERT-REFERENCE -f GENBANK -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
         """
