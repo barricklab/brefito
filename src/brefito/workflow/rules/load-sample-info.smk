@@ -357,16 +357,21 @@ class SampleInfo():
 
             self.sample_set.add(this_sample)
             row['sample'] = this_sample
-            self.file_info.append(copy.deepcopy(row))
 
-            #print("Adding row")
-            #print(row)
+            #check for duplicates
+            if row in self.file_info:
+                print("Ignored duplicate sample info row:")
+                print(row)
+            else:
+                self.file_info.append(copy.deepcopy(row))
+                #print("Adding row")
+                #print(row)
 
-            if not this_sample in self.file_lists_by_sample_by_type.keys():
-                self.file_lists_by_sample_by_type[this_sample] = {}
-            if not row['type'] in self.file_lists_by_sample_by_type[this_sample].keys():
-                self.file_lists_by_sample_by_type[this_sample][row['type']] = []
-            self.file_lists_by_sample_by_type[this_sample][row['type']].append(row['local_path'])
+                if not this_sample in self.file_lists_by_sample_by_type.keys():
+                    self.file_lists_by_sample_by_type[this_sample] = {}
+                if not row['type'] in self.file_lists_by_sample_by_type[this_sample].keys():
+                    self.file_lists_by_sample_by_type[this_sample][row['type']] = []
+                self.file_lists_by_sample_by_type[this_sample][row['type']].append(row['local_path'])
 
     # Looks for matches in a list and splits them off (to allow multile extensions)
     def split_filename_and_extension(self, input_filename):
