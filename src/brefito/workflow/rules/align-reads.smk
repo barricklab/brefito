@@ -19,6 +19,11 @@ if 'MERGE' in brefito_config.keys():
 if 'INDEX' in brefito_config.keys():
     INDEX = brefito_config['INDEX']
 
+# Can't index if we don't sort
+if SORT == 0:
+    print("Can't INDEX unsorted BAM files. Setting SORT to 0 (false).")
+    INDEX=0
+
 #Note: It's too hard to make temp() work when sorting and merging are conditional, so we clean up all prior files within rules
 
 #print("Merge: " + str(MERGE))
@@ -170,7 +175,7 @@ rule align_PE_illumina_reads:
     threads: 12
     shell:
         """
-        bowtie2-build {input.reference} {params.bowtie2_index} > {log} 2>&1
+        bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
         bowtie2 {BOWTIE2_PE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
@@ -190,7 +195,7 @@ rule align_SE_illumina_reads:
     threads: 12
     shell:
         """
-        bowtie2-build {input.reference} {params.bowtie2_index} > {log} 2>&1
+        bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
         bowtie2 {BOWTIE2_SE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
