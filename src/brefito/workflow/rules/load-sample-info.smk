@@ -42,6 +42,8 @@ class SampleInfo():
     sample_set = set({})
     sample_list = []
 
+    reads_with_bad_endings = False
+
     # Dictionary of lists with keys that are types of data and then lists of files
     file_lists_by_sample_by_type = {}
     option_lists_by_sample_by_type = {}
@@ -84,10 +86,8 @@ class SampleInfo():
                 file_name = os.path.basename(row['setting'])
                 base_file_name = os.path.basename(row['setting'])
 
-                #And then also remove .fastq here
-                simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
-
                 if (row['type'] == "nanopore"):
+                    simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("nanopore-reads", simplified_read_file_base_name + ".fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
@@ -98,6 +98,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
+                    simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".SE.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
@@ -108,6 +109,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R1"):
+                    simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R1.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
@@ -118,6 +120,7 @@ class SampleInfo():
                         })
 
                 elif (row['type'] == "illumina-R2"):
+                    simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R2.fastq.gz")
                     self.add_file({ 
                         'sample' : row['sample'],
@@ -403,15 +406,11 @@ class SampleInfo():
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):
         
-        no_ending_read_name = in_read_name
-
-        # We remove the last extension no matter what it is. Usually it is *.gz
-        # This may not be necessary or might even cause problem...
-        no_ending_read_name = os.path.splitext(no_ending_read_name)[0]
-        #new_read_name = rreplace1(new_read_name, ".gz", "")
-
-        # Then, remove multiple line endings, but only of certain formats
-        no_ending_read_name = rreplace1(no_ending_read_name, ".fastq", "")
+        # Valid read file names must end in *.fastq.gz for workflows to function!
+        no_ending_read_name = rreplace1(in_read_name, ".fastq.gz", "")
+        if no_ending_read_name == in_read_name:
+            self.reads_with_bad_endings = True
+            return "INVALID---[" + in_read_name + "]---"
 
         # Now, remove the first of these that we encounter. 
         # The idea is that if we do this to the file names for
@@ -686,3 +685,9 @@ if 'SAMPLES' in brefito_config.keys():
 
 sample_info.print_file_lists()
 print()
+
+if (sample_info.reads_with_bad_endings):
+  print("ERROR: Read file names not of the expected form (*.fastq.gz) found.")
+  print("Check above for offending file names in the form \"INVALID---[in_read_name]---*.fastq.gz\"")
+  exit(1)
+
