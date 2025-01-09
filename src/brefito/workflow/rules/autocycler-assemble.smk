@@ -11,7 +11,7 @@ ASSEMBLERS=["canu","flye","miniasm","necat","nextdenovo","raven"]
 
 rule all_targets_autocycler_cluster:
     input:
-        ["autocycler/" + s + "/clustering/" for s in sample_info.get_sample_list()]
+        ["autocycler/" + s + "/clustering/qc_pass/cluster_001/1_untrimmed.gfa" for s in sample_info.get_sample_list()]
     default_target: True
 
 rule canu_assemble:
@@ -153,7 +153,7 @@ rule autocycler_cluster:
     input:
         "autocycler/{dataset}/input_assemblies.gfa"
     output:
-        "autocycler/{dataset}/clustering/"
+        "autocycler/{dataset}/clustering/qc_pass/cluster_001/1_untrimmed.gfa"
     params:
         input_directory="autocycler/{dataset}/"
     log:
