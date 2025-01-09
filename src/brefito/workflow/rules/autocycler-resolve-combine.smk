@@ -37,5 +37,5 @@ rule autocycler_combine:
         "logs/{dataset}/autocycler_combine.log"
     shell:
         """
-        autocycler combine -a autocycler/{wildcards.dataset}/output -i autocycler/{dataset}/clustering/qc_pass/cluster_*/5_final.gfa"
+        autocycler combine -a autocycler/{wildcards.dataset}/output -i autocycler/{wildcards.dataset}/clustering/qc_pass/cluster_*/5_final.gfa"
         """
