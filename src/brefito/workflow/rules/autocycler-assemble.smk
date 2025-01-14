@@ -2,16 +2,16 @@ try: sample_info
 except NameError:
     include: "load-sample-info.smk"
 
-# Does all steps through assembly and clustering
+# Does all steps for autocycler after assembly
 
 include: "autocycler-subsample-nanopore-reads.smk"
 
 READ_SUBSET_IDS=["01","02","03","04"] # autocycler subsample creates 4 subsampled fastqs for a given fastq file
 ASSEMBLERS=["canu","flye","miniasm","necat","nextdenovo","raven"]
 
-rule all_targets_autocycler_cluster:
+rule all_targets_autocycler:
     input:
-        ["autocycler/" + s + "/clustering/qc_pass/cluster_001/1_untrimmed.gfa" for s in sample_info.get_sample_list()]
+        ["autocycler/" + s + "/output/consensus_assembly.fasta" for s in sample_info.get_sample_list()]
     default_target: True
 
 rule canu_assemble:
@@ -30,7 +30,7 @@ rule canu_assemble:
         output_prefix="intermediate-assemblies/{dataset}/canu_assembly_{assembly_id}"
     shell:
         """
-        canu.sh {input} {params} {threads} {config[genome_size]}
+        canu.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 rule flye_assemble:
@@ -49,7 +49,7 @@ rule flye_assemble:
         output_prefix="intermediate-assemblies/{dataset}/flye_assembly_{assembly_id}"
     shell:
         """
-        flye.sh {input} {params} {threads} {config[genome_size]}
+        flye.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 rule miniasm_assemble:
@@ -68,7 +68,7 @@ rule miniasm_assemble:
         output_prefix="intermediate-assemblies/{dataset}/miniasm_assembly_{assembly_id}"
     shell:
         """
-        miniasm.sh {input} {params} {threads} {config[genome_size]}
+        miniasm.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 rule necat_assemble:
@@ -87,7 +87,7 @@ rule necat_assemble:
         output_prefix="intermediate-assemblies/{dataset}/necat_assembly_{assembly_id}"
     shell:
         """
-        necat.sh {input} {params} {threads} {config[genome_size]}
+        necat.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 rule nextdenovo_assemble:
@@ -106,7 +106,7 @@ rule nextdenovo_assemble:
         output_prefix="intermediate-assemblies/{dataset}/nextdenovo_assembly_{assembly_id}"
     shell:
         """
-        nextdenovo.sh {input} {params} {threads} {config[genome_size]}
+        nextdenovo.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 rule raven_assemble:
@@ -125,7 +125,7 @@ rule raven_assemble:
         output_prefix="intermediate-assemblies/{dataset}/raven_assembly_{assembly_id}"
     shell:
         """
-        raven.sh {input} {params} {threads} {config[genome_size]}
+        raven.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
         """
 
 # compress all of the input assemblies (6 assemblers x 4 subsets each = 24 assemblies per sample) with autocycler
@@ -146,20 +146,18 @@ rule autocycler_compress:
     threads: 16
     shell:
         """
-        autocycler compress -i {params.input_assemblies} -a {params.output_directory}
+        autocycler compress -i {params.input_assemblies} -a {params.output_directory} > {log} 2>&1
         """
 
-rule autocycler_cluster:
+rule autocycler_all_steps:
     input:
-        "autocycler/{dataset}/input_assemblies.gfa"
+        input_gfa = "autocycler/{dataset}/input_assemblies.gfa"
+        script = "src/brefito/autocycler_cluster_trim_resolve_combine.sh"
     output:
-        "autocycler/{dataset}/clustering/qc_pass/cluster_001/1_untrimmed.gfa"
-    params:
-        input_directory="autocycler/{dataset}/"
+        "autocycler/{dataset}/output/consensus_assembly.fasta"
     log:
-        "logs/{dataset}/autocycler_cluster_{dataset}.log"
-    threads: 16
+        "logs/{dataset}/autocycler.log"
     shell:
-        """
-        autocycler cluster -a {params.input_directory}
-        """
+       """
+       {input.script} {wildcards.dataset} > {log} 2>&1
+       """
