@@ -12,6 +12,8 @@ rule subsample_nanopore_reads:
         "nanopore-reads-filtered/{sample}.fastq"
     output:
         expand("autocycler-nanopore-reads-subsampled/{{sample}}/sample_{subset_id}.fastq", subset_id=READ_SUBSET_IDS)
+    conda:
+        "../envs/autocycler.yml"    
     log:
         "logs/autocycler-subsample-{sample}.log"
     shell:

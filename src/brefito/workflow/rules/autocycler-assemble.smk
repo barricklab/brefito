@@ -152,12 +152,11 @@ rule autocycler_compress:
 rule autocycler_all_steps:
     input:
         input_gfa = "autocycler/{dataset}/input_assemblies.gfa"
-        script = "src/brefito/autocycler_cluster_trim_resolve_combine.sh"
     output:
         "autocycler/{dataset}/output/consensus_assembly.fasta"
     log:
         "logs/{dataset}/autocycler.log"
     shell:
        """
-       {input.script} {wildcards.dataset} > {log} 2>&1
+       autocycler_cluster_trim_resolve_combine.sh {wildcards.dataset} > {log} 2>&1
        """

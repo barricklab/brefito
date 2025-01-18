@@ -24,7 +24,7 @@ rule cat_contigs:
         "assemblies/{dataset}.fasta"
     shell:
         """
-        ARG={input}
+        ARG="{input}"
         if [[ -z "$ARG" ]]; then
             echo "No input files found for generating {output}"
             touch {output}
