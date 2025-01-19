@@ -1,0 +1,8 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - porechop_abi = 0.5.0
+  - pigz =2.8
+name: porechop_abi
