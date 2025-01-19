@@ -138,6 +138,8 @@ rule autocycler_compress:
                assembler=ASSEMBLERS)
     output:
         "autocycler/{dataset}/input_assemblies.gfa"
+    conda:
+        "../envs/autocycler.yml"
     params:
         input_assemblies="intermediate-assemblies/{dataset}/",
         output_directory="autocycler/{dataset}/"
@@ -146,7 +148,7 @@ rule autocycler_compress:
     threads: 16
     shell:
         """
-        autocycler compress -i {params.input_assemblies} -a {params.output_directory} > {log} 2>&1
+        autocycler compress --threads {threads} -i {params.input_assemblies} -a {params.output_directory} > {log} 2>&1
         """
 
 rule autocycler_all_steps:
@@ -154,9 +156,31 @@ rule autocycler_all_steps:
         input_gfa = "autocycler/{dataset}/input_assemblies.gfa"
     output:
         "autocycler/{dataset}/output/consensus_assembly.fasta"
+    conda:
+        "../envs/autocycler.yml"
     log:
         "logs/{dataset}/autocycler.log"
     shell:
        """
-       autocycler_cluster_trim_resolve_combine.sh {wildcards.dataset} > {log} 2>&1
+       sample={wildcards.dataset}
+       input_directory="autocycler/$sample"
+
+       # run cluster
+       autocycler cluster -a $input_directory > {log} 2>&1
+
+       for c in "$input_directory/clustering/qc_pass/cluster_"*; do
+           autocycler trim  --threads {threads} -c "$c" > {log} 2>&1
+           autocycler dotplot -i "$c"/1_untrimmed.gfa -o "$c"/1_untrimmed.png > {log} 2>&1
+           autocycler dotplot -i "$c"/2_trimmed.gfa -o "$c"/2_trimmed.png > {log} 2>&1
+           autocycler resolve -c "$c" > {log} 2>&1
+       done
+
+       output_directory="autocycler/$sample/output"
+
+       if [ ! -d "$output_directory" ]; then
+           mkdir -p "$output_directory"
+       fi
+
+       autocycler combine -a "$output_directory" -i $input_directory/clustering/qc_pass/cluster_*/5_final.gfa > {log} 2>&1 
+
        """
