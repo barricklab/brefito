@@ -11,7 +11,7 @@ ASSEMBLERS=["canu","flye","miniasm","necat","nextdenovo","raven"]
 
 rule all_targets_autocycler:
     input:
-        ["autocycler/" + s + "/output/consensus_assembly.fasta" for s in sample_info.get_sample_list()]
+        ["assemblies/" + s + ".fasta" for s in sample_info.get_sample_list()]
     default_target: True
 
 rule canu_assemble:
@@ -155,7 +155,7 @@ rule autocycler_all_steps:
     input:
         input_gfa = "autocycler/{dataset}/input_assemblies.gfa"
     output:
-        "autocycler/{dataset}/output/consensus_assembly.fasta"
+        "assemblies/{dataset}.fasta"
     conda:
         "../envs/autocycler.yml"
     log:
@@ -170,7 +170,7 @@ rule autocycler_all_steps:
 
        for c in "$input_directory/clustering/qc_pass/cluster_"*; do
            autocycler trim  --threads {threads} -c "$c" > {log} 2>&1
-           autocycler dotplot -i "$c"/1_untrimmed.gfa -o "$c"/1_untrimmed.png > {log} 2>&1
+           #autocycler dotplot -i "$c"/1_untrimmed.gfa -o "$c"/1_untrimmed.png > {log} 2>&1
            autocycler dotplot -i "$c"/2_trimmed.gfa -o "$c"/2_trimmed.png > {log} 2>&1
            autocycler resolve -c "$c" > {log} 2>&1
        done
@@ -181,6 +181,10 @@ rule autocycler_all_steps:
            mkdir -p "$output_directory"
        fi
 
-       autocycler combine -a "$output_directory" -i $input_directory/clustering/qc_pass/cluster_*/5_final.gfa > {log} 2>&1 
+       autocycler combine -a "$output_directory" -i "$input_directory"/clustering/qc_pass/cluster_*/5_final.gfa > {log} 2>&1 
 
+       mkdir -p assemblies
+       cp $output_directory/consensus_assembly.fasta assemblies/{wildcards.dataset}.fasta
+       cp $output_directory/consensus_assembly.gfa assemblies/{wildcards.dataset}.gfa
+       cp $output_directory/consensus_assembly.yaml assemblies/{wildcards.dataset}.yaml
        """
