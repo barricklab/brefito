@@ -57,7 +57,7 @@ def main():
     parser.add_argument("-t", "--file-type", help="Input sequence file type [fasta]", action="store", default="fasta")
     parser.add_argument("-s", "--sort", help="Sort contigs, longest to shortest. Sorting happens before renaming", action='store_true')
     parser.add_argument("-c", "--copy-names", help="Rename contig names to match the reference in order.", action='store_true')
-    parser.add_argument("-n", "--new-names", help="Rename contigs with  this prefix followed by their index in the file", action="store")
+    parser.add_argument("-n", "--new-names", help="Rename contigs with this prefix followed by their index in the file", action="store")
     parser.add_argument("-x", "--reindex-reference", help="Reindex (rotate) contigs so they start with the same bases as the provided reference", action='store_true')
     parser.add_argument("-y", "--reindex-initial-bases", help="Reindex (rotate) contigs in so they start with the same number of identical nucleotides to the reference", action="store", type=int, default=24)
     parser.add_argument("-z", "--reindex-sequence", help="Reindex (rotate) all contigs to begin with this sequence if possible", action="store")
@@ -100,6 +100,7 @@ def main():
         assert args.reference != None, "Must provide reference for this operation."
         assert len(reference_seqs)==len(input_seqs), "Reference and input files must have the same number of sequences."
         for i, item in enumerate(input_seqs):
+            print(item['id'] + "=" + reference_seqs[i]['id'] )
             item['id'] = reference_seqs[i]['id'] 
     
     # Handle renaming (by index)

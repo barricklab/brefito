@@ -22,6 +22,14 @@ def main():
 
     valid_workflow_help = "Valid workflows are:\n  " + "\n  ".join(valid_workflows)
 
+    # OLD => OLD should be deleted when migration complete
+    assemblies_path = "assemblies"
+    reference_assemblies_path = "references"
+    sample_assemblies_path = "samples"
+    nanopore_input_path = "nanopore_reads"
+    illumina_input_path = "illumina_reads"
+    # <= OLD should be deleted when migration complete
+
     # What command did we choose
     parser = argparse.ArgumentParser(
                         prog='brefito',
@@ -94,6 +102,7 @@ def main():
 
         workflow_to_run = match['workflow_to_run']
 
+
     # Now check whether it is valid
     assert workflow_to_run in valid_workflows, "Workflow not recognized: " + workflow_to_run + "\n" + valid_workflow_help
 
@@ -159,12 +168,6 @@ def main():
 
         return(matching_input_files)
 
-    assemblies_path = "assemblies"
-    reference_assemblies_path = "references"
-    sample_assemblies_path = "samples"
-    nanopore_input_path = "nanopore_reads"
-    illumina_input_path = "illumina_reads"
-
     print()
     print("Nanopore read files found (*.fastq.gz) in " + nanopore_input_path)
     print()
@@ -197,18 +200,6 @@ def main():
     input_assembly_files = find_matching_input_files(assemblies_path, "fasta")
     for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
     if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
-
-    input_main_reference_assembly_files = glob.glob("reference.fasta")
-    input_main_reference_assembly_file = None
-    input_main_reference_assembly_file_status = "UNKNOWN";
-    if (len(input_main_reference_assembly_files) == 1):
-        input_main_reference_assembly_file = input_main_reference_assembly_files[0]
-        input_main_reference_assembly_file_status = "FOUND"
-    else:
-        input_main_reference_assembly_file_status = "NOT FOUND"
-    print()
-    print("Main reference genome assembly file found (reference.fasta)? " + input_main_reference_assembly_file_status)
-    print()
 
     print()
     print("Reference genome assembly files found (*.fasta) in " + reference_assemblies_path)
@@ -259,24 +250,24 @@ def main():
     ## Commands that haven't yet been updated below --->
 
     # When we normalize, we need to know it will work = the same number of contigs as reference
-    normalize_assembly_files = {}
-    if workflow_to_run == "normalize-assemblies":
-        from Bio import SeqIO
-        assert input_main_reference_assembly_file != None, "Main reference assembly required for this command!" 
-        input_main_reference_seqs = []
-        for record in SeqIO.parse(input_main_reference_assembly_file, "fasta"):
-            input_main_reference_seqs.append({'id' : record.id, 'seq' : record.seq})
-        num_reference_contigs = len(input_main_reference_seqs)
+    # normalize_assembly_files = {}
+    # if workflow_to_run == "normalize-genomes":
+    #     from Bio import SeqIO
+    #     assert input_main_reference_assembly_file != None, "Main reference assembly required for this command!" 
+    #     input_main_reference_seqs = []
+    #     for record in SeqIO.parse(input_main_reference_assembly_file, "fasta"):
+    #         input_main_reference_seqs.append({'id' : record.id, 'seq' : record.seq})
+    #     num_reference_contigs = len(input_main_reference_seqs)
 
-        for input_assembly_file_key in input_assembly_files.keys():
-            input_assembly_seqs = []
-            input_assembly_file = input_assembly_files[input_assembly_file_key]
-            for record in SeqIO.parse(input_assembly_file, "fasta"):
-                input_assembly_seqs.append({'id' : record.id, 'seq' : record.seq})
-            if len(input_assembly_seqs) == num_reference_contigs:
-                smk_targets.append("assemblies/{}.fasta.normalized".format(input_assembly_file_key))
-                normalize_assembly_files[input_assembly_file_key] = input_assembly_file
-        valid_command_found = True 
+    #     for input_assembly_file_key in input_assembly_files.keys():
+    #         input_assembly_seqs = []
+    #         input_assembly_file = input_assembly_files[input_assembly_file_key]
+    #         for record in SeqIO.parse(input_assembly_file, "fasta"):
+    #             input_assembly_seqs.append({'id' : record.id, 'seq' : record.seq})
+    #         if len(input_assembly_seqs) == num_reference_contigs:
+    #             smk_targets.append("assemblies/{}.fasta.normalized".format(input_assembly_file_key))
+    #             normalize_assembly_files[input_assembly_file_key] = input_assembly_file
+    #     valid_command_found = True 
 
     if workflow_to_run == "compare-syri":
         for s in input_sample_assembly_files.keys():
@@ -401,7 +392,7 @@ def main():
     elif workflow_to_run == "polish-medaka":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
     elif workflow_to_run == "normalize-assemblies":
-        copy_and_rename_assemblies(normalize_assembly_files.values(), "normalized", "normalized")
+        copy_and_rename_assemblies(input_assembly_files.values(), "normalized", "normalized")
 
 def check_command_with_references(workflow_to_run, test_command_prefix):
     return_dict = { 'matched' : False }
