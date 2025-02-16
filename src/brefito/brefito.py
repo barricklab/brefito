@@ -70,6 +70,7 @@ def main():
     match = check_command_list_with_references(
         workflow_to_run, [
             "predict-mutations-breseq",
+            "evaluate-coverage-breseq",
             "predict-cnv-breseq",
             "compare-mutations-breseq",
             "coverage-plots-breseq",
