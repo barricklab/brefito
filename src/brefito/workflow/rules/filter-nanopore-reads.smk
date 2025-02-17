@@ -4,14 +4,17 @@ except NameError:
 
 include: "trim-nanopore-reads.smk"
 
-#This is 100x nominal coverage of a 5 Mbp genome
-FILTLONG_TARGET_BASES = 500000000
-if "filtlong_target_bases" in config.keys():
-    FILTLONG_TARGET_BASES = config["filtlong_target_bases"]
+FILTLONG_OPTIONS = "--min_length 1000 --keep_percent 90"
+if "filtlong_target_bases" not in config.keys():
+    print("Filtering nanopore reads using default filtlong command-line options:")
+    print("  " + FILTLONG_OPTIONS)
+    print("To change these options add something like this to your brefito command")
+    print("  --config FILTLONG_OPTIONS=\"--min_length 5000 --keep_percent 95 --target_bases 500000000\"")
+else:
+    FILTLONG_OPTIONS = config["filtlong_target_bases"]
+    print("Filtering nanopore reads with user-specified filtlong command-line options:")
+    print("  " + FILTLONG_OPTIONS)
 
-FILTLONG_KEEP_PERCENT = 90
-if "filtlong_keep_percent" in config.keys():
-    FILTLONG_KEEP_PERCENT = config["filtlong_keep_percent"]
 
 rule all_filter_nanopore_reads:
     input:
@@ -38,4 +41,4 @@ rule filter_nanopore_reads:
     conda:
         "../envs/filtlong.yml"
     shell:
-        "filtlong --min_length 1000 --keep_percent {FILTLONG_KEEP_PERCENT} --target_bases {FILTLONG_TARGET_BASES} {input} > {output} 2> {log}"
+        "filtlong {FILTLONG_OPTIONS} {input} > {output} 2> {log}"
