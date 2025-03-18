@@ -71,9 +71,8 @@ class SampleInfo():
                 #print(row)
 
                 #Ignore commented rows, where first item begins with #
-                if 'sample' in row:
-                    if row['sample'][0]=='#':
-                        continue
+                if row[data_reader.fieldnames[0]][0]=='#':
+                    continue
 
                 # Add 'path' for 'setting' for backwards compatibility
                 if 'path' in row:
