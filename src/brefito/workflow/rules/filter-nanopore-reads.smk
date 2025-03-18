@@ -5,13 +5,13 @@ except NameError:
 include: "trim-nanopore-reads.smk"
 
 FILTLONG_OPTIONS = "--min_length 1000 --keep_percent 90"
-if "filtlong_target_bases" not in config.keys():
+if "FILTLONG_OPTIONS" not in config.keys():
     print("Filtering nanopore reads using default filtlong command-line options:")
     print("  " + FILTLONG_OPTIONS)
     print("To change these options add something like this to your brefito command")
     print("  --config FILTLONG_OPTIONS=\"--min_length 5000 --keep_percent 95 --target_bases 500000000\"")
 else:
-    FILTLONG_OPTIONS = config["filtlong_target_bases"]
+    FILTLONG_OPTIONS = config["FILTLONG_OPTIONS"]
     print("Filtering nanopore reads with user-specified filtlong command-line options:")
     print("  " + FILTLONG_OPTIONS)
 
