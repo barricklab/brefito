@@ -16,9 +16,9 @@ if "SUBSAMPLE_OPTIONS" not in config.keys():
     print("To change these options add something like this to your brefito command")
     print("  --config SUBSAMPLE_OPTIONS=\"--genome_size 4600000 --min_read_depth 60\"")
 else:
-    FILTLONG_OPTIONS = config["FILTLONG_OPTIONS"]
+    SUBSAMPLE_OPTIONS = config["SUBSAMPLE_OPTIONS"]
     print("Subsampling nanopore reads with user-specified trycycler subsample command-line options:")
-    print("  " + FILTLONG_OPTIONS)
+    print("  " + SUBSAMPLE_OPTIONS)
 
 rule all_subsample_nanopore_reads:
     input:
