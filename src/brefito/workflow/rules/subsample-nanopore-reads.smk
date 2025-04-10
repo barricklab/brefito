@@ -9,6 +9,17 @@ UNICYCLER_RESAMPLED_IDS = ["06", "12", "18", "24"]
 
 ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLISH_RESAMPLED_IDS + CANU_RESAMPLED_IDS + NECAT_RESAMPLED_IDS + UNICYCLER_RESAMPLED_IDS
 
+SUBSAMPLE_OPTIONS = "--genome_size " + str(config[genome_size])
+if "SUBSAMPLE_OPTIONS" not in config.keys():
+    print("Subsampling nanopore reads using default trycycler subsample command-line options:")
+    print("  " + SUBSAMPLE_OPTIONS)
+    print("To change these options add something like this to your brefito command")
+    print("  --config SUBSAMPLE_OPTIONS=\"--genome_size 4600000--min_read_depth 60\"")
+else:
+    FILTLONG_OPTIONS = config["FILTLONG_OPTIONS"]
+    print("Subsampling nanopore reads with user-specified trycycler subsample command-line options:")
+    print("  " + FILTLONG_OPTIONS)
+
 rule all_subsample_nanopore_reads:
     input:
         ["nanopore-reads-subsampled/" + s + "/sample_01.fastq" for s in sample_info.get_sample_list() ]
@@ -24,6 +35,6 @@ rule subsample_nanopore_reads:
     log:
         "logs/trycycler-subsample-{sample}.log"
     shell:
-        "trycycler subsample --genome_size {config[genome_size]} --reads {input} --count 24 --out_dir nanopore-reads-subsampled/{wildcards.sample} > {log} 2>&1"
+        "trycycler subsample {SUBSAMPLE_OPTIONS} --reads {input} --count 24 --out_dir nanopore-reads-subsampled/{wildcards.sample} > {log} 2>&1"
 
 
