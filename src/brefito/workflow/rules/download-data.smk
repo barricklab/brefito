@@ -30,8 +30,15 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
     print("Downloading: " + remote_path)
 
     if remote_path.startswith("SRR"): # is this an sra accession?
-        shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
-        print(shell_command)
+        if output_path.endswith("SE.fastq.gz"): #this is SE reads
+            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
+        elif output_path.endswith("R1.fastq.gz"): #this is R1 of PE data
+            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}_1.fastq;  mv {remote_path}_1.fastq.gz {output_path}; rm -rf {remote_path}; rm {remote_path}*"
+        elif output_path.endswith("R2.fastq.gz"): #this is R2 of PE data:
+            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}_2.fastq;  mv {remote_path}_2.fastq.gz {output_path}; rm -rf {remote_path}; rm {remote_path}*"
+        elif "nanopore" in output_path: #this is nanopore data
+            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
+
         return shell_command
 
     split_remote_path = remote_path.split('://', 1)
