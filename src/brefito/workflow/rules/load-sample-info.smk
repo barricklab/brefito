@@ -18,7 +18,7 @@
 #
 # SETUP BOOKMARK
 #
-# In order to connect you need to set up an lftp bookmark. 
+# In order to connect you need to set up an lftp bookmark.
 # One way to do this is to run a command like this within your lftp shell
 # bookmark utbox ftps://'<username>':<password>@ftp.box.com:990
 # SECURITY WARNING: this creates a file - to which only you have access
@@ -88,10 +88,10 @@ class SampleInfo():
                 if (row['type'] == "nanopore"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("nanopore-reads", simplified_read_file_base_name + ".fastq.gz")
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "nanopore", 
-                        'file_type' : "nanopore", 
+                        'type' : "nanopore",
+                        'file_type' : "nanopore",
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -99,10 +99,10 @@ class SampleInfo():
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".SE.fastq.gz")
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "illumina-SE", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-SE",
+                        'file_type' : "illumina",
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -110,10 +110,10 @@ class SampleInfo():
                 elif (row['type'] == "illumina-R1"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R1.fastq.gz")
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "illumina-R1", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-R1",
+                        'file_type' : "illumina",
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -121,10 +121,10 @@ class SampleInfo():
                 elif (row['type'] == "illumina-R2"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R2.fastq.gz")
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "illumina-R2", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-R2",
+                        'file_type' : "illumina",
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -143,27 +143,27 @@ class SampleInfo():
                     remote_path_1 = row['setting'].replace("{1|2}", "1")
                     remote_path_2 = row['setting'].replace("{1|2}", "2")
 
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
                         'type' : "illumina-R1",
-                        'file_type' : "illumina", 
+                        'file_type' : "illumina",
                         'remote_path' : remote_path_1,
                         'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_1 + ".R1.fastq.gz")
                         })
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "illumina-R2", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-R2",
+                        'file_type' : "illumina",
                         'remote_path' : remote_path_2,
                         'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_2 + ".R2.fastq.gz")
                         })
 
                 elif (row['type'] == "reference"):
                     local_path = os.path.join("references", file_name)
-                    self.add_file({ 
+                    self.add_file({
                         'sample' : row['sample'],
-                        'type' : "reference", 
-                        'file_type' : "reference", 
+                        'type' : "reference",
+                        'file_type' : "reference",
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -200,7 +200,7 @@ class SampleInfo():
                 matching_input_files[short_name[0]] = this_input_file
 
         return(matching_input_files)
-        
+
 
     def init_from_directory_structure(self):
          # What files are available?
@@ -217,11 +217,11 @@ class SampleInfo():
         input_nanopore_files = self.find_matching_input_files(nanopore_input_path, ".fastq.gz")
         for k in input_nanopore_files: print("    " + k)
         if (len(input_nanopore_files.items()) == 0) : print("    " + "NONE FOUND")
-        for k, i in input_nanopore_files.items(): 
-            self.add_file({ 
+        for k, i in input_nanopore_files.items():
+            self.add_file({
                         'sample' : k,
-                        'type' : "nanopore", 
-                        'file_type' : "nanopore", 
+                        'type' : "nanopore",
+                        'file_type' : "nanopore",
                         'remote_path' : None,
                         'local_path' : i
                         })
@@ -238,21 +238,21 @@ class SampleInfo():
             if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
 
         input_illumina_PE_file_names = set({})
-        for k, i in input_illumina_1_files.items(): 
-            self.add_file({ 
+        for k, i in input_illumina_1_files.items():
+            self.add_file({
                         'sample' : k,
-                        'type' : "illumina-R1", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-R1",
+                        'file_type' : "illumina",
                         'remote_path' : None,
                         'local_path' : i
                         })
             input_illumina_PE_file_names.add(i)
 
-        for k, i in input_illumina_2_files.items(): 
-            self.add_file({ 
+        for k, i in input_illumina_2_files.items():
+            self.add_file({
                         'sample' : k,
-                        'type' : "illumina-R2", 
-                        'file_type' : "illumina", 
+                        'type' : "illumina-R2",
+                        'file_type' : "illumina",
                         'remote_path' : None,
                         'local_path' : i
                         })
@@ -260,7 +260,7 @@ class SampleInfo():
 
 
 
-        if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
+        if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0):
             print("    " + "NONE FOUND")
 
         print()
@@ -271,13 +271,13 @@ class SampleInfo():
         for k, i in input_illumina_SE_files.items():
             if i in input_illumina_PE_file_names:
                 continue
-            self.add_file({ 
+            self.add_file({
                 'sample' : k,
-                'type' : "illumina-SE", 
-                'file_type' : "illumina", 
+                'type' : "illumina-SE",
+                'file_type' : "illumina",
                 'remote_path' : None,
                 'local_path' : i
-                })   
+                })
             print("    " + k + " : " + i)
 
 
@@ -289,11 +289,11 @@ class SampleInfo():
         for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
         if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
 
-        for k, i in input_assembly_files.items(): 
-            self.add_file({ 
+        for k, i in input_assembly_files.items():
+            self.add_file({
                         'sample' : k,
-                        'type' : "assembly", 
-                        'file_type' : "fasta", 
+                        'type' : "assembly",
+                        'file_type' : "fasta",
                         'remote_path' : None,
                         'local_path' : i
                         })
@@ -318,11 +318,11 @@ class SampleInfo():
         for (k, v) in input_reference_files.items(): print("    " + k + " : " + v)
         if (len(input_reference_files.items()) == 0) : print("    " + "NONE FOUND")
 
-        for k, i in input_reference_files.items(): 
-            self.add_file({ 
+        for k, i in input_reference_files.items():
+            self.add_file({
                         'sample' : k,
-                        'type' : "reference", 
-                        'file_type' : "reference", 
+                        'type' : "reference",
+                        'file_type' : "reference",
                         'remote_path' : None,
                         'local_path' : i
                         })
@@ -404,14 +404,17 @@ class SampleInfo():
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):
-        
+
+        if in_read_name.startswith("SRR"): # sra accesion can be returned as is
+            return in_read_name
+
         # Valid read file names must end in *.fastq.gz for workflows to function!
         no_ending_read_name = rreplace1(in_read_name, ".fastq.gz", "")
         if no_ending_read_name == in_read_name:
             self.reads_with_bad_endings = True
             return "INVALID---[" + in_read_name + "]---"
 
-        # Now, remove the first of these that we encounter. 
+        # Now, remove the first of these that we encounter.
         # The idea is that if we do this to the file names for
         # each read in a pair, we will have the SAME name afterward
 
@@ -508,7 +511,7 @@ class SampleInfo():
 
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
         return " ".join([argument_prefix + item] for item in self.get_file_list(sample, "illumina-SE"))
-    
+
     def get_samples_with_illumina_SE_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_illumina_SE_read_base_list(sample))]
 
@@ -588,7 +591,7 @@ class SampleInfo():
             return " ".join([argument_prefix + os.path.join(self.reference_prefix, item) for item in self.get_file_list(sample, "reference")])
         else:
             if reference_suffix != None:
-                return argument_prefix + os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+                return argument_prefix + os.path.join(self.reference_prefix, "{}.{}".format(sample, reference_suffix))
             else:
                 return argument_prefix + self.add_preferred_reference_suffix(os.path.join(self.reference_prefix, sample))
 
@@ -597,7 +600,7 @@ class SampleInfo():
             return [ os.path.join(reference_prefix, item) for item in self.get_file_list(sample, "reference")]
         else:
             if reference_suffix != None:
-                return os.path.join(reference_prefix, "{}.{}".format(sample, reference_suffix)) 
+                return os.path.join(reference_prefix, "{}.{}".format(sample, reference_suffix))
             else:
                 return self.add_preferred_reference_suffix(os.path.join(reference_prefix, sample))
 
@@ -622,13 +625,13 @@ class SampleInfo():
 
     def get_remote_path_from_local_path(self, this_local_path):
         return self.local_to_remote_path_mapping[this_local_path]
-        
+
     def get_sample_list(self):
         return list(self.sample_list)
 
     def set_reference_prefix(self, in_reference_prefix):
         self.reference_prefix = in_reference_prefix
-    
+
     def get_reference_prefix(self):
         return self.reference_prefix
 
@@ -689,4 +692,3 @@ if (sample_info.reads_with_bad_endings):
   print("ERROR: Read file names not of the expected form (*.fastq.gz) found.")
   print("Check above for offending file names in the form \"INVALID---[in_read_name]---*.fastq.gz\"")
   exit(1)
-

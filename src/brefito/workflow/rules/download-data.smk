@@ -13,7 +13,7 @@
 #
 # SETUP BOOKMARK
 #
-# In order to connect you need to set up an lftp bookmark. 
+# In order to connect you need to set up an lftp bookmark.
 # One way to do this is to run a command like this within your lftp shell
 # bookmark utbox ftps://'<username>':<password>@ftp.box.com:990
 # SECURITY WARNING: this creates a file - to which only you have access
@@ -21,13 +21,18 @@
 # if you provide a password
 
 try: sample_info
-except NameError: 
+except NameError:
     include: "load-sample-info.smk"
 
 import os
 
 def remote_path_to_shell_command(remote_path, download_path, output_path):
-    #print("Downloading: " + remote_path)
+    print("Downloading: " + remote_path)
+
+    if remote_path.startswith("SRR"): # is this an sra accession?
+        shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
+        print(shell_command)
+        return shell_command
 
     split_remote_path = remote_path.split('://', 1)
     method = None
@@ -37,7 +42,7 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
         if not os.path.exists(remote_path):
             sys.exit ('  FAILED: Local file does not exist: ' + remote_path)
 
-        #create a symbolic link... 
+        #create a symbolic link...
         shell_command = "echo \"Creating local symbolic link for file that does not have a download URL: " + remote_path + "\""
 
         if os.path.isabs(remote_path):
@@ -47,12 +52,12 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
 
         #print(shell_command)
         return(shell_command)
-    else: 
+    else:
         # lftp@utbox://path/from/bookmark
         split_protocol = split_remote_path[0].split('@', 1)
         if (split_protocol[0] == 'lftp'):
             method = 'lftp'
-            if (len(split_protocol) == 2): 
+            if (len(split_protocol) == 2):
                 bookmark = split_protocol[1]
             remote_path = split_remote_path[1]
         # ncbi://accession
@@ -65,7 +70,7 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
 
     if method == None:
         sys.exit ('  FAILED: Could not determine download type.')
-    
+
     shell_command = ''
     if method == 'wget':
         shell_command = "wget -O \"{}\" {}".format(download_path, remote_path)

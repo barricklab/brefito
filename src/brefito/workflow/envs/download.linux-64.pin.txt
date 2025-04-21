@@ -27,3 +27,4 @@ https://conda.anaconda.org/conda-forge/linux-64/gettext-0.22.5-h59595ed_2.conda#
 https://conda.anaconda.org/conda-forge/linux-64/lftp-4.9.2-hedb13fd_1.tar.bz2#722536908f4b4baddbab112d5576b72d
 https://conda.anaconda.org/conda-forge/linux-64/libidn2-2.3.7-hd590300_0.conda#2b7b0d827c6447cc1d85dc06d5b5de46
 https://conda.anaconda.org/conda-forge/linux-64/wget-1.21.4-hda4d442_0.conda#361e96b664eac64a33c20dfd11affbff
+https://conda.anaconda.org/bioconda/linux-64/sra-tools-3.1.1-h4304569_2.tar.bz2

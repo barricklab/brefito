@@ -7,3 +7,4 @@ dependencies:
   - wget =1.21.4
   - ncbi-datasets-cli =16.15.0
   - entrez-direct =21.6
+  - sra-tools =3.1.1
