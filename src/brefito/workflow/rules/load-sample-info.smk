@@ -129,45 +129,31 @@ class SampleInfo():
                         'local_path' : local_path
                         })
 
-                elif row['type'] in ["illumina-pair", "illumina-paired", "illumina-PE"] and (row['setting'].startswith("SRR")):
-
-                    print("PE from SRA")
-                    simplified_read_file_base_name_1 = row['setting'] # this value is already simplified
-                    simplified_read_file_base_name_2 =  row['setting'] # this value is already simplified
-
-                    remote_path_1 = row['setting']
-                    remote_path_2 = row['setting']
-
-                    self.add_file({
-                        'sample' : row['sample'],
-                        'type' : "illumina-R1",
-                        'file_type' : "illumina",
-                        'remote_path' : remote_path_1,
-                        'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_1 + ".R1.fastq.gz")
-                        })
-                    self.add_file({
-                        'sample' : row['sample'],
-                        'type' : "illumina-R2",
-                        'file_type' : "illumina",
-                        'remote_path' : remote_path_2,
-                        'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_2 + ".R2.fastq.gz")
-                        })
-
                 # paired end reads
+                elif row['type'] in ["illumina-pair", "illumina-paired", "illumina-PE"]:
+                    
+                    # Don't do the automatic read name simplification step for sra://SRR entries
+                    if row['setting'].startswith("sra://SRR"):
 
-                elif row['type'] in ["illumina-pair", "illumina-paired", "illumina-PE"] and not(row['setting'].startswith("SRR")):
-                    #Must have {1/2} in the name
-                    if not "{1|2}" in row['setting']:
-                        print("Did not find {1|2} in name of illumina-PE entry:" + row['setting'])
-                        print("Skipping this entry.")
-                        continue
+                        #Make sure we cut off the sra:// part using slice
+                        simplified_read_file_base_name_1 = row['setting'][6:] # this value is already simplified
+                        simplified_read_file_base_name_2 = row['setting'][6:] # this value is already simplified
 
-                    # Don't do the automatic read name simplification step
-                    simplified_read_file_base_name_1 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "1"))
-                    simplified_read_file_base_name_2 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "2"))
+                        remote_path_1 = row['setting']
+                        remote_path_2 = row['setting']
 
-                    remote_path_1 = row['setting'].replace("{1|2}", "1")
-                    remote_path_2 = row['setting'].replace("{1|2}", "2")
+                    # Normal case non-SRA
+                    else:
+                        if not "{1|2}" in row['setting']:
+                            print("Did not find {1|2} in name of illumina-PE entry:" + row['setting'])
+                            print("Skipping this entry.")
+                            continue
+                                                
+                        simplified_read_file_base_name_1 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "1"))
+                        simplified_read_file_base_name_2 = self.get_simplified_read_file_base_name(base_file_name.replace("{1|2}", "2"))
+
+                        remote_path_1 = row['setting'].replace("{1|2}", "1")
+                        remote_path_2 = row['setting'].replace("{1|2}", "2")
 
                     self.add_file({
                         'sample' : row['sample'],

@@ -8,3 +8,4 @@ dependencies:
   - ncbi-datasets-cli =16.15.0
   - entrez-direct =21.6
   - sra-tools =3.1.1
+  - pigz =2.8

@@ -3,7 +3,7 @@
 # platform: osx-64
 @EXPLICIT
 https://conda.anaconda.org/conda-forge/osx-64/c-ares-1.34.5-hf13058a_0.conda#eafe5d9f1a8c514afe41e6e833f66dfd
-https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2025.1.31-hbd8a1cb_1.conda#e74273d9fc5ab633d613cde474b55157
+https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2025.4.26-hbd8a1cb_0.conda#95db94f75ba080a22eb623590993167b
 https://conda.anaconda.org/conda-forge/osx-64/libcxx-20.1.3-hf95d169_0.conda#022f109787a9624301ddbeb39519ff13
 https://conda.anaconda.org/conda-forge/osx-64/libev-4.33-h10d778d_2.conda#899db79329439820b7e8f8de41bca902
 https://conda.anaconda.org/conda-forge/osx-64/libexpat-2.7.0-h240833e_0.conda#026d0a1056ba2a3dbbea6d4b08188676
@@ -36,6 +36,7 @@ https://conda.anaconda.org/conda-forge/noarch/perl-scope-guard-0.21-pl5321hd8ed1
 https://conda.anaconda.org/conda-forge/osx-64/perl-test-warnings-0.031-pl5321h694c41f_0.conda#73dff05aff476826a95fcb5d581c8169
 https://conda.anaconda.org/conda-forge/osx-64/perl-try-tiny-0.31-pl5321h694c41f_0.tar.bz2#a89954e73ec2843e0f63c2c56ac22215
 https://conda.anaconda.org/conda-forge/noarch/perl-xml-sax-base-1.09-pl5321hd8ed1ab_0.tar.bz2#a4d9b02cd61c478c9cb58064307a1414
+https://conda.anaconda.org/conda-forge/osx-64/pigz-2.8-h92b6c6a_0.conda#cd7e77b88e2f202548eb85f7ae336302
 https://conda.anaconda.org/conda-forge/osx-64/readline-8.2-h7cca4af_2.conda#342570f8e02f2f022147a7f841475784
 https://conda.anaconda.org/conda-forge/osx-64/xz-gpl-tools-5.8.1-h357f2ed_0.conda#d41e7f7377313e6d44cb37f24bca046d
 https://conda.anaconda.org/conda-forge/osx-64/xz-tools-5.8.1-hd471939_0.conda#0feb3570e5d52cb777ccac5bb252d5c9

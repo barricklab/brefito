@@ -25,11 +25,19 @@ except NameError:
     include: "load-sample-info.smk"
 
 import os
+import uuid
+
+# Use multiple threads for SRA downloads to speed up gzipping
+def get_num_threads(remote_path):
+    if (remote_path.startswith("sra://")):
+        return 6
+    return 1
 
 def remote_path_to_shell_command(remote_path, download_path, output_path):
     #print("Downloading: " + remote_path)
 
-
+    #Save b/c it can be modified below and we need to keep the prefix for some functionality
+    original_remote_path = remote_path
 
     split_remote_path = remote_path.split('://', 1)
     method = None
@@ -78,28 +86,38 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
 
     if method == 'wget':
         shell_command = "wget -O \"{}\" {}".format(download_path, remote_path)
+        ## Move the temp download path to the final path
+        shell_command = shell_command + " && mv " + download_path + " " + output_path
 
     elif method == 'lftp':
         #echo 'cd "{REMOTE_BASE_PATH}"' > {params.lftp_commands_file}
         #echo 'get "{params.URL}" -o "{params.download_path}"' >> {params.lftp_commands_file}
         shell_command = "echo 'get \"{}\" -o \"{}\"' | lftp {} ".format(remote_path, download_path, bookmark)
+        ## Move the temp download path to the final path
+        shell_command = shell_command + " && mv " + download_path + " " + output_path
 
     elif method == 'ncbi':
         shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)
+        ## Move the temp download path to the final path
+        shell_command = shell_command + " && mv " + download_path + " " + output_path
 
     elif method == 'sratools':
-        if output_path.endswith("SE.fastq.gz"): #this is SE reads
-            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
-        elif output_path.endswith("R1.fastq.gz"): #this is R1 of PE data
-            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}_1.fastq;  mv {remote_path}_1.fastq.gz {output_path}; rm -rf {remote_path}; rm {remote_path}*"
-        elif output_path.endswith("R2.fastq.gz"): #this is R2 of PE data:
-            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}_2.fastq;  mv {remote_path}_2.fastq.gz {output_path}; rm -rf {remote_path}; rm {remote_path}*"
-        elif "nanopore" in output_path: #this is nanopore data
-            shell_command = f"prefetch {remote_path}; fasterq-dump {remote_path}; gzip {remote_path}*.fastq;  mv {remote_path}*.fastq.gz {output_path}; rm -rf {remote_path}"
-        return shell_command
+        # Right now we double-download PE data, which is ugly.
+        # Could prevent this by making output_path below a list of outputs, but wil require a bit of work.
 
-    ## Move the temp download path to the final path
-    shell_command = shell_command + " && mv " + download_path + " " + output_path
+        # We need a job_id added when we might be downloading the same data set at the same time for R1 and R2!
+        jobid = str(uuid.uuid4())[:8]
+
+        threads = get_num_threads(original_remote_path)
+        if output_path.endswith("SE.fastq.gz"): #this is SE reads
+            shell_command = f"mkdir sra_download_{jobid}; cd sra_download_{jobid}; prefetch {remote_path}; fasterq-dump {remote_path}; pigz -f -p {threads} {remote_path}*.fastq;  mv {remote_path}*.fastq.gz ../{output_path}; cd ..; rm -rf {remote_path}"
+        elif output_path.endswith("R1.fastq.gz"): #this is R1 of PE data
+            shell_command = f"mkdir sra_download_{jobid}; cd sra_download_{jobid}; prefetch {remote_path}; fasterq-dump {remote_path}; pigz -f -p {threads} {remote_path}_1.fastq;  mv {remote_path}_1.fastq.gz ../{output_path}; cd ..; rm -rf sra_download_{jobid}"
+        elif output_path.endswith("R2.fastq.gz"): #this is R2 of PE data
+            shell_command = f"mkdir sra_download_{jobid}; cd sra_download_{jobid}; prefetch {remote_path}; fasterq-dump {remote_path}; pigz -f -p {threads} {remote_path}_2.fastq;  mv {remote_path}_2.fastq.gz ../{output_path}; cd ..; rm -rf sra_download_{jobid}"
+        elif "nanopore" in output_path: #this is nanopore data
+            shell_command = f"mkdir sra_download_{jobid}; cd sra_download_{jobid}; prefetch {remote_path}; fasterq-dump {remote_path}; pigz -f -p {threads} {remote_path}*.fastq;  mv {remote_path}*.fastq.gz ../{output_path}; cd ..; rm -rf {remote_path}"
+        return shell_command
 
     #print(shell_command)
     return(shell_command)
@@ -116,13 +134,13 @@ rule download_file:
     params:
         remote_path = lambda wildcards: sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample),
         download_path = "{download_type}/temp_{sample}",
-        shell_command = lambda wildcards:  remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample, wildcards.download_type + "/" + wildcards.sample)
-    threads: 1
+        shell_command = lambda wildcards: remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample, wildcards.download_type + "/" + wildcards.sample)
+    threads: lambda wildcards:  get_num_threads(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
     wildcard_constraints:
         download_type="(references|illumina-reads|nanopore-reads)"
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
-        connections=1
+        connections=1,
     conda:
         "../envs/download.yml"
     shell:
