@@ -178,6 +178,8 @@ rule download_sra:
         prefetch {wildcards.run_accession}
         """
 
+ruleorder: dump_paired_sra > dump_single_end_sra > dump_nanopore_sra
+
 rule dump_paired_sra:
     input:
         "sra-downloads/{run_accession}/{run_accession}.sra"
@@ -216,7 +218,7 @@ rule dump_nanopore_sra:
     input:
         "sra-downloads/{run_accession}/{run_accession}.sra"
     output:
-        temp("sra_download/{run_accession}.fastq")
+        temp("sra-downloads/{run_accession}.fastq")
     threads: 6
     conda:
         "../envs/download.yml"
