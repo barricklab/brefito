@@ -60,8 +60,8 @@ rule search_references_blast:
         blastdb = "blast-" + sample_info.get_reference_prefix() + "/blastdb/{sample}_blastdb",
     shell:
         """
-        blastn -db {params.blastdb} -html -query {input.query} -out {output.format1}
-        blastn -db {params.blastdb} -outfmt 7 -query {input.query} -out {output.format7}
+        blastn -task blastn-short -evalue 10 -db {params.blastdb} -html -query {input.query} -out {output.format1}
+        blastn -task blastn-short -evalue 10 -db {params.blastdb} -outfmt 7 -query {input.query} -out {output.format7}
         cat {output.format7}
         """
 
