@@ -4,24 +4,23 @@ except NameError:
 
 include: "download-data.smk"
 
-NO_NANOPORE_TRIMMING = False
-if 'NO_NANOPORE_TRIMMING' in brefito_config.keys():
-    NO_NANOPORE_TRIMMING = bool(brefito_config['NO_NANOPORE_TRIMMING'])
+NANOPORE_TRIMMING = "none"
+if 'NANOPORE_TRIMMING' in brefito_config.keys():
+    NANOPORE_TRIMMING = bool(brefito_config['NANOPORE_TRIMMING'])
 
-USE_PORECHOP_ABI = False
-if 'USE_PORECHOP_ABI' in brefito_config.keys():
-    USE_PORECHOP_ABI = bool(brefito_config['USE_PORECHOP_ABI'])
-
-if NO_NANOPORE_TRIMMING:
+if NANOPORE_TRIMMING.upper() == "NONE" or NANOPORE_TRIMMING.upper() == "FALSE" or NANOPORE_TRIMMING.upper() == "F" or NANOPORE_TRIMMING == "0":
     print("Nanopore reads are not trimmed.")
     ruleorder: trim_nanopore_reads_no_trim > trim_nanopore_reads_porechop_abi > trim_nanopore_reads_porechop
-
-elif USE_PORECHOP_ABI:
+elif NANOPORE_TRIMMING.upper() == "PORECHOP-ABI":
     print("porechop_ABI used for trimming nanopore reads.")
     ruleorder: trim_nanopore_reads_porechop_abi > trim_nanopore_reads_porechop_abi > trim_nanopore_reads_no_trim
-else:
+elif NANOPORE_TRIMMING.upper() == "PORECHOP":
     print("porechop used for trimming nanopore reads. (DEFAULT)")
     ruleorder: trim_nanopore_reads_porechop > trim_nanopore_reads_porechop_abi > trim_nanopore_reads_no_trim
+else:
+    print("Unknown trimming method requested for --config NANOPORE_TRIMMING.")
+    print("Valid options are: 'none', 'porechop', 'porechop-ABI'.")
+    exit(0)
 
 def get_all_trimmed_nanopore_read_names():
     nanopore_files = []
