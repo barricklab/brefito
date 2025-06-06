@@ -163,46 +163,35 @@ rule download_file:
         {params.shell_command}
         """
 
-rule download_sra:
-    output:
-        temp("sra-downloads/{run_accession}/{run_accession}.sra")
-    threads: 1
-    resources:
-        connections=1
-    conda:
-        "../envs/download.yml"
-    shell:
-        """
-        mkdir -p sra-downloads
-        cd sra-downloads
-        prefetch {wildcards.run_accession}
-        """
+ruleorder: download_paired_sra > download_single_end_sra > download_nanopore_sra
 
-ruleorder: dump_paired_sra > dump_single_end_sra > dump_nanopore_sra
-
-rule dump_paired_sra:
-    input:
-        "sra-downloads/{run_accession}/{run_accession}.sra"
+rule download_paired_sra:
     output:
         output_R1_path = temp("sra-downloads/{run_accession}.R1.fastq"),
         output_R2_path = temp("sra-downloads/{run_accession}.R2.fastq")
-    threads: 6
+    threads: 1
+    resources:
+        # This is an invented resource to prevent opening too many download connections at once!
+        # We calculate this so we can use 0 here for SRA downloads handled by a separate function
+        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
     conda:
         "../envs/download.yml"
     shell:
         """
         cd sra-downloads
-        fasterq-dump -e {threads} {wildcards.run_accession}
+        fastq-dump --split-files {wildcards.run_accession}
         mv {wildcards.run_accession}_1.fastq {wildcards.run_accession}.R1.fastq
         mv {wildcards.run_accession}_2.fastq {wildcards.run_accession}.R2.fastq
         """
 
-rule dump_single_end_sra:
-    input:
-        "sra-downloads/{run_accession}/{run_accession}.sra"
+rule download_single_end_sra:
     output:
         temp("sra-downloads/{run_accession}.SE.fastq")
-    threads: 6
+    threads: 1
+    resources:
+        # This is an invented resource to prevent opening too many download connections at once!
+        # We calculate this so we can use 0 here for SRA downloads handled by a separate function
+        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
     conda:
         "../envs/download.yml"
     conda:
@@ -210,16 +199,18 @@ rule dump_single_end_sra:
     shell:
         """
         cd sra-downloads
-        fasterq-dump -e {threads} {wildcards.run_accession}
+        fastq-dump {wildcards.run_accession}
         mv {wildcards.run_accession}.fastq {wildcards.run_accession}.SE.fastq
         """
 
-rule dump_nanopore_sra:
-    input:
-        "sra-downloads/{run_accession}/{run_accession}.sra"
+rule download_nanopore_sra:
     output:
         temp("sra-downloads/{run_accession}.fastq")
-    threads: 6
+    threads: 1
+    resources:
+        # This is an invented resource to prevent opening too many download connections at once!
+        # We calculate this so we can use 0 here for SRA downloads handled by a separate function
+        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
     conda:
         "../envs/download.yml"
     conda:
@@ -227,7 +218,7 @@ rule dump_nanopore_sra:
     shell:
         """
         cd sra-downloads
-        fasterq-dump -e {threads} {wildcards.run_accession}
+        fastq-dump {wildcards.run_accession}
         """
 
 rule gzip_sra:
