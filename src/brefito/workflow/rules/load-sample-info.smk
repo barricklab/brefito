@@ -132,8 +132,8 @@ class SampleInfo():
                 # paired end reads
                 elif row['type'] in ["illumina-pair", "illumina-paired", "illumina-PE"]:
                     
-                    # Don't do the automatic read name simplification step for sra://SRR entries
-                    if row['setting'].startswith("sra://SRR"):
+                    # Don't do the automatic read name simplification step for sra://SRR or sra://ERR entries
+                    if row['setting'].startswith("sra://SRR") or row['setting'].startswith("sra://ERR"):
 
                         #Make sure we cut off the sra:// part using slice
                         simplified_read_file_base_name_1 = row['setting'][6:] # this value is already simplified
@@ -417,7 +417,7 @@ class SampleInfo():
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):
 
-        if in_read_name.startswith("SRR"): # sra accesion can be returned as is
+        if in_read_name.startswith("SRR") or in_read_name.startswith("ERR"): # sra accesion can be returned as is
             return in_read_name
 
         # Valid read file names must end in *.fastq.gz for workflows to function!

@@ -173,7 +173,7 @@ rule download_paired_sra:
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
-        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
+        connections=1
     conda:
         "../envs/download.yml"
     shell:
@@ -191,7 +191,7 @@ rule download_single_end_sra:
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
-        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
+        connections=1
     conda:
         "../envs/download.yml"
     conda:
@@ -210,7 +210,7 @@ rule download_nanopore_sra:
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
-        connections=lambda wildcards: get_num_connections(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample))
+        connections=1
     conda:
         "../envs/download.yml"
     conda:
