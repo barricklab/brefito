@@ -406,8 +406,10 @@ class SampleInfo():
 
     #makes sure that different remote paths aren't mapped to the same local path
     def deconflict_paths(self, this_row):
-        if this_row['local_path'] in self.local_to_remote_path_mapping.keys():
-            if self.local_to_remote_path_mapping[this_row['local_path']] != this_row['remote_path']:
+
+        if this_row['local_path'].lower() in (k.lower() for k in self.local_to_remote_path_mapping.keys()):
+        #if this_row['local_path'] in self.local_to_remote_path_mapping.keys():
+        #    if self.local_to_remote_path_mapping[this_row['local_path']] != this_row['remote_path']:
                 i=1
                 file_name, file_extension = self.split_filename_and_extension(this_row['local_path'])
                 while file_name + "-" + str(i) + file_extension in self.local_to_remote_path_mapping.keys():
