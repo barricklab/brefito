@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - lftp =4.9.2
+  - rclone =1.71.2
   - wget =1.21.4
   - ncbi-datasets-cli =16.15.0
   - entrez-direct =21.6

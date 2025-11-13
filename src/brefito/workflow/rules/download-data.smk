@@ -70,6 +70,14 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
             if (len(split_protocol) == 2):
                 bookmark = split_protocol[1]
             remote_path = split_remote_path[1]
+
+        # rclone@natsci_barricklab://path/from/root
+        elif (split_protocol[0] == 'rclone'):
+            method = 'rclone'
+            if (len(split_protocol) == 2):
+                bookmark = split_protocol[1]
+            remote_path = split_remote_path[1]
+
         # ncbi://accession
         elif (split_protocol[0] == 'ncbi'):
             method = 'ncbi'
@@ -100,6 +108,13 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
         shell_command = "echo 'get \"{}\" -o \"{}\"' | lftp {} ".format(remote_path, download_path, bookmark)
         ## Move the temp download path to the final path
         shell_command = shell_command + " && mv " + download_path + " " + output_path
+
+    elif method == 'rclone':
+        
+        shell_command = "rclone copyto --progress {}:{} {}".format(bookmark, remote_path, download_path)
+        ## Move the temp download path to the final path
+        shell_command = shell_command + " && mv " + download_path + " " + output_path
+        print(shell_command)
 
     elif method == 'ncbi':
         shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)

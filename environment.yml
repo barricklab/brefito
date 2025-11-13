@@ -6,7 +6,4 @@ channels:
 dependencies:
   - biopython =1.83
   - snakemake
-  - pip
-  - pip:
-  # works for regular pip packages
-    - snakedeploy
+  - snakedeploy
