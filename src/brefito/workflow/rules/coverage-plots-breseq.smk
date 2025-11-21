@@ -1,5 +1,24 @@
 include: "predict-mutations-breseq.smk"
 
+TILE_SIZE = 10000
+if 'TILE_SIZE' in brefito_config.keys():
+    TILE_SIZE = int(brefito_config['TILE_SIZE'])
+
+TILE_OVERLAP = ""
+if 'TILE_OVERLAP' in brefito_config.keys():
+    TILE_OVERLAP = brefito_config['TILE_OVERLAP'] 
+
+PLOT_RESOLUTION = 1000
+if 'PLOT_RESOLUTION' in brefito_config.keys():
+    PLOT_RESOLUTION = bool(brefito_config['PLOT_RESOLUTION'])
+
+PLOT_FORMAT = "PNG"
+if 'PLOT_FORMAT' in brefito_config.keys():
+    PLOT_FORMAT = bool(brefito_config['PLOT_FORMAT'])
+
+print("Using breseq bam2cov options, --tile-size {} --tile-overlap {} --resolution {} --format {}".format(TILE_SIZE, TILE_OVERLAP, PLOT_RESOLUTION, PLOT_FORMAT))
+print("You can set these using --config TILE_SIZE=<int> --config TILE_OVERLAP=<int> --config PLOT_RESOLUTION=<int> --config PLOT_FORMAT=<PDF/PNG>\n")
+
 rule all_coverage_plots_breseq:
     input:
         ["breseq-" + sample_info.get_reference_prefix() + "/cov/" + s + "/coverage.done" for s in sample_info.get_sample_list()]
@@ -23,7 +42,7 @@ rule coverage_plots_breseq:
     threads: 1
     shell:
         """
-        breseq bam2cov -o {output.dir} -x tiling_ -b {input.bam} -f {input.fasta} -a --tile-size 10000 --tile-overlap 2000 -p 1000 -j {input.breseq_summary_json} > {log} 2>&1
+        breseq bam2cov -o {output.dir} -x tiling_ -b {input.bam} -f {input.fasta} -a --format {PLOT_FORMAT} --tile-size {TILE_SIZE} --tile-overlap {TILE_OVERLAP} --resolution {PLOT_RESOLUTION} -j {input.breseq_summary_json} > {log} 2>&1
         breseq bam2cov -o {output.dir} -x summary_ -b {input.bam} -f {input.fasta} -a -j {input.breseq_summary_json} -p 10000 >> {log} 2>&1
         touch {output.done_file}
         """
