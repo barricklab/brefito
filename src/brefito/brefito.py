@@ -44,6 +44,7 @@ def main():
     parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
 
     #Snakemake passthroughs
+    parser.add_argument('--cores', type=int, default=0, help='--cores argument passed through to Snakemake (0 = all)') # 0 means "all"
     parser.add_argument('--config', action='append', default=[], help='--config argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--resources', action='append', default=[], help='--resources argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
@@ -220,7 +221,12 @@ def main():
 
 #### END TODELETE WHEN MIGRATION COMPLETE
 
-    snakemake_plus_common_options = ["snakemake", "--use-conda", "--cores", "all"]
+    snakemake_plus_common_options = ["snakemake", "--use-conda"]
+    if args.cores == 0:
+        snakemake_plus_common_options = ["--cores", "all"]
+    else:
+        snakemake_plus_common_options = ["--cores", str(args.cores)]
+
     if args.rerun_incomplete:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
     if args.unlock:
