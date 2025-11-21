@@ -223,9 +223,9 @@ def main():
 
     snakemake_plus_common_options = ["snakemake", "--use-conda"]
     if args.cores == 0:
-        snakemake_plus_common_options = ["--cores", "all"]
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", "all"]
     else:
-        snakemake_plus_common_options = ["--cores", str(args.cores)]
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", str(args.cores)]
 
     if args.rerun_incomplete:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
