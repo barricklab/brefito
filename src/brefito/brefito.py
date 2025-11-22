@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--config', action='append', default=[], help='--config argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--resources', action='append', default=[], help='--resources argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
+    parser.add_argument('--rerun-triggers', action='append', default=['code', 'input', 'params'], help='argument passed through to Snakemake.') 
     parser.add_argument('--unlock', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
@@ -226,6 +227,9 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", "all"]
     else:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", str(args.cores)]
+
+    for rt in args.rerun_triggers:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-triggers", rt]
 
     if args.rerun_incomplete:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
