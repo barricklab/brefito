@@ -114,7 +114,6 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
         shell_command = "rclone copyto --progress {}:{} {}".format(bookmark, remote_path, download_path)
         ## Move the temp download path to the final path
         shell_command = shell_command + " && mv " + download_path + " " + output_path
-        print(shell_command)
 
     elif method == 'ncbi':
         shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)
