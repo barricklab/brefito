@@ -20,6 +20,8 @@
 # by default - which has your password as plain text under ~/.local
 # if you provide a password
 
+DOWNLOAD_DATA_INCLUDED = 1
+
 try: sample_info
 except NameError:
     include: "load-sample-info.smk"

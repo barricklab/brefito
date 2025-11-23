@@ -2,8 +2,10 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-include: "download-data.smk"
-
+try: DOWNLOAD_DATA_INCLUDED
+except NameError: 
+    include: "download-data.smk"
+    
 NANOPORE_TRIMMING = "none"
 if 'NANOPORE_TRIMMING' in brefito_config.keys():
     NANOPORE_TRIMMING = bool(brefito_config['NANOPORE_TRIMMING'])

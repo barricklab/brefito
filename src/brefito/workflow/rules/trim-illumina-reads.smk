@@ -1,4 +1,10 @@
-include: "download-data.smk"
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
+
+try: DOWNLOAD_DATA_INCLUDED
+except NameError: 
+    include: "download-data.smk"
 
 READ_NUMS = ["1", "2"]
 
