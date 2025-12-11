@@ -12,25 +12,24 @@ print()
 SSR_MINIMUM_LENGTH = 6
 if 'SSR_MINIMUM_LENGTH' in brefito_config.keys():
     SSR_MINIMUM_LENGTH = brefito_config['SSR_MINIMUM_LENGTH'] 
-    print("  User set --minimum-length " + str(SSR_MINIMUM_LENGTH))
+    print("  User set --minimum-length to " + str(SSR_MINIMUM_LENGTH))
 else:
     print("  Using default --minimum-length " + str(SSR_MINIMUM_LENGTH))
     print("  (You can change this using --config SSR_MINIMUM_LENGTH=<int>")
 
 print()
+
 SSR_STRICT_MODE = True
 if 'SSR_STRICT_MODE' in brefito_config.keys():
-    SSR_STRICT_MODE = str2bool(brefito_config['SSR_STRICT_MODE'])
+    SSR_STRICT_MODE = str2bool(str(brefito_config['SSR_STRICT_MODE']))
+    print("  User set --strict mode to " + str(SSR_STRICT_MODE))
 else:
-    print("  Using default mode (no --strict mode option)")
-    print("  You can change this using --config SSR_STRICT_MODE=True")
+    print("  Using default --strict mode of True")
+    print("  You can change this using --config SSR_STRICT_MODE=False")
 
 SSR_STRICT_MODE_ARG = ""
 if (SSR_STRICT_MODE):
-    print("  User set --strict mode")
     SSR_STRICT_MODE_ARG= "--strict"
-else:
-    print("  User did not set --strict mode")
 
 print()
 
