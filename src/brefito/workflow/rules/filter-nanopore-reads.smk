@@ -5,11 +5,11 @@ except NameError:
 include: "trim-nanopore-reads.smk"
 
 do_filtering = True
-NANOPORE_FLTERING = "TRUE"
-if 'NANOPORE_FLTERING' in brefito_config.keys():
-    NANOPORE_FLTERING = brefito_config['NANOPORE_FLTERING']
+NANOPORE_FILTERING = "TRUE"
+if 'NANOPORE_FILTERING' in brefito_config.keys():
+    NANOPORE_FILTERING = brefito_config['NANOPORE_FILTERING']
 
-if NANOPORE_FLTERING.upper() == "NONE" or NANOPORE_FLTERING.upper() == "FALSE" or NANOPORE_FLTERING.upper() == "F" or NANOPORE_FLTERING == "0":
+if NANOPORE_FILTERING.upper() == "NONE" or NANOPORE_FILTERING.upper() == "FALSE" or NANOPORE_FILTERING.upper() == "F" or NANOPORE_FILTERING == "0":
     print("Nanopore reads are not filtered.")
     do_filtering = False
     ruleorder: filter_nanopore_reads_no_filter > filter_nanopore_reads
