@@ -21,7 +21,7 @@ if 'INDEX' in brefito_config.keys():
 
 # Can't index if we don't sort
 if SORT == 0:
-    print("Can't INDEX unsorted BAM files. Setting SORT to 0 (false).")
+    print("Can't INDEX unsorted BAM files. Setting INDEX to 0 (false).")
     INDEX=0
 
 #Note: It's too hard to make temp() work when sorting and merging are conditional, so we clean up all prior files within rules
