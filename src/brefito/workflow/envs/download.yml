@@ -6,7 +6,7 @@ dependencies:
   - lftp =4.9.2
   - rclone =1.71.2
   - wget =1.21.4
-  - ncbi-datasets-cli =16.15.0
-  - entrez-direct =21.6
-  - sra-tools =3.1.1
+  - ncbi-datasets-cli =18.13.0
+  - entrez-direct =24.0
+  - sra-tools =3.2.1
   - pigz =2.8

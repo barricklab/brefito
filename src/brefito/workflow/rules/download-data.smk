@@ -80,17 +80,22 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
                 bookmark = split_protocol[1]
             remote_path = split_remote_path[1]
 
-        # ncbi://accession
-        elif (split_protocol[0] == 'ncbi'):
-            method = 'ncbi'
+        # ncbi-genome://accession
+        elif (split_protocol[0] == 'ncbi-genome'):
+            method = 'ncbi-genome'
             remote_path = split_remote_path[1]
-        # ftp://server.com/path/to/file or https://server.com/path/to/file etc.
+
+        # ncbi-nucleotide://accession
+        elif (split_protocol[0] == 'ncbi-nucleotide') or (split_protocol[0] == 'ncbi-nt') or (split_protocol[0] == 'ncbi'):
+            method = 'ncbi-nucleotide'
+            remote_path = split_remote_path[1]
 
         # sra://SRRXXXX sra accession
         elif (split_protocol[0] == 'sra'):
             method = 'sratools'
             remote_path = split_remote_path[1]
 
+        # ftp://server.com/path/to/file or https://server.com/path/to/file etc.
         else:
             method = 'wget'
 
@@ -117,7 +122,17 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
         ## Move the temp download path to the final path
         shell_command = shell_command + " && mv " + download_path + " " + output_path
 
-    elif method == 'ncbi':
+    elif method=='ncbi-genome':
+        shell_command = "sleep 1; mkdir -p ncbi-download-{}".format(remote_path); 
+        shell_command = shell_command + "; datasets download genome accession {}  --assembly-source refseq --include gbff --filename ncbi-download-{}/genome.zip".format(remote_path, remote_path)
+        shell_command = shell_command + "; unzip ncbi-download-{}/genome.zip -d ncbi-download-{}".format(remote_path, remote_path); 
+        shell_command = shell_command + "; mv ncbi-download-{}/ncbi_dataset/data/{}/genomic.gbff {}".format(remote_path, remote_path, download_path)
+
+        ## Move the temp download path to the final path
+        shell_command = shell_command + "; mv {} {}".format(download_path, output_path)
+        shell_command = shell_command + "; rm -r ncbi-download-{}".format(remote_path)
+
+    elif method == 'ncbi-nucleotide':
         shell_command = "sleep 1; esearch -db nucleotide -query {} | efetch -format genbank > {}".format(remote_path, download_path)
         ## Move the temp download path to the final path
         shell_command = shell_command + " && mv " + download_path + " " + output_path
