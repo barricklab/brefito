@@ -517,10 +517,10 @@ class SampleInfo():
     def get_illumina_read_list(self, sample):
         return self.get_file_list(sample, "illumina-SE") + self.get_file_list(sample, "illumina-R1") + self.get_file_list(sample, "illumina-R2")
 
-    def get_illumina_SE_read_base_list(self, sample):
+    def get_illumina_SE_read_list(self, sample):
         return self.get_file_list(sample, "illumina-SE")
 
-    def get_illumina_SE_read_list(self, sample):
+    def get_illumina_SE_read_base_list(self, sample):
         return [os.path.split(i_se.replace(".SE.fastq.gz", ""))[1] for i_se in self.get_file_list(sample, "illumina-SE")]
 
     def get_illumina_SE_read_arguments(self, sample, argument_prefix=''):
