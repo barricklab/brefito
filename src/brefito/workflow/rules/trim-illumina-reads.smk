@@ -6,6 +6,19 @@ try: DOWNLOAD_DATA_INCLUDED
 except NameError: 
     include: "download-data.smk"
 
+FASTP_OPTIONS = ""
+if 'FASTP_OPTIONS' in brefito_config.keys():
+    FASTP_OPTIONS = brefito_config['FASTP_OPTIONS']
+
+FASTP_SE_OPTIONS = ""
+if 'FASTP_SE_OPTIONS' in brefito_config.keys():
+    FASTP_SE_OPTIONS = brefito_config['FASTP_SE_OPTIONS']
+
+FASTP_PE_OPTIONS = "--detect_adapter_for_pe"
+if 'FASTP_PE_OPTIONS' in brefito_config.keys():
+    print("NOTE: Default fastp PE --detect_adapter_for_pe option overwritten by user option.")
+    FASTP_PE_OPTIONS = brefito_config['FASTP_PE_OPTIONS'] 
+
 READ_NUMS = ["1", "2"]
 
 def all_trimmed_illumina_read_names():
@@ -32,7 +45,7 @@ rule trim_PE_illumina_reads_with_fastp:
     threads: 12
     shell:
         """
-        fastp --detect_adapter_for_pe -j {log.json} -h {log.html} --thread {threads} -i {input[0]} -I {input[1]} -o {output[0]} -O {output[1]} > {log.log} 2>&1
+        fastp {FASTP_OPTIONS} {FASTP_PE_OPTIONS} -j {log.json} -h {log.html} --thread {threads} -i {input[0]} -I {input[1]} -o {output[0]} -O {output[1]} > {log.log} 2>&1
         """
 
 rule trim_SE_illumina_reads_with_fastp:
@@ -49,5 +62,5 @@ rule trim_SE_illumina_reads_with_fastp:
     threads: 12
     shell:
         """
-        fastp -j {log.json} -h {log.html} --thread {threads} -i {input} -o {output} > {log.log} 2>&1
+        fastp {FASTP_OPTIONS} {FASTP_SE_OPTIONS} -j {log.json} -h {log.html} --thread {threads} -i {input} -o {output} > {log.log} 2>&1
         """
