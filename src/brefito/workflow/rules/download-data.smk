@@ -124,7 +124,7 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
 
     elif method=='ncbi-genome':
         shell_command = "sleep 1; mkdir -p ncbi-download-{}".format(remote_path); 
-        shell_command = shell_command + "; datasets download genome accession {}  --assembly-source refseq --include gbff --filename ncbi-download-{}/genome.zip".format(remote_path, remote_path)
+        shell_command = shell_command + "; datasets download genome accession {} --include gbff --filename ncbi-download-{}/genome.zip".format(remote_path, remote_path)
         shell_command = shell_command + "; unzip ncbi-download-{}/genome.zip -d ncbi-download-{}".format(remote_path, remote_path); 
         shell_command = shell_command + "; mv ncbi-download-{}/ncbi_dataset/data/{}/genomic.gbff {}".format(remote_path, remote_path, download_path)
 
