@@ -9,6 +9,9 @@ except NameError:
 include: "trim-illumina-reads.smk"
 include: "filter-nanopore-reads.smk"
 
+if 'UNICYCLER_THREADS' in brefito_config.keys():
+    UNICYCLER_THREADS = brefito_config['UNICYCLER_THREADS']
+
 rule subsample_nanopore_reads:
     input:
         "nanopore-reads0filtered/{sample}.fastq"
@@ -100,7 +103,7 @@ rule assemble_with_unicycler:
         long_read_args = lambda wildcards: get_long_read_args(wildcards)
     conda:
         "../envs/unicycler.yml"
-    threads: 3
+    threads: UNICYCLER_THREADS
     shell:
         """
         mkdir -p assemblies
