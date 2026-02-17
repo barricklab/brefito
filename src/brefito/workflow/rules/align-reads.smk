@@ -36,7 +36,7 @@ ruleorder: samtools_view > samtools_sort
 ## Change output files 
 if MERGE:
     if SORT:
-        ## Steps used: samtools_view_for_sort > samtools_sort_for_merge > samtools_merge
+        ## Steps used: samtools_view > samtools_sort > samtools_merge
 
         SAMTOOLS_VIEW_INPUT_SUFFIX  = ".sam"
         SAMTOOLS_VIEW_OUTPUT_SUFFIX = ".unmerged.unsorted.bam"
@@ -62,7 +62,7 @@ if MERGE:
 else: # Not merged
 
     if SORT:
-        ## Steps used: samtools_view_for_sort > samtools_sort
+        ## Steps used: samtools_view > samtools_sort
         SAMTOOLS_VIEW_INPUT_SUFFIX  = ".sam"
         SAMTOOLS_VIEW_OUTPUT_SUFFIX = ".unsorted.bam"
 
@@ -74,7 +74,6 @@ else: # Not merged
 
     else:
         ## Steps used: samtools_view
-        ruleorder: samtools_view > samtools_view_with_sort
 
         SAMTOOLS_VIEW_INPUT_SUFFIX  = ".sam"
         SAMTOOLS_VIEW_OUTPUT_SUFFIX = ".bam"
