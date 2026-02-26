@@ -42,6 +42,7 @@ def main():
 
     #An additional way to specify these
     parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
+    parser.add_argument('-d', '--data', help='path to CSV with sample and file information', default='data.csv')
 
     #Snakemake passthroughs
     parser.add_argument('--cores', type=int, default=0, help='--cores argument passed through to Snakemake (0 = all)') # 0 means "all"
@@ -50,6 +51,7 @@ def main():
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--rerun-triggers', action='append', default=['code', 'input', 'params'], help='argument passed through to Snakemake.') 
     parser.add_argument('--unlock', action='store_true', help='argument passed through to Snakemake') 
+    parser.add_argument('--pick-lock', action='store_true', help='run Snakemake --unlock and then immediately run Snakemake') 
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--dry-run', action='store_true', help='argument passed through to Snakemake')
@@ -69,6 +71,11 @@ def main():
     config_options_list = args.config
     resource_options_list = args.resources
     references_argument = args.references
+
+    data_file_name = args.data
+
+    if args.pick_lock and args.unlock:
+        print("Ignoring --unlock option because --pick-lock also provided.")
 
     # Is the workflow valid?
 
@@ -155,73 +162,6 @@ def main():
         print("  " + i)
 
 
-
-### BEGIN TODELETE WHEN MIGRATION COMPLETE
-
-    # What files are available?
-
-    def find_matching_input_files(in_base_path, in_file_ending):
-        existing_files=glob.glob(os.path.join(in_base_path, "*."+in_file_ending))
-        #print(os.path.join(base_path,"input", "*."+file_ending))
-        matching_input_files = {}
-        for this_input_file in existing_files:
-            this_file_name=os.path.basename(this_input_file)
-            #print(this_file_name)
-            short_name = re.findall(r'(.+)\.' + re.escape(in_file_ending), this_file_name)
-            matching_input_files[short_name[0]] = this_input_file
-
-        return(matching_input_files)
-
-    print()
-    print("Nanopore read files found (*.fastq.gz) in " + nanopore_input_path)
-    print()
-
-    input_nanopore_files = find_matching_input_files(nanopore_input_path, "fastq.gz")
-    for k in input_nanopore_files: print("    " + k)
-    if (len(input_nanopore_files.items()) == 0) : print("    " + "NONE FOUND")
-
-    print()
-    print("Paired-end Illumina read files found (*.R[1/2].gz) in " + illumina_input_path)
-    print()
-
-    input_illumina_1_files = find_matching_input_files(illumina_input_path, "R1.fastq.gz")
-    input_illumina_2_files = find_matching_input_files(illumina_input_path, "R2.fastq.gz")
-
-    for key in set( list(input_illumina_1_files.keys()) + list(input_illumina_2_files.keys()) ):
-        if key in input_illumina_1_files.keys(): print ("    " + str(key) + " : " + input_illumina_1_files[key])
-        if key in input_illumina_2_files.keys(): print ("    " + str(key) + " : " + input_illumina_2_files[key])
-
-        # if (workflow_to_run != "download-reads-lftp") and (workflow_to_run != "download-data-lftp"):
-        #     assert key in input_illumina_2_files.keys(), "Error: Matching R2 file does not exist"
-        #     assert key in input_illumina_1_files.keys(), "Error: Matching R1 file does not exist"                                   
-
-    if (len(input_illumina_1_files.items()) == 0) and (len(input_illumina_2_files.items()) == 0): 
-        print("    " + "NONE FOUND")
-
-    print()
-    print("Genome assembly files found (*.fasta) in " + assemblies_path)
-    print()
-    input_assembly_files = find_matching_input_files(assemblies_path, "fasta")
-    for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
-    if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
-
-    print()
-    print("Reference genome assembly files found (*.fasta) in " + reference_assemblies_path)
-    print()
-    input_reference_assembly_files = find_matching_input_files(reference_assemblies_path, "fasta")
-    for (k, v) in input_reference_assembly_files.items(): print("    " + k + " : " + v)
-    if (len(input_reference_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
-
-
-    print()
-    print("Sample genome assembly files found (*.fasta) in " + sample_assemblies_path)
-    print()
-    input_sample_assembly_files = find_matching_input_files(sample_assemblies_path, "fasta")
-    for (k, v) in input_sample_assembly_files.items(): print("    " + k + " : " + v)
-    if (len(input_sample_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
-
-#### END TODELETE WHEN MIGRATION COMPLETE
-
     snakemake_plus_common_options = ["snakemake", "--use-conda"]
     if args.cores == 0:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", "all"]
@@ -233,8 +173,6 @@ def main():
 
     if args.rerun_incomplete:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
-    if args.unlock:
-        snakemake_plus_common_options = snakemake_plus_common_options + ["--unlock"]
     if args.notemp:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--notemp"]
     if args.keep_going:
@@ -251,35 +189,18 @@ def main():
     # Set this globally, putting it first means it can be overridden
     resource_options_list = ["connections=1"] + resource_options_list
 
+    # Resurce so we can run just one of certain rules at a time
+    resource_options_list = ["singleton=1"] + resource_options_list
+
     if workflow_to_run == "check-soft-clipping":
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
 
     # If not specified at command line or in workflow, set to default        
     if references_argument == None:
-        references_argument = 'references';
+        references_argument = 'references'
 
 
     ## Commands that haven't yet been updated below --->
-
-    # When we normalize, we need to know it will work = the same number of contigs as reference
-    # normalize_assembly_files = {}
-    # if workflow_to_run == "normalize-genomes":
-    #     from Bio import SeqIO
-    #     assert input_main_reference_assembly_file != None, "Main reference assembly required for this command!" 
-    #     input_main_reference_seqs = []
-    #     for record in SeqIO.parse(input_main_reference_assembly_file, "fasta"):
-    #         input_main_reference_seqs.append({'id' : record.id, 'seq' : record.seq})
-    #     num_reference_contigs = len(input_main_reference_seqs)
-
-    #     for input_assembly_file_key in input_assembly_files.keys():
-    #         input_assembly_seqs = []
-    #         input_assembly_file = input_assembly_files[input_assembly_file_key]
-    #         for record in SeqIO.parse(input_assembly_file, "fasta"):
-    #             input_assembly_seqs.append({'id' : record.id, 'seq' : record.seq})
-    #         if len(input_assembly_seqs) == num_reference_contigs:
-    #             smk_targets.append("assemblies/{}.fasta.normalized".format(input_assembly_file_key))
-    #             normalize_assembly_files[input_assembly_file_key] = input_assembly_file
-    #     valid_command_found = True 
 
     if workflow_to_run == "compare-syri":
         for s in input_sample_assembly_files.keys():
@@ -339,6 +260,8 @@ def main():
     smk_file_path = os.path.join(rules_path, workflow_to_run + ".smk")
     target_options = ["-s", smk_file_path]
 
+    config_options_list.append("data_csv=" + data_file_name)
+
     config_options_list.append("references=" + references_argument)
 
     if samples_to_run != None and len(samples_to_run)>0:
@@ -371,9 +294,14 @@ def main():
     print()
     print("RUNNING SNAKEMAKE COMMAND")
     print()
-    print(" ".join(command))
 
-    subprocess.run(command)
+    if args.unlock or args.pick_lock:
+        print(" ".join(command + ["--unlock"]))
+        subprocess.run(command + ["--unlock"])
+
+    if not args.unlock:
+        print(" ".join(command))
+        subprocess.run(command)
 
     ## Cleanup
 
