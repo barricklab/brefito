@@ -8,8 +8,8 @@ except NameError:
     
 NANOPORE_TRIMMING = "none"
 if 'NANOPORE_TRIMMING' in brefito_config.keys():
-    NANOPORE_TRIMMING = bool(brefito_config['NANOPORE_TRIMMING'])
-
+    NANOPORE_TRIMMING = brefito_config['NANOPORE_TRIMMING']
+    
 if NANOPORE_TRIMMING.upper() == "NONE" or NANOPORE_TRIMMING.upper() == "FALSE" or NANOPORE_TRIMMING.upper() == "F" or NANOPORE_TRIMMING == "0":
     print("Nanopore reads are not trimmed.")
     ruleorder: trim_nanopore_reads_no_trim > trim_nanopore_reads_porechop_abi > trim_nanopore_reads_porechop
@@ -21,7 +21,7 @@ elif NANOPORE_TRIMMING.upper() == "PORECHOP":
     ruleorder: trim_nanopore_reads_porechop > trim_nanopore_reads_porechop_abi > trim_nanopore_reads_no_trim
 else:
     print("Unknown trimming method requested for --config NANOPORE_TRIMMING.")
-    print("Valid options are: 'none', 'porechop', 'porechop-ABI'.")
+    print("Valid options are: 'none' (default), 'porechop', 'porechop-ABI'.")
     exit(0)
 
 def get_all_trimmed_nanopore_read_names():

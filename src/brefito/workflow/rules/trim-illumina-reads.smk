@@ -6,6 +6,11 @@ try: DOWNLOAD_DATA_INCLUDED
 except NameError: 
     include: "download-data.smk"
 
+#supply 'none' to skip
+ILLUMINA_TRIMMING = "fastp"
+if 'ILLUMINA_TRIMMING' in brefito_config.keys():
+    ILLUMINA_TRIMMING = brefito_config['ILLUMINA_TRIMMING']
+
 FASTP_OPTIONS = ""
 if 'FASTP_OPTIONS' in brefito_config.keys():
     FASTP_OPTIONS = brefito_config['FASTP_OPTIONS']
@@ -20,6 +25,19 @@ if 'FASTP_PE_OPTIONS' in brefito_config.keys():
     FASTP_PE_OPTIONS = brefito_config['FASTP_PE_OPTIONS'] 
 
 READ_NUMS = ["1", "2"]
+
+if ILLUMINA_TRIMMING.upper()=="NONE":
+    print("Illumina reads are not trimmed.")
+    ruleorder: trim_illumina_reads_no_trim > trim_PE_illumina_reads_with_fastp
+    ruleorder: trim_illumina_reads_no_trim > trim_SE_illumina_reads_with_fastp
+elif ILLUMINA_TRIMMING.upper()=="FASTP":
+    print("fastp used for trimming illumina reads.")
+    ruleorder: trim_PE_illumina_reads_with_fastp > trim_illumina_reads_no_trim 
+    ruleorder: trim_SE_illumina_reads_with_fastp > trim_illumina_reads_no_trim
+else:
+    print("Unknown trimming method requested for --config ILLUMINA_TRIMMING.")
+    print("Valid options are: 'none', 'fastp' (default).")
+    exit(0)
 
 def all_trimmed_illumina_read_names():
     l = [] 
@@ -64,3 +82,12 @@ rule trim_SE_illumina_reads_with_fastp:
         """
         fastp {FASTP_OPTIONS} {FASTP_SE_OPTIONS} -j {log.json} -h {log.html} --thread {threads} -i {input} -o {output} > {log.log} 2>&1
         """
+
+rule trim_illumina_reads_no_trim:
+    input:
+        "illumina-reads/{sample}.fastq.gz"
+    output:
+        "illumina-reads-trimmed/{sample}.fastq.gz"
+    threads: 1
+    shell:
+        "ln -s ../{input} {output}"
