@@ -7,7 +7,7 @@ except NameError:
 include: "autocycler-subsample-nanopore-reads.smk"
 
 READ_SUBSET_IDS=["01","02","03","04"] # autocycler subsample creates 4 subsampled fastqs for a given fastq file
-ASSEMBLERS=["canu","flye","miniasm","necat","nextdenovo","raven"]
+ASSEMBLERS=["canu","flye","miniasm","necat","metamdbg","raven"]
 
 rule all_targets_autocycler:
     input:
@@ -30,7 +30,7 @@ rule canu_assemble:
         output_prefix="intermediate-assemblies/{dataset}/canu_assembly_{assembly_id}"
     shell:
         """
-        canu.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper canu --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
 rule flye_assemble:
@@ -49,7 +49,7 @@ rule flye_assemble:
         output_prefix="intermediate-assemblies/{dataset}/flye_assembly_{assembly_id}"
     shell:
         """
-        flye.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper flye --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
 rule miniasm_assemble:
@@ -68,7 +68,7 @@ rule miniasm_assemble:
         output_prefix="intermediate-assemblies/{dataset}/miniasm_assembly_{assembly_id}"
     shell:
         """
-        miniasm.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper miniasm --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
 rule necat_assemble:
@@ -87,10 +87,29 @@ rule necat_assemble:
         output_prefix="intermediate-assemblies/{dataset}/necat_assembly_{assembly_id}"
     shell:
         """
-        necat.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper necat --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
-rule nextdenovo_assemble:
+#rule nextdenovo_assemble:
+#    input:
+#        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+#    wildcard_constraints:
+#        assembly_id="|".join(READ_SUBSET_IDS)
+#    conda:
+#        "../envs/autocycler.yml"
+#    output:
+#        "intermediate-assemblies/{dataset}/nextdenovo_assembly_{assembly_id}.fasta"
+#    threads: 16
+#    log:
+#        "logs/{dataset}/nextdenovo_{assembly_id}.log"
+#    params:
+#        output_prefix="intermediate-assemblies/{dataset}/nextdenovo_assembly_{assembly_id}"
+#    shell:
+#        """
+#        autocycler helper nextdenovo --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+#        """
+
+rule metamdbg_assemble:
     input:
         "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     wildcard_constraints:
@@ -98,15 +117,15 @@ rule nextdenovo_assemble:
     conda:
         "../envs/autocycler.yml"
     output:
-        "intermediate-assemblies/{dataset}/nextdenovo_assembly_{assembly_id}.fasta"
+        "intermediate-assemblies/{dataset}/metamdbg_assembly_{assembly_id}.fasta"
     threads: 16
     log:
-        "logs/{dataset}/nextdenovo_{assembly_id}.log"
+        "logs/{dataset}/metamdbg_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/nextdenovo_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/metamdbg_assembly_{assembly_id}"
     shell:
         """
-        nextdenovo.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper metamdbg --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
 rule raven_assemble:
@@ -125,7 +144,7 @@ rule raven_assemble:
         output_prefix="intermediate-assemblies/{dataset}/raven_assembly_{assembly_id}"
     shell:
         """
-        raven.sh {input} {params} {threads} {config[genome_size]} > {log} 2>&1
+        autocycler helper raven --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
         """
 
 # compress all of the input assemblies (6 assemblers x 4 subsets each = 24 assemblies per sample) with autocycler
