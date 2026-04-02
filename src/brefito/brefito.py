@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
+import glob
+import os.path
+import argparse
+import re
+import subprocess
+
 def main():
-
-    import glob
-    import os.path
-    import argparse
-    import re
-    import subprocess
-
 
     # Where are the smk rules files?
     import brefito
@@ -184,6 +183,12 @@ def main():
     smk_targets = []
 
     if workflow_to_run in ["polish-breseq", "polish-polypolish", "polish-polca", "polish-medaka"]:
+        print()
+        print("Genome assembly files found (*.fasta) in " + assemblies_path)
+        print()
+        input_assembly_files = find_matching_input_files(assemblies_path, "fasta")
+        for (k, v) in input_assembly_files.items(): print("    " + k + " : " + v)
+        if (len(input_assembly_files.items()) == 0) : print("    " + "NONE FOUND")
         smk_targets = [ d + ".polished" for d in input_assembly_files.values() ]
 
     # Set this globally, putting it first means it can be overridden
@@ -358,6 +363,17 @@ def check_command_list_with_references(workflow_to_run, test_command_prefix_list
 
     return ( { 'matched' : False } )
 
+def find_matching_input_files(in_base_path, in_file_ending):
+    existing_files=glob.glob(os.path.join(in_base_path, "*."+in_file_ending))
+    #print(os.path.join(base_path,"input", "*."+file_ending))
+    matching_input_files = {}
+    for this_input_file in existing_files:
+        this_file_name=os.path.basename(this_input_file)
+        #print(this_file_name)
+        short_name = re.findall(r'(.+)\.' + re.escape(in_file_ending), this_file_name)
+        matching_input_files[short_name[0]] = this_input_file
+
+    return(matching_input_files)
 
 if __name__ == "__main__":
     main()
