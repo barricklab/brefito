@@ -17,7 +17,8 @@ if 'BRACKEN_READ_LENGTH' in brefito_config.keys():
     BRACKEN_READ_LENGTH = brefito_config['BRACKEN_READ_LENGTH']
 
 
-BRACKEN_OPTIONS = "-r 100 -l S"
+#Default -t, threshold option is 10, this makes it explicit
+BRACKEN_OPTIONS = "-r 100 -l S -t 10"
 BRACKEN_OPTIONS = "S"
 if 'BRACKEN_OPTIONS' in brefito_config.keys():
     BRACKEN_OPTIONS = brefito_config['BRACKEN_OPTIONS']
