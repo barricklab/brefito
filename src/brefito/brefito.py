@@ -197,7 +197,7 @@ def main():
     # Resurce so we can run just one of certain rules at a time
     resource_options_list = ["singleton=1"] + resource_options_list
 
-    if workflow_to_run == "check-soft-clipping":
+    if workflow_to_run in ["check-soft-clipping", "curate-ltee-clones"]:
         config_options_list.append("brefito_package_path=" + str(brefito_package_path))
 
     # If not specified at command line or in workflow, set to default        
