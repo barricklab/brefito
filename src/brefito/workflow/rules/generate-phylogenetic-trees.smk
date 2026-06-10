@@ -7,24 +7,41 @@ include: "predict-mutations-breseq.smk"
 import os.path
 from pathlib import Path
 
+# checking to see that we only have a single reference. Trees should not be made with different refs
+
+
+list_of_references = [
+    ref
+    for sample in sample_info.get_sample_list()
+    for ref in sample_info.get_reference_list(sample)
+]
+
+unique_references = set(list_of_references)
+
+if len(unique_references) == 0:
+    raise ValueError("No reference found. Specify reference in data.csv")
+
+if len(unique_references) > 1:
+    raise ValueError(f"Multiple references found: {list_of_references}. Please specifiy a single reference for all files")
+
 # Trees only make sense if all of the genome diffs have been generated relative to the same reference. Abort process if otherwise.
 if (sample_info.get_reference_prefix()  != "references"):
     raise ValueError(f"Phylogenetic trees can only be constructed with the same reference!")
 
-PHYLOGENY_REFERENCE=None
+#PHYLOGENY_REFERENCE=None
 
-if 'PHYLOGENY_REFERENCE' in brefito_config.keys(): # name of the reference file. Assuming it is in `references`
-    PHYLOGENY_REFERENCE = brefito_config['PHYLOGENY_REFERENCE']
+#if 'PHYLOGENY_REFERENCE' in brefito_config.keys(): # name of the reference file. Assuming it is in `references`
+#    PHYLOGENY_REFERENCE = brefito_config['PHYLOGENY_REFERENCE']
 
-if PHYLOGENY_REFERENCE is None:
-    raise ValueError("Please provide the config value for PHYLOGENY REFERENCE")
+#if PHYLOGENY_REFERENCE is None:
+#    raise ValueError("Please provide the config value for PHYLOGENY REFERENCE")
 
-if not (Path(f"references/{PHYLOGENY_REFERENCE}")).exists(): # check to see if the file exists
-    raise FileNotFoundError(f"File references/{PHYLOGENY_REFERENCE} does not exist.")
+#if not (Path(f"references/{PHYLOGENY_REFERENCE}")).exists(): # check to see if the file exists
+#    raise FileNotFoundError(f"File references/{PHYLOGENY_REFERENCE} does not exist.")
 
-PHYLOGENY_OPTIONS=""
-if 'PHYLOGENY_OPTIONS' in brefito_config.keys():
-    PHYLOGENY_OPTIONS = brefito_config['PHYLOGENY_OPTIONS']
+#PHYLOGENY_OPTIONS=""
+#if 'PHYLOGENY_OPTIONS' in brefito_config.keys():
+#    PHYLOGENY_OPTIONS = brefito_config['PHYLOGENY_OPTIONS']
 
 file_prefix = "phylogeny"
 
@@ -47,7 +64,7 @@ def get_tree_file_name_prefix(default_tree_file_name): # deciding on the name fo
 rule generate_phylogenetic_tree:
     input:
         gd = expand("breseq-" + sample_info.get_reference_prefix() + "/gd/{sample}.gd", sample=sample_info.get_sample_list()), # you can't use wildcards here but you can use this expand functionality
-        references = f"references/{PHYLOGENY_REFERENCE}"
+        references = list_of_references[0]
     output:
         tree_file = "breseq-" + sample_info.get_reference_prefix() + "/trees/" + get_tree_file_name_prefix(default_tree_file_name) + "/" + get_tree_file_name_prefix(default_tree_file_name) + ".tre"
     log:
