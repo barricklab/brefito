@@ -28,7 +28,7 @@ if 'PHYLOGENY_OPTIONS' in brefito_config.keys():
 
 file_prefix = "phylogeny"
 
-default_tree_file_name = "breseq-" + sample_info.get_reference_prefix() + f"/trees/{file_prefix}.tre" # default name for output
+default_tree_file_name = "breseq-" + sample_info.get_reference_prefix() + f"/trees/{file_prefix}/{file_prefix}.tre" # default name for output
 default_log_file_name = "logs/gdtools-" + sample_info.get_reference_prefix() + f"{file_prefix}.log" #default name for log files
 
 def get_tree_file_name_prefix(default_tree_file_name): # deciding on the name for the output to avoid overwriting the existing output
