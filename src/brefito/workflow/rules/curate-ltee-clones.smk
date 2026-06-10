@@ -45,38 +45,46 @@ rule all_curate_ltee_clones:
 
 rule download_LTEE_ref_gbk:
     output: REF_GBK
+    log:
+        "logs/download-LTEE-ref-gbk.log"
     conda: "../envs/download.yml"
     shell:
         """
-        mkdir -p {REF_DIR}
-        wget -q -O {output} "{_LTEE_REF_URL}/REL606.gbk"
+        mkdir -p {REF_DIR} > {log} 2>&1
+        wget -q -O {output} "{_LTEE_REF_URL}/REL606.gbk" >> {log} 2>&1
         """
 
 rule download_LTEE_mask_gd:
     output: REF_DIR + "/REL606.L20.G15.P0.M35.mask.gd"
+    log:
+        "logs/download-LTEE-mask-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
-        mkdir -p {REF_DIR}
-        wget -q -O {output} "{_LTEE_REF_URL}/REL606.L20.G15.P0.M35.mask.gd"
+        mkdir -p {REF_DIR} > {log} 2>&1
+        wget -q -O {output} "{_LTEE_REF_URL}/REL606.L20.G15.P0.M35.mask.gd" >> {log} 2>&1
         """
 
 rule download_LTEE_prophage_gd:
     output: PROPHAGE_GD
+    log:
+        "logs/download-LTEE-prophage-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
-        mkdir -p {REF_DIR}
-        wget -q -O {output} "{_LTEE_REF_URL}/prophage-amplifications.gd"
+        mkdir -p {REF_DIR} > {log} 2>&1
+        wget -q -O {output} "{_LTEE_REF_URL}/prophage-amplifications.gd" >> {log} 2>&1
         """
 
 rule download_LTEE_empty_mask_gd:
     output: REF_DIR + "/empty.mask.gd"
+    log:
+        "logs/download-LTEE-empty-mask-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
-        mkdir -p {REF_DIR}
-        wget -q -O {output} "{_LTEE_REF_URL}/empty.mask.gd"
+        mkdir -p {REF_DIR} > {log} 2>&1
+        wget -q -O {output} "{_LTEE_REF_URL}/empty.mask.gd" >> {log} 2>&1
         """
 
 
@@ -87,11 +95,13 @@ rule create_LTEE_header:
         gd = ancient("01_breseq_initial_gd/{sample}.gd")
     output:
         "00_header/{sample}.gd"
+    log:
+        "logs/create-LTEE-header-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd}
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp
+        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
+        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
         rm {output}.tmp
         """
 
@@ -100,11 +110,13 @@ rule create_LTEE_curate_add:
         gd = ancient("01_breseq_initial_gd/{sample}.gd")
     output:
         "02_curate_add/{sample}.gd"
+    log:
+        "logs/create-LTEE-curate-add-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd}
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp
+        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
+        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
         rm {output}.tmp
         """
 
@@ -113,11 +125,13 @@ rule create_LTEE_curate_remove:
         gd = ancient("01_breseq_initial_gd/{sample}.gd")
     output:
         "02_curate_remove/{sample}.gd"
+    log:
+        "logs/create-LTEE-curate-remove-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd}
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp
+        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
+        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
         rm {output}.tmp
         """
 
