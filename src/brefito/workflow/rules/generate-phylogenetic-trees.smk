@@ -48,17 +48,32 @@ file_prefix = "phylogeny"
 default_tree_file_name = "breseq-" + sample_info.get_reference_prefix() + f"/trees/{file_prefix}/{file_prefix}.tre" # default name for output
 default_log_file_name = "logs/gdtools-" + sample_info.get_reference_prefix() + f"{file_prefix}.log" #default name for log files
 
-def get_tree_file_name_prefix(default_tree_file_name): # deciding on the name for the output to avoid overwriting the existing output
+def get_tree_file_name_prefix(default_tree_file_name):
+
+# Thanks Chat for the function
+
     path = Path(default_tree_file_name)
 
+    stem = path.stem                  # "phylogeny"
+    suffix = path.suffix              # ".tre"
+    base_dir = path.parent.parent     # ".../trees"
+
+    # If default doesn't exist, use it
     if not path.exists():
-        return file_prefix
+        print(f"Using default output: {path}")
+        return stem
 
     i = 1
     while True:
-        candidate = path.with_name(f"{path.stem}_{i}{path.suffix}")
-        if not candidate.exists():
-            return f"{file_prefix}_1"
+        new_prefix = f"{stem}_{i}"
+
+        candidate_dir = base_dir / new_prefix
+        candidate_file = candidate_dir / f"{new_prefix}{suffix}"
+
+        if not candidate_file.exists():
+            print(f"Using new output: {candidate_file}")
+            return new_prefix
+
         i += 1
 
 rule generate_phylogenetic_tree:
