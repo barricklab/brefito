@@ -7,8 +7,8 @@ brefito_config = {key.upper(): value for key, value in config.items()}
 BREFITO_PACKAGE_PATH = brefito_config.get("BREFITO_PACKAGE_PATH", "")
 TREE_UTILS = BREFITO_PACKAGE_PATH + "/workflow/scripts/tree_utils.pl"
 
-# Detect samples from 01_breseq_initial_gd directory
-_initial_gd_dir = "01_breseq_initial_gd"
+# Detect samples from gd directory
+_initial_gd_dir = "gd"
 samples = sorted([os.path.splitext(os.path.basename(f))[0]
                   for f in glob.glob(_initial_gd_dir + "/*.gd")])
 
@@ -61,12 +61,12 @@ _all_targets = []
 if samples:
     _all_targets += expand("04_final_normalized_gd/{sample}.gd", sample=samples)
     _all_targets += expand("mutated_genomes/{sample}.gff", sample=samples)
-    _all_targets += ["compare_normalized.html", "initial.count.csv", "final.count.csv"]
+    _all_targets += ["output/compare_normalized.html", "output/count.initial.csv", "output/count.final.csv"]
     _all_targets += expand("05_normalized_masked_gd/{sample}.gd", sample=samples)
     _all_targets += expand("06_normalized_masked_no_IS_adjacent_gd/{sample}.gd", sample=samples)
-    _all_targets += ["compare_normalized_masked.html", "final_masked.count.csv"]
+    _all_targets += ["output/compare_normalized_masked.html", "output/count.final_masked.csv"]
     if ancestor_files:
-        _all_targets += ["07_phylogeny/tree.rerooted.rescaled.tre"]
+        _all_targets += ["output/final.tre"]
 
 
 rule all_curate_ltee_clones:
@@ -136,7 +136,7 @@ if _ANCESTOR_DOWNLOAD_FILE:
 
 rule create_LTEE_header:
     input:
-        gd = ancient("01_breseq_initial_gd/{sample}.gd")
+        gd = ancient("gd/{sample}.gd")
     output:
         "00_header/{sample}.gd"
     log:
@@ -151,9 +151,9 @@ rule create_LTEE_header:
 
 rule create_LTEE_curate_add:
     input:
-        gd = ancient("01_breseq_initial_gd/{sample}.gd")
+        gd = ancient("gd/{sample}.gd")
     output:
-        "02_curate_add/{sample}.gd"
+        "01_curate_add/{sample}.gd"
     log:
         "logs/create-LTEE-curate-add-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -166,7 +166,7 @@ rule create_LTEE_curate_add:
 
 rule create_LTEE_curate_remove:
     input:
-        gd = ancient("01_breseq_initial_gd/{sample}.gd")
+        gd = ancient("gd/{sample}.gd")
     output:
         "02_curate_remove/{sample}.gd"
     log:
@@ -184,9 +184,9 @@ rule create_LTEE_curate_remove:
 
 rule curate_LTEE_gd:
     input:
-        initial    = "01_breseq_initial_gd/{sample}.gd",
+        initial    = "gd/{sample}.gd",
         subtracts  = "02_curate_remove/{sample}.gd",
-        add        = "02_curate_add/{sample}.gd",
+        add        = "01_curate_add/{sample}.gd",
         header     = "00_header/{sample}.gd",
         reference  = REF_GBK
     output:
@@ -272,7 +272,7 @@ rule compare_LTEE_normalized:
         gd_files  = expand("04_final_normalized_gd/{sample}.gd", sample=samples),
         reference = REF_GBK
     output:
-        "compare_normalized.html"
+        "output/compare_normalized.html"
     log:
         "logs/compare-LTEE-normalized.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -286,7 +286,7 @@ rule compare_LTEE_normalized_masked:
         gd_files  = expand("05_normalized_masked_gd/{sample}.gd", sample=samples),
         reference = REF_GBK
     output:
-        "compare_normalized_masked.html"
+        "output/compare_normalized_masked.html"
     log:
         "logs/compare-LTEE-normalized-masked.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -297,10 +297,10 @@ rule compare_LTEE_normalized_masked:
 
 rule count_LTEE_initial:
     input:
-        gd_files  = expand("01_breseq_initial_gd/{sample}.gd", sample=samples),
+        gd_files  = expand("gd/{sample}.gd", sample=samples),
         reference = REF_GBK
     output:
-        "initial.count.csv"
+        "output/count.initial.csv"
     log:
         "logs/count-LTEE-initial.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -314,7 +314,7 @@ rule count_LTEE_final:
         gd_files  = expand("04_final_normalized_gd/{sample}.gd", sample=samples),
         reference = REF_GBK
     output:
-        "final.count.csv"
+        "output/count.final.csv"
     log:
         "logs/count-LTEE-final.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -328,7 +328,7 @@ rule count_LTEE_final_masked:
         gd_files  = expand("05_normalized_masked_gd/{sample}.gd", sample=samples),
         reference = REF_GBK
     output:
-        "final_masked.count.csv"
+        "output/count.final_masked.csv"
     log:
         "logs/count-LTEE-final-masked.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -348,7 +348,8 @@ rule LTEE_phylogeny:
         sample_key   = "07_phylogeny/tree.sample.key.txt",
         mutation_key = "07_phylogeny/tree.mutation.key.txt",
         rerooted     = "07_phylogeny/tree.rerooted.tre",
-        rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre"
+        rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre",
+        final        = "output/final.tre"
     log:
         "logs/LTEE-phylogeny.log"
     conda: "../envs/breseq_LTEE.yml"
@@ -360,4 +361,5 @@ rule LTEE_phylogeny:
         perl {TREE_UTILS} SCALE-PHYLIP  -i {output.rerooted} -o {output.rescaled} -p {output.genotypes} >> {log} 2>&1
         mkdir -p 07_phylogeny/discrepancies
         perl {TREE_UTILS} DISCREPANCIES -i {output.rerooted} -p 07_phylogeny/tree -o 07_phylogeny/discrepancies/tree >> {log} 2>&1
+        cp {output.rescaled} {output.final} >> {log} 2>&1
         """
