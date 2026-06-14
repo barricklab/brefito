@@ -50,6 +50,6 @@ rule summarize_soft_clipping:
     threads: 1
     shell:
         """
-        Rscript {BREFITO_PACKAGE_PATH}/summarize_soft_clipping.R -i {input.csv} -p {output.plot} -o {output.summary} > {log} 2>&1
+        Rscript {BREFITO_PACKAGE_PATH}/workflow/scripts/summarize_soft_clipping.R -i {input.csv} -p {output.plot} -o {output.summary} > {log} 2>&1
         """
 

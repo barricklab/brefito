@@ -13,14 +13,14 @@ where = ["src"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["*.smk", "*.yml"]
+"*" = ["*.smk", "*.yml", "*.pl", "*.R"]
 
 [project.scripts]
 brefito = "brefito.brefito:main"
-normalize_assembly = "brefito.normalize_assembly:main"
-canu_trim = "brefito.canu_trim:main"
-extract_mobile_elements = "brefito.extract_mobile_elements:main"
-fastq_folder_to_data_csv = "brefito.fastq_folder_to_data_csv:main"
+normalize_assembly = "brefito.workflow.scripts.normalize_assembly:main"
+canu_trim = "brefito.workflow.scripts.canu_trim:main"
+extract_mobile_elements = "brefito.workflow.scripts.extract_mobile_elements:main"
+fastq_folder_to_data_csv = "brefito.workflow.scripts.fastq_folder_to_data_csv:main"
 
 
 
