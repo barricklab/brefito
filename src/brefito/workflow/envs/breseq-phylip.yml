@@ -1,0 +1,8 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - breseq =0.40.1
+  - phylip =3.697
+name: breseq-phylip
