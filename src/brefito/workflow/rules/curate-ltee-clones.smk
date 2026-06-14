@@ -1,5 +1,7 @@
 import glob
 import os
+import re
+import sys
 
 brefito_config = {key.upper(): value for key, value in config.items()}
 BREFITO_PACKAGE_PATH = brefito_config.get("BREFITO_PACKAGE_PATH", "")
@@ -12,6 +14,37 @@ samples = sorted([os.path.splitext(os.path.basename(f))[0]
 
 # Ancestor GD files in working directory (e.g. Anc-_0gen_REL606.gd)
 ancestor_files = sorted(glob.glob("Anc*.gd"))
+
+# If no ancestor GD file is present, try to determine which one to download
+# automatically from the barricklab/LTEE-Ecoli repository based on the name
+# of the directory brefito is being run in.
+_LTEE_ANCESTOR_BASE_URL = "https://raw.githubusercontent.com/barricklab/LTEE-Ecoli/master"
+_ANCESTOR_DOWNLOAD_FILE = None
+_ANCESTOR_DOWNLOAD_URL = None
+
+if samples and not ancestor_files:
+    _cwd_name = os.path.basename(os.getcwd())
+    if re.search(r"(Ara-|A-)\d+", _cwd_name):
+        _ANCESTOR_DOWNLOAD_FILE = "Anc-_0gen_REL606.gd"
+        _ANCESTOR_DOWNLOAD_URL = _LTEE_ANCESTOR_BASE_URL + "/LTEE-clone-curated/" + _ANCESTOR_DOWNLOAD_FILE
+    elif re.search(r"(Ara\+|A\+)\d+", _cwd_name):
+        _ANCESTOR_DOWNLOAD_FILE = "Anc+_0gen_REL607.gd"
+        _ANCESTOR_DOWNLOAD_URL = _LTEE_ANCESTOR_BASE_URL + "/LTEE-clone-curated/" + _ANCESTOR_DOWNLOAD_FILE
+    elif re.search(r"MAE|MA", _cwd_name):
+        _ANCESTOR_DOWNLOAD_FILE = "Anc+_REL1207.gd"
+        _ANCESTOR_DOWNLOAD_URL = _LTEE_ANCESTOR_BASE_URL + "/MAE-clone-curated/" + _ANCESTOR_DOWNLOAD_FILE
+    else:
+        sys.stderr.write(
+            "Error: No Anc*.gd ancestor genome diff file was found in this directory, "
+            "and the directory name '" + _cwd_name + "' does not match a recognized "
+            "LTEE naming convention (Ara-#, A-#, Ara+#, A+#, MA, MAE), so an ancestor "
+            "genome diff cannot be downloaded automatically.\n"
+            "Please place the appropriate ancestor Anc*.gd file in this directory "
+            "before running curate-LTEE-clone.\n"
+        )
+        sys.exit(1)
+
+    ancestor_files = [_ANCESTOR_DOWNLOAD_FILE]
 
 # Reference and mask paths
 REF_DIR = "references"
@@ -86,6 +119,17 @@ rule download_LTEE_empty_mask_gd:
         mkdir -p {REF_DIR} > {log} 2>&1
         wget -q -O {output} "{_LTEE_REF_URL}/empty.mask.gd" >> {log} 2>&1
         """
+
+if _ANCESTOR_DOWNLOAD_FILE:
+    rule download_LTEE_ancestor_gd:
+        output: _ANCESTOR_DOWNLOAD_FILE
+        log:
+            "logs/download-LTEE-ancestor-gd.log"
+        conda: "../envs/download.yml"
+        shell:
+            """
+            wget -q -O {output} "{_ANCESTOR_DOWNLOAD_URL}" > {log} 2>&1
+            """
 
 
 # ── Stub creation (ancient() ensures existing files are never overwritten) ───
