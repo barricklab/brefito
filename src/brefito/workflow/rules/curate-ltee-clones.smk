@@ -60,7 +60,7 @@ _LTEE_REF_URL = "https://raw.githubusercontent.com/barricklab/LTEE-Ecoli/master/
 _all_targets = []
 if samples:
     _all_targets += expand("04_final_normalized_gd/{sample}.gd", sample=samples)
-    _all_targets += expand("mutated_genomes/{sample}.gff", sample=samples)
+    _all_targets += expand("mutants/{sample}.gff", sample=samples)
     _all_targets += ["output/compare_normalized.html", "output/count.initial.csv", "output/count.final.csv"]
     _all_targets += expand("05_normalized_masked_gd/{sample}.gd", sample=samples)
     _all_targets += expand("06_normalized_masked_no_IS_adjacent_gd/{sample}.gd", sample=samples)
@@ -79,7 +79,7 @@ rule all_curate_ltee_clones:
 rule download_LTEE_ref_gbk:
     output: REF_GBK
     log:
-        "logs/download-LTEE-ref-gbk.log"
+        "logs/download/LTEE-ref-gbk.log"
     conda: "../envs/download.yml"
     shell:
         """
@@ -90,7 +90,7 @@ rule download_LTEE_ref_gbk:
 rule download_LTEE_mask_gd:
     output: REF_DIR + "/REL606.L20.G15.P0.M35.mask.gd"
     log:
-        "logs/download-LTEE-mask-gd.log"
+        "logs/download/LTEE-mask-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
@@ -101,7 +101,7 @@ rule download_LTEE_mask_gd:
 rule download_LTEE_prophage_gd:
     output: PROPHAGE_GD
     log:
-        "logs/download-LTEE-prophage-gd.log"
+        "logs/download/LTEE-prophage-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
@@ -112,7 +112,7 @@ rule download_LTEE_prophage_gd:
 rule download_LTEE_empty_mask_gd:
     output: REF_DIR + "/empty.mask.gd"
     log:
-        "logs/download-LTEE-empty-mask-gd.log"
+        "logs/download/LTEE-empty-mask-gd.log"
     conda: "../envs/download.yml"
     shell:
         """
@@ -124,7 +124,7 @@ if _ANCESTOR_DOWNLOAD_FILE:
     rule download_LTEE_ancestor_gd:
         output: _ANCESTOR_DOWNLOAD_FILE
         log:
-            "logs/download-LTEE-ancestor-gd.log"
+            "logs/download/LTEE-ancestor-gd.log"
         conda: "../envs/download.yml"
         shell:
             """
@@ -140,7 +140,7 @@ rule create_LTEE_header:
     output:
         "00_header/{sample}.gd"
     log:
-        "logs/create-LTEE-header-{sample}.log"
+        "logs/curate/create-LTEE-header-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -155,7 +155,7 @@ rule create_LTEE_curate_add:
     output:
         "01_curate_add/{sample}.gd"
     log:
-        "logs/create-LTEE-curate-add-{sample}.log"
+        "logs/curate/create-LTEE-curate-add-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -170,7 +170,7 @@ rule create_LTEE_curate_remove:
     output:
         "02_curate_remove/{sample}.gd"
     log:
-        "logs/create-LTEE-curate-remove-{sample}.log"
+        "logs/curate/create-LTEE-curate-remove-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -192,7 +192,7 @@ rule curate_LTEE_gd:
     output:
         "03_curated/{sample}.gd"
     log:
-        "logs/curate-LTEE-clones-{sample}.log"
+        "logs/curate/curate-LTEE-clones-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -210,7 +210,7 @@ rule normalize_LTEE_gd:
     output:
         "04_final_normalized_gd/{sample}.gd"
     log:
-        "logs/normalize-LTEE-clones-{sample}.log"
+        "logs/curate/normalize-LTEE-clones-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -227,7 +227,7 @@ rule mask_LTEE_gd:
     output:
         "05_normalized_masked_gd/{sample}.gd"
     log:
-        "logs/mask-LTEE-clones-{sample}.log"
+        "logs/curate/mask-LTEE-clones-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -243,7 +243,7 @@ rule no_is_adjacent_LTEE_gd:
     output:
         "06_normalized_masked_no_IS_adjacent_gd/{sample}.gd"
     log:
-        "logs/no-is-adjacent-LTEE-clones-{sample}.log"
+        "logs/curate/no-is-adjacent-LTEE-clones-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -255,9 +255,9 @@ rule apply_LTEE_mutations:
         gd        = "04_final_normalized_gd/{sample}.gd",
         reference = REF_GBK
     output:
-        "mutated_genomes/{sample}.gff"
+        "mutants/{sample}.gff"
     log:
-        "logs/apply-LTEE-mutations-{sample}.log"
+        "logs/curate/apply-LTEE-mutations-{sample}.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -274,7 +274,7 @@ rule compare_LTEE_normalized:
     output:
         "output/compare_normalized.html"
     log:
-        "logs/compare-LTEE-normalized.log"
+        "logs/curate/compare-LTEE-normalized.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -288,7 +288,7 @@ rule compare_LTEE_normalized_masked:
     output:
         "output/compare_normalized_masked.html"
     log:
-        "logs/compare-LTEE-normalized-masked.log"
+        "logs/curate/compare-LTEE-normalized-masked.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -302,7 +302,7 @@ rule count_LTEE_initial:
     output:
         "output/count.initial.csv"
     log:
-        "logs/count-LTEE-initial.log"
+        "logs/curate/count-LTEE-initial.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -316,7 +316,7 @@ rule count_LTEE_final:
     output:
         "output/count.final.csv"
     log:
-        "logs/count-LTEE-final.log"
+        "logs/curate/count-LTEE-final.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -330,7 +330,7 @@ rule count_LTEE_final_masked:
     output:
         "output/count.final_masked.csv"
     log:
-        "logs/count-LTEE-final-masked.log"
+        "logs/curate/count-LTEE-final-masked.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
@@ -351,7 +351,7 @@ rule LTEE_phylogeny:
         rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre",
         final        = "output/final.tre"
     log:
-        "logs/LTEE-phylogeny.log"
+        "logs/curate/LTEE-phylogeny.log"
     conda: "../envs/breseq_LTEE.yml"
     shell:
         """
