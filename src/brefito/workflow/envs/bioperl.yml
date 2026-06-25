@@ -1,9 +1,7 @@
-name: breseq_LTEE
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - breseq =0.40.1
-  - phylip =3.697
   - perl-bioperl-core =1.7.8
+name: bioperl
