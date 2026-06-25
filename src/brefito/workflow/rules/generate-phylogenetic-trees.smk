@@ -85,7 +85,7 @@ rule generate_phylogenetic_tree:
     log:
         "logs/gdtools-" + sample_info.get_reference_prefix() + "-" + get_tree_file_name_prefix(default_tree_file_name) + ".log"
     conda:
-        "../envs/breseq-phylip.yml"
+        "../envs/breseq.yml"
     params:
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
         prefix = get_tree_file_name_prefix(default_tree_file_name),
