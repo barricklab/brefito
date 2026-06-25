@@ -56,7 +56,7 @@ rule predict_mutations_minimap2_breseq:
     log: 
         "logs/minimap2-breseq-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         gd_dir = directory("minimap2-breseq-" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),

@@ -290,7 +290,7 @@ rule copy_convert_references:
     params:
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample)
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     shell:
         """
         breseq CONVERT-REFERENCE -o {output.fasta} -f FASTA {params.reference_arguments} > {log} 2>&1

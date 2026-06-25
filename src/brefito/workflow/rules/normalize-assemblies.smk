@@ -52,7 +52,7 @@ rule create_merged_reference_fasta:
     params:
         reference_path = "normalize-merged-references"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     shell:
         """
         mkdir -p {params.reference_path}

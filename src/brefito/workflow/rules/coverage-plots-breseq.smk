@@ -38,7 +38,7 @@ rule coverage_plots_breseq:
     log:
         "logs/coverage-plots-breseq-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

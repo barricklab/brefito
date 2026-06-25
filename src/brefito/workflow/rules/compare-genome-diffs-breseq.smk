@@ -57,7 +57,7 @@ rule compare_mutations_breseq:
     log: 
         "logs/compare-{output_name}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         reference_arguments = lambda wildcards: ["-r " + r for r in get_reference_files_list_from_output_name(wildcards.output_name)]
     threads: 1

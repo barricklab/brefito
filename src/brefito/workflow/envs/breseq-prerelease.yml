@@ -1,0 +1,8 @@
+channels:
+  - https://barricklab.github.io/conda/
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - breseq-prerelease
+name: breseq-prerelease

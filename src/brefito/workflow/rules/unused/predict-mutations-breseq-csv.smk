@@ -28,7 +28,7 @@ REFERENCE_ARGUMENT = ' '.join(REFERENCE_FILES)
 #     log: 
 #         "logs/breseq_nanopore_reads_{sample}.log"
 #     conda:
-#         "../envs/breseq.yml"
+#         BRESEQ_ENV
 #     threads: 8
 #     shell:
 #         """
@@ -82,7 +82,7 @@ rule predict_mutations_with_breseq:
     log: 
         "logs/evaluate_breseq_{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         automatic_breseq_args=lambda wildcards: get_breseq_args(wildcards.sample),
         reference_args=lambda wildcards: get_reference_args(wildcards.sample)

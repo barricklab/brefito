@@ -31,7 +31,7 @@ rule mutate_genomes_gdtools:
     log:
         "logs/mutate-genomes-gdtools-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r '),
         output_format = OUTPUT_FORMAT

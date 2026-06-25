@@ -668,6 +668,8 @@ class SampleInfo():
 #### Initialize from config values
 brefito_config = {key.upper(): value for key, value in config.items()}
 
+BRESEQ_ENV = "../envs/breseq-prerelease.yml" if brefito_config.get("BRESEQ_PRERELEASE") else "../envs/breseq.yml"
+
 data_csv_name = 'data.csv'
 if "data_csv" in config:
     data_csv_name = config["data_csv"]

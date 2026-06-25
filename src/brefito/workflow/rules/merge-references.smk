@@ -22,7 +22,7 @@ rule merge_references:
     log:
         "logs/merge-references-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         output_path = "merged-" + sample_info.get_reference_prefix()
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample)

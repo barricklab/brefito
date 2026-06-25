@@ -22,7 +22,7 @@ rule convert_references:
     params:
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample),
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     shell:
         """
         breseq CONVERT-REFERENCE -o {output.fasta} -f FASTA {params.reference_arguments} > {log} 2>&1
@@ -74,7 +74,7 @@ rule combine_annotation_with_breseq:
     log:
         "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-combine-annotation-with-breseq.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     shell:
         """
         breseq CONVERT-REFERENCE -f GENBANK -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
