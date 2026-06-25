@@ -141,7 +141,7 @@ rule create_LTEE_header:
         "00_header/{sample}.gd"
     log:
         "logs/curate/create-LTEE-header-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
@@ -156,7 +156,7 @@ rule create_LTEE_curate_add:
         "01_curate_add/{sample}.gd"
     log:
         "logs/curate/create-LTEE-curate-add-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
@@ -171,7 +171,7 @@ rule create_LTEE_curate_remove:
         "02_curate_remove/{sample}.gd"
     log:
         "logs/curate/create-LTEE-curate-remove-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
@@ -193,7 +193,7 @@ rule curate_LTEE_gd:
         "03_curated/{sample}.gd"
     log:
         "logs/curate/curate-LTEE-clones-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools VALIDATE -r {input.reference} {input.initial} {input.add} {input.subtracts} {input.header} > {log} 2>&1
@@ -211,7 +211,7 @@ rule normalize_LTEE_gd:
         "04_final_normalized_gd/{sample}.gd"
     log:
         "logs/curate/normalize-LTEE-clones-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools NORMALIZE -a -r {input.reference} -o {output} {input.gd} > {log} 2>&1
@@ -228,7 +228,7 @@ rule mask_LTEE_gd:
         "05_normalized_masked_gd/{sample}.gd"
     log:
         "logs/curate/mask-LTEE-clones-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools REMOVE   -c type==CON -o {output}.tmp1 {input.gd} > {log} 2>&1
@@ -244,7 +244,7 @@ rule no_is_adjacent_LTEE_gd:
         "06_normalized_masked_no_IS_adjacent_gd/{sample}.gd"
     log:
         "logs/curate/no-is-adjacent-LTEE-clones-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools REMOVE -e -c TYPE!=UN -c adjacent!=UNDEFINED -o {output} {input} > {log} 2>&1
@@ -258,7 +258,7 @@ rule apply_LTEE_mutations:
         "mutants/{sample}.gff"
     log:
         "logs/curate/apply-LTEE-mutations-{sample}.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools APPLY -r {input.reference} -f GFF3 -o {output} {input.gd} > {log} 2>&1
@@ -275,7 +275,7 @@ rule compare_LTEE_normalized:
         "output/compare_normalized.html"
     log:
         "logs/curate/compare-LTEE-normalized.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools COMPARE -p -r {input.reference} -o {output} {input.gd_files} > {log} 2>&1
@@ -289,7 +289,7 @@ rule compare_LTEE_normalized_masked:
         "output/compare_normalized_masked.html"
     log:
         "logs/curate/compare-LTEE-normalized-masked.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools COMPARE -p -r {input.reference} -o {output} {input.gd_files} > {log} 2>&1
@@ -303,7 +303,7 @@ rule count_LTEE_initial:
         "output/count.initial.csv"
     log:
         "logs/curate/count-LTEE-initial.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools COUNT -o {output} -r {input.reference} {input.gd_files} > {log} 2>&1
@@ -317,7 +317,7 @@ rule count_LTEE_final:
         "output/count.final.csv"
     log:
         "logs/curate/count-LTEE-final.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools COUNT -o {output} -r {input.reference} {input.gd_files} > {log} 2>&1
@@ -331,13 +331,13 @@ rule count_LTEE_final_masked:
         "output/count.final_masked.csv"
     log:
         "logs/curate/count-LTEE-final-masked.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         gdtools COUNT -o {output} -r {input.reference} {input.gd_files} > {log} 2>&1
         """
 
-rule LTEE_phylogeny:
+rule LTEE_phylogeny_tree:
     input:
         sample_gds   = expand("05_normalized_masked_gd/{sample}.gd", sample=samples),
         ancestor_gds = ancestor_files,
@@ -346,19 +346,32 @@ rule LTEE_phylogeny:
         tre          = "07_phylogeny/tree.tre",
         genotypes    = "07_phylogeny/tree.genotypes.txt",
         sample_key   = "07_phylogeny/tree.sample.key.txt",
-        mutation_key = "07_phylogeny/tree.mutation.key.txt",
-        rerooted     = "07_phylogeny/tree.rerooted.tre",
-        rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre",
-        final        = "output/final.tre"
+        mutation_key = "07_phylogeny/tree.mutation.key.txt"
     log:
         "logs/curate/LTEE-phylogeny.log"
-    conda: "../envs/breseq-LTEE.yml"
+    conda: "../envs/breseq.yml"
     shell:
         """
         mkdir -p 07_phylogeny
         gdtools PHYLOGENY -p -a -o 07_phylogeny/tree -r {input.reference} {input.ancestor_gds} {input.sample_gds} > {log} 2>&1
-        perl {TREE_UTILS} ROOT-ANCESTOR -i {output.tre} -o {output.rerooted} >> {log} 2>&1
-        perl {TREE_UTILS} SCALE-PHYLIP  -i {output.rerooted} -o {output.rescaled} -p {output.genotypes} >> {log} 2>&1
+        """
+
+rule LTEE_phylogeny_postprocess:
+    input:
+        tre          = "07_phylogeny/tree.tre",
+        genotypes    = "07_phylogeny/tree.genotypes.txt",
+        reference    = REF_GBK
+    output:
+        rerooted     = "07_phylogeny/tree.rerooted.tre",
+        rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre",
+        final        = "output/final.tre"
+    log:
+        "logs/curate/LTEE-phylogeny-postprocess.log"
+    conda: "../envs/bioperl.yml"
+    shell:
+        """
+        perl {TREE_UTILS} ROOT-ANCESTOR -i {input.tre} -o {output.rerooted} > {log} 2>&1
+        perl {TREE_UTILS} SCALE-PHYLIP  -i {output.rerooted} -o {output.rescaled} -p {input.genotypes} >> {log} 2>&1
         mkdir -p 07_phylogeny/discrepancies
         perl {TREE_UTILS} DISCREPANCIES -i {output.rerooted} -p 07_phylogeny/tree -o 07_phylogeny/discrepancies/tree >> {log} 2>&1
         cp {output.rescaled} {output.final} >> {log} 2>&1
