@@ -40,6 +40,9 @@ brefito predict-mutations-breseq -r myref
 
 # Recover from a locked snakemake directory
 brefito <workflow-name> --pick-lock
+
+# Force-reinstall a conda environment (e.g. to pick up a new prerelease build of a pinned tool)
+brefito <workflow-name> --reinstall breseq
 ```
 
 ## Architecture

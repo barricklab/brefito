@@ -5,6 +5,9 @@ import os.path
 import argparse
 import re
 import subprocess
+import hashlib
+import shutil
+import json
 
 def main():
 
@@ -50,7 +53,12 @@ def main():
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--rerun-triggers', action='append', default=['code', 'input', 'params'], help='argument passed through to Snakemake.') 
     parser.add_argument('--unlock', action='store_true', help='argument passed through to Snakemake') 
-    parser.add_argument('--pick-lock', action='store_true', help='run Snakemake --unlock and then immediately run Snakemake') 
+    parser.add_argument('--pick-lock', action='store_true', help='run Snakemake --unlock and then immediately run Snakemake')
+    parser.add_argument('--reinstall', action='append', default=[], metavar='ENV',
+                         help='Delete the installed Snakemake conda environment matching '
+                              'workflow/envs/ENV or workflow/envs/ENV.yml, forcing Snakemake '
+                              'to reinstall it on this run. Can be specified multiple times. '
+                              'Example: --reinstall breseq')
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--dry-run', action='store_true', help='argument passed through to Snakemake')
@@ -296,6 +304,10 @@ def main():
 
     command = snakemake_plus_common_options + target_options + smk_targets + config_options + resource_options
 
+    if args.reinstall:
+        envs_path = os.path.join(brefito_package_path, "workflow", "envs")
+        reinstall_conda_envs(args.reinstall, envs_path, get_conda_envs_dir())
+
     print()
     print("RUNNING SNAKEMAKE COMMAND")
     print()
@@ -362,6 +374,92 @@ def check_command_list_with_references(workflow_to_run, test_command_prefix_list
             return (this_return_dict)
 
     return ( { 'matched' : False } )
+
+def get_conda_envs_dir():
+    conda_prefix = os.environ.get("SNAKEMAKE_CONDA_PREFIX")
+    if conda_prefix:
+        conda_prefix = os.path.expanduser(os.path.expandvars(conda_prefix))
+        return os.path.abspath(conda_prefix)
+    return os.path.join(os.path.abspath(".snakemake"), "conda")
+
+def get_conda_platform():
+    try:
+        info = json.loads(subprocess.check_output(["conda", "info", "--json"], text=True))
+        return info["platform"]
+    except (subprocess.CalledProcessError, FileNotFoundError, KeyError, json.JSONDecodeError):
+        print("Warning: could not determine conda platform (is conda on PATH?); ignoring any pin files.")
+        return None
+
+def candidate_env_hashes(yaml_file, envs_dir, platform):
+    with open(yaml_file, "rb") as f:
+        content = f.read()
+
+    prefix = yaml_file
+    if prefix.endswith(".yml") or prefix.endswith(".yaml"):
+        prefix = prefix.rsplit(".", 1)[0]
+
+    pin_content = None
+    if platform:
+        pin_file = prefix + f".{platform}.pin.txt"
+        if os.path.isfile(pin_file):
+            with open(pin_file, "rb") as f:
+                pin_content = f.read()
+
+    deploy_content = None
+    deploy_file = prefix + ".post-deploy.sh"
+    if os.path.isfile(deploy_file):
+        with open(deploy_file, "rb") as f:
+            deploy_content = f.read()
+
+    # Mirrors Snakemake's Env._get_hash(include_location=True, include_container_img=True)
+    current = hashlib.md5(usedforsecurity=False)
+    current.update(os.path.realpath(envs_dir).encode())
+    if deploy_content:
+        current.update(deploy_content)
+    if pin_content:
+        current.update(pin_content)
+    current.update(content)
+
+    # Legacy fallbacks for envs built by older/different Snakemake versions.
+    legacy_content_only = hashlib.md5(content).hexdigest()
+    legacy_name_and_content = hashlib.md5(os.path.basename(yaml_file).encode() + content).hexdigest()
+
+    return [current.hexdigest(), legacy_content_only, legacy_name_and_content]
+
+def remove_installed_conda_env(yaml_file, envs_dir, platform):
+    for env_hash in candidate_env_hashes(yaml_file, envs_dir, platform):
+        for candidate in (env_hash, env_hash + "_", env_hash[:8]):
+            env_dir = os.path.join(envs_dir, candidate)
+            if os.path.isdir(env_dir):
+                shutil.rmtree(env_dir)
+                for suffix in (".yaml", ".pin.txt", ".post-deploy.sh", ".env_setup_done"):
+                    sidecar = env_dir + suffix
+                    if os.path.isfile(sidecar):
+                        os.remove(sidecar)
+                return env_dir
+    return None
+
+def reinstall_conda_envs(reinstall_values, envs_path, envs_dir):
+    if not reinstall_values:
+        return
+
+    platform = get_conda_platform()
+
+    for value in reinstall_values:
+        candidate_names = sorted({value, value + ".yml"})
+        matches = [n for n in candidate_names if os.path.isfile(os.path.join(envs_path, n))]
+
+        if not matches:
+            print(f"--reinstall {value}: no environment file matching '{value}' or '{value}.yml' found in {envs_path}")
+            continue
+
+        for name in matches:
+            yaml_file = os.path.join(envs_path, name)
+            removed = remove_installed_conda_env(yaml_file, envs_dir, platform)
+            if removed:
+                print(f"--reinstall {value}: removed installed conda environment for {name} ({removed})")
+            else:
+                print(f"--reinstall {value}: {name} has no installed conda environment yet; it will be installed fresh")
 
 def find_matching_input_files(in_base_path, in_file_ending):
     existing_files=glob.glob(os.path.join(in_base_path, "*."+in_file_ending))
