@@ -1,3 +1,8 @@
+#sample info not used but this loads the BRESEQ_ENV variable as well
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
+
 import glob
 import os
 import re

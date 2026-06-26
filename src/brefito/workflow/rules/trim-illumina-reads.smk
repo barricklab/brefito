@@ -11,7 +11,7 @@ ILLUMINA_TRIMMING = "fastp"
 if 'ILLUMINA_TRIMMING' in brefito_config.keys():
     ILLUMINA_TRIMMING = brefito_config['ILLUMINA_TRIMMING']
 
-FASTP_OPTIONS = ""
+FASTP_OPTIONS = "--disable_quality_filtering"
 if 'FASTP_OPTIONS' in brefito_config.keys():
     FASTP_OPTIONS = brefito_config['FASTP_OPTIONS']
 
@@ -21,8 +21,10 @@ if 'FASTP_SE_OPTIONS' in brefito_config.keys():
 
 FASTP_PE_OPTIONS = "--detect_adapter_for_pe"
 if 'FASTP_PE_OPTIONS' in brefito_config.keys():
-    print("NOTE: Default fastp PE --detect_adapter_for_pe option overwritten by user option.")
+    print("NOTE: Default fastp PE --detect_adapter_for_pe --disable_quality_filtering options overwritten by user option.")
     FASTP_PE_OPTIONS = brefito_config['FASTP_PE_OPTIONS'] 
+
+
 
 READ_NUMS = ["1", "2"]
 
@@ -34,6 +36,9 @@ elif ILLUMINA_TRIMMING.upper()=="FASTP":
     print("fastp used for trimming illumina reads.")
     ruleorder: trim_PE_illumina_reads_with_fastp > trim_illumina_reads_no_trim 
     ruleorder: trim_SE_illumina_reads_with_fastp > trim_illumina_reads_no_trim
+    print("  Single-end fastp options: " + FASTP_SE_OPTIONS)
+    print("  Paired-end fastp options: " + FASTP_PE_OPTIONS)
+    print("  Shared     fastp options: " + FASTP_OPTIONS)
 else:
     print("Unknown trimming method requested for --config ILLUMINA_TRIMMING.")
     print("Valid options are: 'none', 'fastp' (default).")
