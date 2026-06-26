@@ -17,7 +17,7 @@ rule convert_annotated_references_to_genbank:
     log: 
         "logs/breseq-convert-references-to-genbank-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """
@@ -53,7 +53,7 @@ rule simulate_reads_breseq:
     log: 
         "logs/breseq-simulate-reads-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         reads = "simulated-reads-" + sample_info.get_reference_prefix() + "/{sample}.fastq"
     threads: 8
@@ -80,7 +80,7 @@ rule predict_mutations_breseq:
     log: 
         "logs/breseq-predict-mutations-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
     threads: 8

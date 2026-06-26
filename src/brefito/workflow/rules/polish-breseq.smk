@@ -49,7 +49,7 @@ rule apply_mutations_gdtools:
     log: 
         "logs/breseq-polish-apply" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """
@@ -71,7 +71,7 @@ rule predict_mutations_breseq:
     log: 
         "logs/breseq-polish-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         gd_dir = directory("breseq-polish" + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),

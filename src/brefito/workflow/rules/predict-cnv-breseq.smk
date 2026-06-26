@@ -39,7 +39,7 @@ rule create_coverage_file_breseq:
     log: 
         "logs/breseq-" + sample_info.get_reference_prefix() + "-{sample}-create-coverage-file.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

@@ -26,7 +26,7 @@ rule evaluate_coverage:
         "logs/evaluate_coverage_{sample}.log"
 #    Official breseq doesn't support plotting entire sequence (yet)
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

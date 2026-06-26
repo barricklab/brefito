@@ -52,7 +52,7 @@ rule tabulate_ssrs_breseq:
     log: 
         "logs/breseq-" + sample_info.get_reference_prefix() + "-{sample}-tabulate-ssrs.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

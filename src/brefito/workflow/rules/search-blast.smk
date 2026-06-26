@@ -18,7 +18,7 @@ rule create_merged_reference_fasta:
     log: 
         "logs/merge-references-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         blastdb_path = "blast-" + sample_info.get_reference_prefix() + "/blastdb"
     shell:

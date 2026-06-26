@@ -30,7 +30,7 @@ rule tabulate_all_soft_clipping:
     log:
         "logs/" + "check-soft-clipping-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

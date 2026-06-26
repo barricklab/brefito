@@ -57,7 +57,7 @@ rule predict_mutations_breseq:
     log: 
         "logs/breseq-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     params:
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),

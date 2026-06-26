@@ -14,7 +14,7 @@ rule _validate_genomediff_gdtools:
     output:
         "genome-diffs-validate/{sample}.txt"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """

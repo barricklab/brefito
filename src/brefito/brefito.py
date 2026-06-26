@@ -59,6 +59,10 @@ def main():
                               'workflow/envs/ENV or workflow/envs/ENV.yml, forcing Snakemake '
                               'to reinstall it on this run. Can be specified multiple times. '
                               'Example: --reinstall breseq')
+    parser.add_argument('--breseq-prerelease', action='store_true',
+                         help='Use the prerelease breseq build (breseq-prerelease conda env) '
+                              'instead of the stable release. Use --reinstall breseq-prerelease '
+                              'to force-reinstall the prerelease env when a new build is pushed.')
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--dry-run', action='store_true', help='argument passed through to Snakemake')
@@ -280,6 +284,8 @@ def main():
     if samples_to_run != None and len(samples_to_run)>0:
         config_options_list.append("samples=" + "_,_".join(samples_to_run))
 
+    if args.breseq_prerelease:
+        config_options_list.append("BRESEQ_PRERELEASE=True")
 
     config_options = []
     if len(config_options_list) > 0:

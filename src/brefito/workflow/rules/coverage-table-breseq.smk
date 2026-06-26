@@ -17,7 +17,7 @@ rule coverage_table_breseq:
     log:
         "logs/coverage-table-breseq-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
-        "../envs/breseq.yml"
+        BRESEQ_ENV
     threads: 1
     shell:
         """
