@@ -48,7 +48,6 @@ rule predict_mutations_breseq:
         references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
         breseq_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/data/{sample}"),
-        html_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/html/{sample}"),
         done_file = "breseq-" + sample_info.get_reference_prefix() + "/html/{sample}/output.done",
         gd_file = "breseq-" + sample_info.get_reference_prefix() + "/gd/{sample}.gd",
         bam = "breseq-" + sample_info.get_reference_prefix() + "/data/{sample}/data/reference.bam",
@@ -59,6 +58,7 @@ rule predict_mutations_breseq:
     conda:
         BRESEQ_ENV
     params:
+        html_dir = lambda wildcards: directory("breseq-" + sample_info.get_reference_prefix() + "/html/" + wildcards.sample),
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
@@ -72,6 +72,6 @@ rule predict_mutations_breseq:
         
         # Copy/move output files
         cp {output.breseq_dir}/output/output.gd {output.gd_file}
-        rm -rf {output.html_dir}
-        mv {output.breseq_dir}/output {output.html_dir}
+        rm -rf {params.html_dir}
+        mv {output.breseq_dir}/output {params.html_dir}
         """
