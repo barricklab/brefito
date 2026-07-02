@@ -6,7 +6,6 @@ import argparse
 import re
 import subprocess
 import hashlib
-import shutil
 import json
 
 def main():
@@ -437,7 +436,7 @@ def remove_installed_conda_env(yaml_file, envs_dir, platform):
         for candidate in (env_hash, env_hash + "_", env_hash[:8]):
             env_dir = os.path.join(envs_dir, candidate)
             if os.path.isdir(env_dir):
-                shutil.rmtree(env_dir)
+                subprocess.run(["conda", "remove", "--all", "--yes", "--prefix", env_dir])
                 for suffix in (".yaml", ".pin.txt", ".post-deploy.sh", ".env_setup_done"):
                     sidecar = env_dir + suffix
                     if os.path.isfile(sidecar):
