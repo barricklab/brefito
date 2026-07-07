@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import glob
+import os
 import os.path
 import argparse
 import re
@@ -39,7 +40,11 @@ def main():
                         formatter_class=argparse.RawDescriptionHelpFormatter
                         )
 
-    parser.add_argument('-p', '--path', default='.', type=str)
+    parser.add_argument('-p', '--path', default='.', type=str,
+                         help='Working directory in which to run the workflow. brefito '
+                              'changes to this directory before discovering input files '
+                              'and running Snakemake, so all sample/reference/output '
+                              'paths are resolved relative to it. Default: current directory')
 
     #An additional way to specify these
     parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
@@ -77,6 +82,13 @@ def main():
     args = parser.parse_args()
 
     base_path = args.path
+    # Run everything (input-file discovery, Snakemake, its .snakemake/conda dirs, and
+    # output writing) in the requested directory by changing to it up front, so all
+    # relative paths resolve consistently there rather than in the invocation CWD.
+    if not os.path.isdir(base_path):
+        print("Error: --path directory does not exist: " + base_path)
+        return
+    os.chdir(base_path)
     workflow_to_run = args.workflow.lower()
     samples_to_run = args.samples
 
