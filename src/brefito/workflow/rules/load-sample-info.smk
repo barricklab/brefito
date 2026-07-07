@@ -497,8 +497,11 @@ class SampleInfo():
         for this_sample in sorted(self.get_sample_list()):
             print()
             print("SAMPLE :: " + this_sample)
-            for this_type in sorted(self.file_lists_by_sample_by_type[this_sample].keys()):
-                for this_item in self.file_lists_by_sample_by_type[this_sample][this_type]:
+            # A sample may have no associated files (e.g. samples requested at the CLI
+            # when no data.csv is present and none were found by the directory scan).
+            file_lists_by_type = self.file_lists_by_sample_by_type.get(this_sample, {})
+            for this_type in sorted(file_lists_by_type.keys()):
+                for this_item in file_lists_by_type[this_type]:
                     print("  " + this_type + " : " + this_item)
         #print(self.local_to_remote_path_mapping)
 
