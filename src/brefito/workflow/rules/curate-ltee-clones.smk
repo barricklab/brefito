@@ -25,6 +25,30 @@ if 'SAMPLES' in brefito_config:
     _requested_samples = brefito_config['SAMPLES'].split("_,_")
     samples = [s for s in samples if s in _requested_samples]
 
+# The 00_header / 01_curate_add / 02_curate_remove files are created (and then
+# hand-curated) by the separate 'curate-LTEE-clones-init' workflow. This workflow
+# consumes them as pre-existing inputs and never regenerates them, so that a
+# --forceall run cannot clobber the hand-edited curation files. Fail early with a
+# clear message if any are missing.
+_init_dirs = ["00_header", "01_curate_add", "02_curate_remove"]
+_missing_init_files = [
+    os.path.join(d, s + ".gd")
+    for s in samples
+    for d in _init_dirs
+    if not os.path.exists(os.path.join(d, s + ".gd"))
+]
+if _missing_init_files:
+    sys.stderr.write(
+        "Error: The following curation input files are missing:\n"
+        + "".join("  " + f + "\n" for f in _missing_init_files)
+        + "These files are created by the 'curate-LTEE-clones-init' workflow.\n"
+        + "Please run:\n"
+        + "    brefito curate-LTEE-clones-init\n"
+        + "first (then edit the 01_curate_add/ and 02_curate_remove/ files as needed) "
+        + "before running curate-LTEE-clones.\n"
+    )
+    sys.exit(1)
+
 # Ancestor GD files in working directory (e.g. Anc-_0gen_REL606.gd)
 ancestor_files = sorted(glob.glob("Anc*.gd"))
 
@@ -151,55 +175,10 @@ if _ANCESTOR_DOWNLOAD_FILE:
             """
 
 
-# ── Stub creation (ancient() ensures existing files are never overwritten) ───
-
-rule create_LTEE_header:
-    input:
-        gd = ancient("gd/{sample}.gd")
-    output:
-        "00_header/{sample}.gd"
-    log:
-        "logs/curate/create-LTEE-header-{sample}.log"
-    conda: BRESEQ_ENV
-    shell:
-        """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
-        rm {output}.tmp
-        """
-
-rule create_LTEE_curate_add:
-    input:
-        gd = ancient("gd/{sample}.gd")
-    output:
-        "01_curate_add/{sample}.gd"
-    log:
-        "logs/curate/create-LTEE-curate-add-{sample}.log"
-    conda: BRESEQ_ENV
-    shell:
-        """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
-        rm {output}.tmp
-        """
-
-rule create_LTEE_curate_remove:
-    input:
-        gd = ancient("gd/{sample}.gd")
-    output:
-        "02_curate_remove/{sample}.gd"
-    log:
-        "logs/curate/create-LTEE-curate-remove-{sample}.log"
-    conda: BRESEQ_ENV
-    shell:
-        """
-        gdtools SUBTRACT -o {output}.tmp {input.gd} {input.gd} > {log} 2>&1
-        gdtools NOT-EVIDENCE -o {output} {output}.tmp >> {log} 2>&1
-        rm {output}.tmp
-        """
-
-
 # ── Per-sample curation pipeline ─────────────────────────────────────────────
+# Note: the 00_header / 01_curate_add / 02_curate_remove inputs of curate_LTEE_gd
+# are produced by the separate 'curate-LTEE-clones-init' workflow (see the guard at
+# the top of this file), not by any rule here.
 
 rule curate_LTEE_gd:
     input:

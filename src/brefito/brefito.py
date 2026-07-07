@@ -65,6 +65,7 @@ def main():
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--nolock', action='store_true', help='argument passed through to Snakemake')
+    parser.add_argument('--forceall', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('-n', '--dry-run', action='store_true', help='argument passed through to Snakemake')
 
     # REQUIRED positional argument
@@ -190,6 +191,8 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--keep-going"]
     if args.nolock:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--nolock"]
+    if args.forceall:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--forceall"]
     if args.dry_run:
         snakemake_plus_common_options = snakemake_plus_common_options + ["-n"]
 
