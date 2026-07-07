@@ -55,7 +55,7 @@ def main():
     parser.add_argument('--config', action='append', default=[], help='--config argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--resources', action='append', default=[], help='--resources argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
-    parser.add_argument('--rerun-triggers', action='append', default=['code', 'input', 'params'], help='argument passed through to Snakemake.') 
+    parser.add_argument('--rerun-triggers', action='append', default=None, help='argument passed through to Snakemake. Can be specified multiple times; providing it replaces the default set (mtime, code, input, params) rather than adding to it.')
     parser.add_argument('--unlock', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--pick-lock', action='store_true', help='run Snakemake --unlock and then immediately run Snakemake')
     parser.add_argument('--reinstall', action='append', default=[], metavar='ENV',
@@ -192,7 +192,8 @@ def main():
     else:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", str(args.cores)]
 
-    for rt in args.rerun_triggers:
+    rerun_triggers = args.rerun_triggers if args.rerun_triggers is not None else ['mtime', 'code', 'input', 'params']
+    for rt in rerun_triggers:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-triggers", rt]
 
     if args.rerun_incomplete:
