@@ -238,7 +238,7 @@ rule mask_LTEE_gd:
         """
         gdtools REMOVE   -c type==CON -o {output}.tmp1 {input.gd} > {log} 2>&1
         gdtools SUBTRACT -o {output}.tmp2 {output}.tmp1 {input.prophage} {input.ancestors} >> {log} 2>&1
-        gdtools MASK     -v -s -o {output} {output}.tmp2 {input.mask} >> {log} 2>&1
+        gdtools MASK     -v --mask-mode SMALL -o {output} {output}.tmp2 {input.mask} >> {log} 2>&1
         rm {output}.tmp1 {output}.tmp2
         """
 
