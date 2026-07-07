@@ -1,6 +1,6 @@
 #sample info not used but this loads the BRESEQ_ENV variable as well
 try: sample_info
-except NameError: 
+except NameError:
     include: "load-sample-info.smk"
 
 import glob
@@ -17,6 +17,14 @@ _initial_gd_dir = "gd"
 samples = sorted([os.path.splitext(os.path.basename(f))[0]
                   for f in glob.glob(_initial_gd_dir + "/*.gd")])
 
+# If specific sample names were given on the brefito command line, restrict the
+# run to just building the curated mutant genome (mutants/{sample}.gff) for those
+# samples. In this mode we skip all aggregate steps (count, compare, phylogeny).
+_requested_samples = None
+if 'SAMPLES' in brefito_config:
+    _requested_samples = brefito_config['SAMPLES'].split("_,_")
+    samples = [s for s in samples if s in _requested_samples]
+
 # Ancestor GD files in working directory (e.g. Anc-_0gen_REL606.gd)
 ancestor_files = sorted(glob.glob("Anc*.gd"))
 
@@ -27,7 +35,7 @@ _LTEE_ANCESTOR_BASE_URL = "https://raw.githubusercontent.com/barricklab/LTEE-Eco
 _ANCESTOR_DOWNLOAD_FILE = None
 _ANCESTOR_DOWNLOAD_URL = None
 
-if samples and not ancestor_files:
+if samples and not ancestor_files and _requested_samples is None:
     _cwd_name = os.path.basename(os.getcwd())
     if re.search(r"(Ara-|A-)\d+", _cwd_name):
         _ANCESTOR_DOWNLOAD_FILE = "Anc-_0gen_REL606.gd"
@@ -64,14 +72,20 @@ _LTEE_REF_URL = "https://raw.githubusercontent.com/barricklab/LTEE-Ecoli/master/
 # Build target list
 _all_targets = []
 if samples:
-    _all_targets += expand("04_final_normalized_gd/{sample}.gd", sample=samples)
-    _all_targets += expand("mutants/{sample}.gff", sample=samples)
-    _all_targets += ["output/compare_normalized.html", "output/count.initial.csv", "output/count.final.csv"]
-    _all_targets += expand("05_normalized_masked_gd/{sample}.gd", sample=samples)
-    _all_targets += expand("06_normalized_masked_no_IS_adjacent_gd/{sample}.gd", sample=samples)
-    _all_targets += ["output/compare_normalized_masked.html", "output/count.final_masked.csv"]
-    if ancestor_files:
-        _all_targets += ["output/final.tre"]
+    if _requested_samples is not None:
+        # Only build the mutant genome for the requested samples. Snakemake pulls in
+        # the full header/curate/normalize/apply chain automatically; the counting,
+        # comparison, and phylogeny steps are intentionally omitted.
+        _all_targets += expand("mutants/{sample}.gff", sample=samples)
+    else:
+        _all_targets += expand("04_final_normalized_gd/{sample}.gd", sample=samples)
+        _all_targets += expand("mutants/{sample}.gff", sample=samples)
+        _all_targets += ["output/compare_normalized.html", "output/count.initial.csv", "output/count.final.csv"]
+        _all_targets += expand("05_normalized_masked_gd/{sample}.gd", sample=samples)
+        _all_targets += expand("06_normalized_masked_no_IS_adjacent_gd/{sample}.gd", sample=samples)
+        _all_targets += ["output/compare_normalized_masked.html", "output/count.final_masked.csv"]
+        if ancestor_files:
+            _all_targets += ["output/final.tre"]
 
 
 rule all_curate_ltee_clones:

@@ -63,8 +63,9 @@ def main():
                               'instead of the stable release. Use --reinstall breseq-prerelease '
                               'to force-reinstall the prerelease env when a new build is pushed.')
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
-    parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake') 
-    parser.add_argument('--dry-run', action='store_true', help='argument passed through to Snakemake')
+    parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake')
+    parser.add_argument('--nolock', action='store_true', help='argument passed through to Snakemake')
+    parser.add_argument('-n', '--dry-run', action='store_true', help='argument passed through to Snakemake')
 
     # REQUIRED positional argument
     parser.add_argument('workflow', type=str)
@@ -187,8 +188,10 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--notemp"]
     if args.keep_going:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--keep-going"]
+    if args.nolock:
+        snakemake_plus_common_options = snakemake_plus_common_options + ["--nolock"]
     if args.dry_run:
-        snakemake_plus_common_options = snakemake_plus_common_options + ["-r"]
+        snakemake_plus_common_options = snakemake_plus_common_options + ["-n"]
 
     # What are appropriate targets for the workflow we are running?
     smk_targets = []
