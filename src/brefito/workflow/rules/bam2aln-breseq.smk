@@ -2,7 +2,11 @@ try: sample_info
 except NameError: 
     include: "load-sample-info.smk"
 
-include: "predict-mutations-breseq.smk"
+# NOTE: deliberately do NOT include predict-mutations-breseq.smk. This is a
+# read-only view over an existing breseq run; if predict were a producer in the
+# DAG, a stale-looking breseq output would re-run breseq (often with no reads),
+# fail, and Snakemake would delete breseq-<ref>/data/<clone>/. BRESEQ_ENV comes
+# from load-sample-info.smk. Missing breseq output is a clean error, not a rebuild.
 
 print()
 print("Config options for workflow :: bam2cov-breseq")
