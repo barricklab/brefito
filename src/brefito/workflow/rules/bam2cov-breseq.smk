@@ -30,7 +30,7 @@ BAM2COV_OPTIONS = ""
 if 'BAM2COV_OPTIONS' in brefito_config.keys():
     BAM2COV_OPTIONS = brefito_config['BAM2COV_OPTIONS']
     pattern = r"--format +\S+"
-    if re.search(pattern, my_string):
+    if re.search(pattern, BAM2COV_OPTIONS):
        print()
        print("Provide --format options through --config BAM2COV_FORMAT=\"png|svg|pdf\" instead of BAM2COV_OPTIONS")
        exit(1)
