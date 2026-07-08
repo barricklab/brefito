@@ -360,9 +360,10 @@ rule LTEE_phylogeny_postprocess:
         genotypes    = "07_phylogeny/tree.genotypes.txt",
         reference    = REF_GBK
     output:
-        rerooted     = "07_phylogeny/tree.rerooted.tre",
-        rescaled     = "07_phylogeny/tree.rerooted.rescaled.tre",
-        final        = "output/final.tre"
+        rerooted      = "07_phylogeny/tree.rerooted.tre",
+        rescaled      = "07_phylogeny/tree.rerooted.rescaled.tre",
+        discrepancies = directory("07_phylogeny/discrepancies"),
+        final         = "output/final.tre"
     log:
         "logs/curate/LTEE-phylogeny-postprocess.log"
     conda: "../envs/bioperl.yml"
@@ -370,7 +371,8 @@ rule LTEE_phylogeny_postprocess:
         """
         perl {TREE_UTILS} ROOT-ANCESTOR -i {input.tre} -o {output.rerooted} > {log} 2>&1
         perl {TREE_UTILS} SCALE-PHYLIP  -i {output.rerooted} -o {output.rescaled} -p {input.genotypes} >> {log} 2>&1
-        mkdir -p 07_phylogeny/discrepancies
-        perl {TREE_UTILS} DISCREPANCIES -i {output.rerooted} -p 07_phylogeny/tree -o 07_phylogeny/discrepancies/tree >> {log} 2>&1
+        rm -rf {output.discrepancies}
+        mkdir -p {output.discrepancies}
+        perl {TREE_UTILS} DISCREPANCIES -i {output.rerooted} -p 07_phylogeny/tree -o {output.discrepancies}/tree >> {log} 2>&1
         cp {output.rescaled} {output.final} >> {log} 2>&1
         """
