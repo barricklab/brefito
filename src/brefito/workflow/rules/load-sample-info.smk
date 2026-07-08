@@ -711,3 +711,15 @@ if (sample_info.reads_with_bad_endings):
   print("ERROR: Read file names not of the expected form (*.fastq.gz) found.")
   print("Check above for offending file names in the form \"INVALID---[in_read_name]---*.fastq.gz\"")
   exit(1)
+
+# A workflow may set SAMPLE_INFO_REQUIRED = False before including this file if it
+# derives its samples elsewhere (see curate-ltee-clones). Default: required.
+try: SAMPLE_INFO_REQUIRED
+except NameError: SAMPLE_INFO_REQUIRED = True
+
+if SAMPLE_INFO_REQUIRED and not sample_info.get_sample_list():
+    print("ERROR: This workflow requires sample information, but none was found.")
+    print("  Provide a data.csv (or a file via -d) describing your samples, or place input")
+    print("  files in the expected directories (nanopore-reads/, illumina-reads/,")
+    print("  assemblies/, references/).")
+    exit(1)

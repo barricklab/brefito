@@ -8,6 +8,7 @@ import re
 import subprocess
 import hashlib
 import json
+import sys
 
 def main():
 
@@ -48,7 +49,9 @@ def main():
 
     #An additional way to specify these
     parser.add_argument('-r', '--references', type=str, help='Path to use for reference files. Default: references')
-    parser.add_argument('-d', '--data', help='path to CSV with sample and file information', default='data.csv')
+    parser.add_argument('-d', '--data', default=None,
+                        help='path to CSV with sample and file information (default: data.csv). '
+                             'If specified explicitly, the file must exist.')
 
     #Snakemake passthroughs
     parser.add_argument('--cores', type=int, default=0, help='--cores argument passed through to Snakemake (0 = all)') # 0 means "all"
@@ -87,7 +90,7 @@ def main():
     # relative paths resolve consistently there rather than in the invocation CWD.
     if not os.path.isdir(base_path):
         print("Error: --path directory does not exist: " + base_path)
-        return
+        sys.exit(1)
     os.chdir(base_path)
     workflow_to_run = args.workflow.lower()
     samples_to_run = args.samples
@@ -96,7 +99,16 @@ def main():
     resource_options_list = args.resources
     references_argument = args.references
 
-    data_file_name = args.data
+    # If the user explicitly specified a --data/-d file, it must exist. If they did
+    # not, fall back to the default 'data.csv', which may legitimately be absent for
+    # workflows that discover samples from the directory structure instead.
+    if args.data is not None:
+        if not os.path.isfile(args.data):
+            print("Error: --data/-d file does not exist: " + args.data)
+            sys.exit(1)
+        data_file_name = args.data
+    else:
+        data_file_name = "data.csv"
 
     if args.pick_lock and args.unlock:
         print("Ignoring --unlock option because --pick-lock also provided.")
@@ -336,13 +348,14 @@ def main():
     print("RUNNING SNAKEMAKE COMMAND")
     print()
 
+    snakemake_returncode = 0
     if args.unlock or args.pick_lock:
         print(" ".join(command + ["--unlock"]))
         subprocess.run(command + ["--unlock"])
 
     if not args.unlock:
         print(" ".join(command))
-        subprocess.run(command)
+        snakemake_returncode = subprocess.run(command).returncode
 
     ## Cleanup
 
@@ -374,6 +387,10 @@ def main():
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
     elif workflow_to_run == "normalize-assemblies":
         copy_and_rename_assemblies(input_assembly_files.values(), "normalized", "normalized")
+
+    # Propagate Snakemake's exit status so failures (including a workflow that
+    # requires sample information but found none) surface as a non-zero exit.
+    sys.exit(snakemake_returncode)
 
 def check_command_with_references(workflow_to_run, test_command_prefix):
     return_dict = { 'matched' : False }
