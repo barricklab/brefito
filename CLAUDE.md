@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working directory: use the worktree, not the main checkout
+
+When you are invoked in a git worktree (e.g. under `.claude/worktrees/<name>`), do ALL of
+your work inside that worktree. Edit files by their path under the worktree directory, and
+run git and other commands from there.
+
+Do NOT modify the main checkout (or commit/merge onto its checked-out branch) unless the
+user explicitly directs you to. In particular:
+
+- Watch for absolute paths: a path under `.claude/worktrees/<name>/` points at the worktree,
+  while the same repo-relative path outside that prefix points at the MAIN checkout. Always
+  edit the worktree path so your changes land on the worktree branch.
+- If a plan or prior message references a main-checkout path, translate it to the equivalent
+  worktree path before editing.
+- Commit on the worktree branch. Only touch `main` or the main checkout when the user asks
+  you to merge or commit there.
+
 ## What brefito is
 
 `brefito` is a Python CLI that wraps Snakemake workflows for microbial genome assembly, polishing, annotation, and mutation prediction. Each workflow is a standalone `.smk` file; `brefito` resolves sample data and invokes `snakemake --use-conda` with the appropriate file and config arguments.
