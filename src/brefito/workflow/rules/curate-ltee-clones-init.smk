@@ -1,4 +1,7 @@
 #sample info not used but this loads the BRESEQ_ENV variable as well
+# This workflow derives its samples from the gd/ directory, so it does not
+# require sample information from data.csv / the read/assembly directories.
+SAMPLE_INFO_REQUIRED = False
 try: sample_info
 except NameError:
     include: "load-sample-info.smk"
