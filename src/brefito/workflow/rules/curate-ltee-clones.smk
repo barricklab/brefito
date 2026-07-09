@@ -113,6 +113,7 @@ if samples:
         _all_targets += ["output/compare_normalized_masked.html", "output/count.final_masked.csv"]
         if ancestor_files:
             _all_targets += ["output/final.tre"]
+            _all_targets += ["output/compare_normalized_masked.discrepancies.html"]
 
 
 rule all_curate_ltee_clones:
@@ -295,6 +296,55 @@ rule compare_LTEE_normalized_masked:
         """
         gdtools COMPARE -p -r {input.reference} -o {output} {input.gd_files} > {log} 2>&1
         """
+
+rule mark_discrepancies_LTEE_compare:
+    input:
+        html          = "output/compare_normalized_masked.html",
+        discrepancies = "07_phylogeny/discrepancies",   # directory() output of postprocess rule
+    output:
+        "output/compare_normalized_masked.discrepancies.html"
+    run:
+        import os, glob, re, html as _html
+
+        # 1. Collect the set of discrepant keys from the discrepancy filenames.
+        #    Current tree_utils.pl names files: tree.<i>.<mut_name>.<i>.tre
+        #    We treat every "."-delimited field of each basename as a candidate key,
+        #    so a data-key equal to the index <i> OR the mutation name <mut_name>
+        #    will match. --- ADJUST THIS ONE BLOCK once the finalized breseq
+        #    discrepancy-filename format is known. ---
+        discrepant_keys = set()
+        for path in glob.glob(os.path.join(input.discrepancies, "*")):
+            base = os.path.basename(path)
+            base_no_ext = os.path.splitext(base)[0]
+            discrepant_keys.add(base_no_ext)                 # whole basename sans extension
+            discrepant_keys.update(base_no_ext.split("."))   # each dotted field
+
+        # 2. Rewrite each <tr ... data-key="K" ...> whose K is discrepant, injecting a
+        #    light-red background. Uses a CSS <style> block keyed on data-key so we never
+        #    have to merge into existing style/bgcolor attributes on the row.
+        with open(input.html) as fh:
+            doc = fh.read()
+
+        present_keys = set(re.findall(r'data-key="([^"]*)"', doc))
+        hit_keys = sorted(k for k in present_keys if k in discrepant_keys)
+
+        if hit_keys:
+            selectors = ", ".join(
+                'tr[data-key="%s"]' % _html.escape(k, quote=True) for k in hit_keys
+            )
+            style_block = (
+                "\n<style>%s { background-color: #ffb3b3 !important; }</style>\n"
+                % selectors
+            )
+            # Inject before </head> if present, else at the very top of the document.
+            if "</head>" in doc:
+                doc = doc.replace("</head>", style_block + "</head>", 1)
+            else:
+                doc = style_block + doc
+
+        with open(output[0], "w") as fh:
+            fh.write(doc)
+
 
 rule count_LTEE_initial:
     input:
