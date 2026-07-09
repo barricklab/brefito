@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git: never run git commands without explicit approval
+
+Do NOT run ANY git command that changes state — `git commit`, `git add`, `git merge`,
+`git push`, `git rebase`, `git reset`, `git checkout`/`switch`, `git stash`, `git branch`,
+tag creation, etc. — unless the user has explicitly told you to in the current request.
+Wait for an explicit OK each time; approval for one git action does not carry over to the
+next. Read-only git commands (`git status`, `git diff`, `git log`, `git show`) are fine to
+run when helpful. When you believe a commit/merge/push is warranted, propose it and ask
+first.
+
 ## Working directory: use the worktree, not the main checkout
 
 When you are invoked in a git worktree (e.g. under `.claude/worktrees/<name>`), do ALL of
