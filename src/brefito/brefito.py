@@ -327,14 +327,18 @@ def main():
     if workflow_to_run=="search-blast":
         config_options = config_options + ["QUERY_FILE_PATH" + '="' + search_query_option + '"']
 
-    # This lets us replace defaults with user specified resource settings
+    # This lets us replace defaults with user specified resource settings.
+    # Snakemake resource names are lower case (e.g. 'connections'), so normalize
+    # the key to lower case: this makes the passthrough case-insensitive and lets
+    # a user-supplied 'CONNECTIONS=4' actually override the default 'connections=1'
+    # instead of being sent as a separate, ignored resource.
     resource_options = []
     if len(resource_options_list) > 0:
         resource_options =  ["--resources"]
         resource_options_dict = {}
         for i in resource_options_list:
             si = i.split('=')
-            resource_options_dict[si[0]]=si[1] 
+            resource_options_dict[si[0].lower()]=si[1]
         for k in resource_options_dict:
             resource_options = resource_options + [k + '=' + resource_options_dict[k]]
 
