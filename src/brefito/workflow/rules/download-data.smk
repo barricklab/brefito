@@ -31,12 +31,12 @@ import uuid
 
 # Use multiple threads for SRA downloads to speed up gzipping
 def get_num_threads(remote_path):
-    if (remote_path.startswith("sra://")):
+    if (remote_path and remote_path.startswith("sra://")):
         return 6
     return 1
 
 def get_num_connections(remote_path):
-    if (remote_path.startswith("sra://")):
+    if (remote_path and remote_path.startswith("sra://")):
         return 0
     return 1
 
@@ -45,6 +45,11 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
 
     #Save b/c it can be modified below and we need to keep the prefix for some functionality
     original_remote_path = remote_path
+
+    # Autodetected local files have no remote path - there is nothing to download,
+    # the file is expected to already exist locally.
+    if remote_path is None:
+        return "echo 'No download URL; using existing local file: " + output_path + "'"
 
     split_remote_path = remote_path.split('://', 1)
     method = None
@@ -163,7 +168,7 @@ rule download_all:
 # We need to download the SRA stuff for some inputs
 def get_sra_path_from_local_path(local_path, file_name):
     remote_path = sample_info.get_remote_path_from_local_path(local_path)
-    if not remote_path.startswith("sra://"):
+    if not remote_path or not remote_path.startswith("sra://"):
         return []
 
     #print(f"sra-downloads/{file_name}")
