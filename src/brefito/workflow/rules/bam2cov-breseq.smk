@@ -23,7 +23,7 @@ else:
 
 
 BAM2COV_FORMAT = "png"
-if 'BAM2COV_FORMAT' in brefito_config.keys():
+if 'BAM2COV_FORMAT' in brefito_config.keys() and brefito_config['BAM2COV_FORMAT'] != None:
     BAM2COV_FORMAT = brefito_config['BAM2COV_FORMAT']
 else:
     print()
@@ -31,7 +31,7 @@ else:
     print("  You can change this using --config BAM2COV_FORMAT=\"png|svg|pdf\"")
 
 BAM2COV_OPTIONS = ""
-if 'BAM2COV_OPTIONS' in brefito_config.keys():
+if 'BAM2COV_OPTIONS' in brefito_config.keys() and brefito_config['BAM2COV_OPTIONS'] != None:
     BAM2COV_OPTIONS = brefito_config['BAM2COV_OPTIONS']
     pattern = r"--format +\S+"
     if re.search(pattern, BAM2COV_OPTIONS):

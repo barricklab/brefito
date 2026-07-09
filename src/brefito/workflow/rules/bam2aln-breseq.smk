@@ -32,10 +32,10 @@ else:
     print("  You can change this using --config BAM2ALN_FORMAT=\"HTML|TXT|JSON\"")
 
 BAM2ALN_OPTIONS = ""
-if 'BAM2ALN_OPTIONS' in brefito_config.keys():
+if 'BAM2ALN_OPTIONS' in brefito_config.keys() and brefito_config['BAM2ALN_OPTIONS'] != None:
     BAM2ALN_OPTIONS = brefito_config['BAM2ALN_OPTIONS']
     pattern = r"--format +\S+"
-    if re.search(pattern, my_string):
+    if re.search(pattern, BAM2ALN_OPTIONS):
        print()
        print("Provide --format options through --config BAM2ALN_FORMAT=\"HTML|TXT|JSON\" instead of BAM2ALN_OPTIONS")
        exit(1)
