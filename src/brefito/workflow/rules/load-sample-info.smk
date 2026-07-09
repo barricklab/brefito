@@ -67,11 +67,18 @@ class SampleInfo():
 
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
+            first_column_name = data_reader.fieldnames[0] if data_reader.fieldnames else None
             for row in data_reader:
                 #print(row)
 
+                first_column_value = row.get(first_column_name)
+
+                # Skip blank lines
+                if first_column_value is None or first_column_value.strip() == "":
+                    continue
+
                 #Ignore commented rows, where first item begins with #
-                if row[data_reader.fieldnames[0]][0]=='#':
+                if first_column_value.lstrip().startswith("#"):
                     continue
 
                 # Add 'path' for 'setting' for backwards compatibility
@@ -80,6 +87,19 @@ class SampleInfo():
                         print("Both 'path' and 'setting' found for row. Only using 'setting'.")
                     else:
                         row["setting"] = row["path"]
+
+                # A row that did not split into the expected columns leaves 'type'
+                # and/or 'setting' as None. Fail with a clear, actionable message
+                # instead of a cryptic error deeper in.
+                if row.get('type') is None or row.get('setting') is None:
+                    hint = ""
+                    if "\t" in first_column_value:
+                        hint = (" This row looks TAB-separated, but brefito data files must be "
+                                "COMMA-separated (the header and every data row). Re-save it "
+                                "with commas between the sample, type, and setting columns.")
+                    raise ValueError(
+                        "could not parse a row into the required 'sample,type,setting' "
+                        "columns: " + repr(first_column_value) + "." + hint)
 
                 # Copy over certain paths to allow for some choices.
                 file_name = os.path.basename(row['setting'])
@@ -696,10 +716,9 @@ if sample_info == None:
     except Exception as e:
         # The file exists but could not be parsed. Do NOT silently fall back to a
         # directory scan (that hides the real cause and yields a misleading "none
-        # found" message) - surface the error and exit.
-        print("ERROR: Failed to parse sample information file '" + data_csv_name + "': " + str(e))
-        import traceback
-        traceback.print_exc()
+        # found" message) - surface the error clearly and exit.
+        print("ERROR: Could not parse sample information file '" + data_csv_name + "':")
+        print("  " + str(e))
         exit(1)
 
 if sample_info == None:
