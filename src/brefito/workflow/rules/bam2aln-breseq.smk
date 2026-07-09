@@ -24,8 +24,8 @@ else:
 
 
 BAM2ALN_FORMAT = "HTML"
-if 'BAM2COV_FORMAT' in brefito_config.keys():
-    BAM2COV_FORMAT = brefito_config['BAM2COV_FORMAT']
+if 'BAM2ALN_FORMAT' in brefito_config.keys():
+    BAM2ALN_FORMAT = brefito_config['BAM2ALN_FORMAT']
 else:
     print()
     print("  Using default --config BAM2ALN_FORMAT setting: --format " + BAM2ALN_FORMAT)
