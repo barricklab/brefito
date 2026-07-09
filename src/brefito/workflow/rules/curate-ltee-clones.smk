@@ -113,7 +113,7 @@ if samples:
         _all_targets += ["output/compare_normalized_masked.html", "output/count.final_masked.csv"]
         if ancestor_files:
             _all_targets += ["output/final.tre"]
-            _all_targets += ["output/compare_normalized_masked.discrepancies.html"]
+            _all_targets += ["output/compare_normalized_masked_discrepancies.html"]
 
 
 rule all_curate_ltee_clones:
@@ -302,7 +302,7 @@ rule mark_discrepancies_LTEE_compare:
         html          = "output/compare_normalized_masked.html",
         discrepancies = "07_phylogeny/discrepancies",   # directory() output of postprocess rule
     output:
-        "output/compare_normalized_masked.discrepancies.html"
+        "output/compare_normalized_masked_discrepancies.html"
     run:
         import os, glob, re, html as _html
 
