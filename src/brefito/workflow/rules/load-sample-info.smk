@@ -339,6 +339,10 @@ class SampleInfo():
                         'local_path' : i
                         })
 
+        # add_file() populates self.sample_set; mirror init_from_CSV_file and
+        # publish it as sample_list so get_sample_list() works under autodetect.
+        self.sample_list = list(self.sample_set)
+
     def add_file(self, row):
 
         # Do checks that lead to not adding to the list first
@@ -686,14 +690,20 @@ if sample_info == None:
         print("Attempting to load Sample Info from CSV file: " + data_csv_name)
         sample_info = SampleInfo(data_csv_name)
     except FileNotFoundError:
-        print("  Could not find/load Sample Info file.")
+        # No such file: legitimately fall back to autodetecting from the directory
+        # structure below (e.g. the default 'data.csv' simply isn't present).
+        print("  Could not find Sample Info file '" + data_csv_name + "'.")
     except Exception as e:
-        print(f"Caught a general exception: {e}")
+        # The file exists but could not be parsed. Do NOT silently fall back to a
+        # directory scan (that hides the real cause and yields a misleading "none
+        # found" message) - surface the error and exit.
+        print("ERROR: Failed to parse sample information file '" + data_csv_name + "': " + str(e))
         import traceback
         traceback.print_exc()
+        exit(1)
 
 if sample_info == None:
-    print("Attempting to load Sample Info from directory structure: " + data_csv_name)
+    print("Attempting to load Sample Info from directory structure")
     sample_info = SampleInfo()
 
 # Typically "references" or "assemblies" but can be overridden
