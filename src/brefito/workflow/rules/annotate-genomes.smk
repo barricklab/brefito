@@ -3,8 +3,11 @@
 # which is why this makes GFF3 only right now!
 
 try: sample_info
-except NameError: 
+except NameError:
     include: "load-sample-info.smk"
+
+# --config NO_ISESCAN[=1] skips ISEScan integration; the final .gbk path is unchanged.
+NO_ISESCAN = config_is_true("NO_ISESCAN")
 
 rule all_annotate_genomes:
     input:
@@ -48,8 +51,11 @@ rule annotate_with_isescan:
     input:
         "annotated-" + sample_info.get_reference_prefix() + "-fasta/{sample}.fasta"
     output:
-        dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}")),
-        isescan_annotated_csv = temp("annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}/" +  "annotated-" + sample_info.get_reference_prefix() + "-fasta" + "/{sample}.fasta.csv")
+        # ISEScan exits 0 but writes no *.fasta.csv when it finds zero IS elements, so
+        # we depend on the (always-created) output directory instead of that csv. The
+        # combine rule checks at runtime whether the csv exists. mkdir -p is a cheap
+        # safety net so the directory-output check never fails.
+        dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}"))
     log:
         "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-isescan.log"
     conda:
@@ -58,24 +64,44 @@ rule annotate_with_isescan:
     shell:
         """
         isescan.py --nthread {threads} --seqfile {input} --output {output.dir} > {log} 2>&1
+        mkdir -p {output.dir}
         """
 
 #       isescan.py --removeShortIS --nthread {threads} --seqfile {input} --output {output.dir} > {log} 2>&1
 
 
+def combine_annotation_inputs(wildcards):
+    prefix = "annotated-" + sample_info.get_reference_prefix()
+    inputs = {
+        "prokka": prefix + "-prokka/" + wildcards.sample + "/reference.gff",
+        "prokka_dir": prefix + "-prokka/" + wildcards.sample,
+    }
+    # Only depend on (and run) ISEScan when it is not being skipped.
+    if not NO_ISESCAN:
+        inputs["isescan_dir"] = prefix + "-isescan/" + wildcards.sample
+    return inputs
+
 rule combine_annotation_with_breseq:
     input:
-        prokka = "annotated-" + sample_info.get_reference_prefix() + "-prokka/{sample}/reference.gff",
-        isescan = "annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}/" +  "annotated-" + sample_info.get_reference_prefix() + "-fasta" + "/{sample}.fasta.csv",
-        prokka_dir = "annotated-" + sample_info.get_reference_prefix() + "-prokka/{sample}",
-        isescan_dir = "annotated-" + sample_info.get_reference_prefix() + "-isescan/{sample}"
+        unpack(combine_annotation_inputs)
     output:
         "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gbk"
+    params:
+        # Expected ISEScan csv path (empty when NO_ISESCAN). The shell adds -s only when
+        # this file actually exists and is non-empty, so a zero-IS-element result (no csv)
+        # falls back to a Prokka-only conversion instead of crashing.
+        isescan_csv = lambda wildcards: "" if NO_ISESCAN else (
+            "annotated-" + sample_info.get_reference_prefix() + "-isescan/" + wildcards.sample + "/" +
+            "annotated-" + sample_info.get_reference_prefix() + "-fasta/" + wildcards.sample + ".fasta.csv")
     log:
         "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-combine-annotation-with-breseq.log"
     conda:
         BRESEQ_ENV
     shell:
         """
-        breseq CONVERT-REFERENCE -f GENBANK -s {input.isescan} -o {output} {input.prokka} > {log} 2>&1
+        if [ -n "{params.isescan_csv}" ] && [ -s "{params.isescan_csv}" ]; then
+            breseq CONVERT-REFERENCE -f GENBANK -s "{params.isescan_csv}" -o {output} {input.prokka} > {log} 2>&1
+        else
+            breseq CONVERT-REFERENCE -f GENBANK -o {output} {input.prokka} > {log} 2>&1
+        fi
         """

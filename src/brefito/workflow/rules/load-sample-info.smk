@@ -695,6 +695,19 @@ class SampleInfo():
 #### Initialize from config values
 brefito_config = {key.upper(): value for key, value in config.items()}
 
+def config_is_true(name, default=False):
+    """Interpret an on/off --config flag as a boolean, consistently across workflows.
+
+    Handles `--config NAME` (the brefito wrapper turns a value-less flag into "1"),
+    `--config NAME=1|true|yes|on`, and `NAME=0|false|no|off`. An absent key returns
+    `default`. Unlike a bare bool(brefito_config[...]), this treats the string "0"/"false"
+    as False. Use ONLY for genuine flags - not for value-bearing options.
+    """
+    v = brefito_config.get(name.upper(), default)
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() not in ("", "0", "false", "no", "off")
+
 BRESEQ_ENV = "../envs/breseq-prerelease.yml" if brefito_config.get("BRESEQ_PRERELEASE") else "../envs/breseq.yml"
 
 data_csv_name = 'data.csv'
