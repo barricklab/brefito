@@ -321,8 +321,14 @@ def main():
     if len(config_options_list) > 0:
         config_options =  ["--config"]
         for i in config_options_list:
-            si = i.split('=')
-            config_options = config_options + [si[0] + '="' + si[1] + '"']
+            # split once so a value that itself contains '=' is preserved, and so a
+            # value-less flag (e.g. --config NO_ISESCAN) becomes NO_ISESCAN="1"
+            # instead of crashing here on a missing si[1].
+            si = i.split('=', 1)
+            if len(si) == 1:
+                config_options = config_options + [si[0] + '="1"']
+            else:
+                config_options = config_options + [si[0] + '="' + si[1] + '"']
 
     if workflow_to_run=="search-blast":
         config_options = config_options + ["QUERY_FILE_PATH" + '="' + search_query_option + '"']

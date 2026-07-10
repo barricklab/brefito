@@ -15,9 +15,7 @@ BRESEQ_OPTIONS = ""
 if 'BRESEQ_OPTIONS' in brefito_config.keys():
     BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
 
-NO_DEFAULT_BRESEQ_OPTIONS = False
-if 'NO_DEFAULT_BRESEQ_OPTIONS' in brefito_config.keys():
-    NO_DEFAULT_BRESEQ_OPTIONS = bool(brefito_config['NO_DEFAULT_BRESEQ_OPTIONS'])
+NO_DEFAULT_BRESEQ_OPTIONS = config_is_true("NO_DEFAULT_BRESEQ_OPTIONS")
 
 AUTOMATIC_BRESEQ_ARGS = {}
 
