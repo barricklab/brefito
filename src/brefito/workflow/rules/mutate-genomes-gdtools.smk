@@ -2,15 +2,14 @@ try: sample_info
 except NameError:
     include: "load-sample-info.smk"
 
-OUTPUT_FORMAT=None
+OUTPUT_FORMAT="GENBANK"
 
 if "OUTPUT_FORMAT" in brefito_config.keys():
-    OUTPUT_FORMAT = brefito_config['OUTPUT_FORMAT']
-
-print(f"Supplied output format is {OUTPUT_FORMAT}")
-
-if OUTPUT_FORMAT is None:
-    raise ValueError("Please provide the output format. Valid args are GFF3, GENBANK, FASTA")
+    OUTPUT_FORMAT = brefito_config['OUTPUT_FORMAT'].upper()
+    print(f"User specified output format is {OUTPUT_FORMAT}")
+else:
+    print("Using default output format: " + OUTPUT_FORMAT)
+    print("You can change this by providing --config OUTPUT_FORMAT=<GFF3|GENBANK|FASTA>")
 
 if not(OUTPUT_FORMAT in ['GFF3', 'GENBANK', 'FASTA']):
     raise ValueError(f"File format {OUTPUT_FORMAT} not recognized. Please provide the output format. Valid args are GFF3, GENBANK, FASTA")
