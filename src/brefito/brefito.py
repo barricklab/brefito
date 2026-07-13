@@ -205,8 +205,12 @@ def main():
         snakemake_plus_common_options = snakemake_plus_common_options + ["--cores", str(args.cores)]
 
     rerun_triggers = args.rerun_triggers if args.rerun_triggers is not None else ['mtime', 'code', 'input']
-    for rt in rerun_triggers:
-        snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-triggers", rt]
+    # Snakemake's --rerun-triggers uses nargs="+" (not action="append"), so repeating
+    # the flag makes argparse keep only the LAST value. Emitting them one-per-flag
+    # therefore collapsed the whole list to just 'input', silently disabling the other
+    # selected triggers (e.g. 'code', so edits to a rule's shell command no longer
+    # forced a rerun). Pass them all under a single flag so each trigger is honored.
+    snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-triggers"] + rerun_triggers
 
     if args.rerun_incomplete:
         snakemake_plus_common_options = snakemake_plus_common_options + ["--rerun-incomplete"]
