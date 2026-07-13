@@ -4,5 +4,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - breseq-prerelease
+  - breseq
 name: breseq
