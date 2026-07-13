@@ -28,7 +28,8 @@ if 'BAM2COV_FORMAT' in brefito_config.keys() and brefito_config['BAM2COV_FORMAT'
 else:
     print()
     print("  Using default --config BAM2COV_FORMAT setting: --format " + BAM2COV_FORMAT)
-    print("  You can change this using --config BAM2COV_FORMAT=\"png|svg|pdf\"")
+    print("  You can change this using --config BAM2COV_FORMAT=\"png|svg|pdf|tsv|csv\"")
+BAM2COV_FORMAT = BAM2COV_FORMAT.lower()
 
 BAM2COV_OPTIONS = ""
 if 'BAM2COV_OPTIONS' in brefito_config.keys() and brefito_config['BAM2COV_OPTIONS'] != None:
@@ -36,7 +37,7 @@ if 'BAM2COV_OPTIONS' in brefito_config.keys() and brefito_config['BAM2COV_OPTION
     pattern = r"--format +\S+"
     if re.search(pattern, BAM2COV_OPTIONS):
        print()
-       print("Provide --format options through --config BAM2COV_FORMAT=\"png|svg|pdf\" instead of BAM2COV_OPTIONS")
+       print("Provide --format options through --config BAM2COV_FORMAT=\"png|svg|pdf|tsv|csv\" instead of BAM2COV_OPTIONS")
        exit(1)
 else:
     print()
@@ -68,6 +69,6 @@ rule bam2cov_breseq:
     threads: 1 
     shell:
         """
-        echo "breseq BAM2COV --output {params.region} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION}" > {log} 2>&1
-        breseq BAM2COV --output {params.region} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION} >> {log} 2>&1
+        echo "breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION}" > {log}
+        breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION} >> {log} 2>&1
         """
