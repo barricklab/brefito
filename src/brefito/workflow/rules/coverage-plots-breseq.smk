@@ -4,17 +4,17 @@ TILE_SIZE = 10000
 if 'TILE_SIZE' in brefito_config.keys():
     TILE_SIZE = int(brefito_config['TILE_SIZE'])
 
-TILE_OVERLAP = ""
+TILE_OVERLAP = 2000
 if 'TILE_OVERLAP' in brefito_config.keys():
-    TILE_OVERLAP = brefito_config['TILE_OVERLAP'] 
+    TILE_OVERLAP = int(brefito_config['TILE_OVERLAP'])
 
 PLOT_RESOLUTION = 1000
 if 'PLOT_RESOLUTION' in brefito_config.keys():
-    PLOT_RESOLUTION = bool(brefito_config['PLOT_RESOLUTION'])
+    PLOT_RESOLUTION = int(brefito_config['PLOT_RESOLUTION'])
 
 PLOT_FORMAT = "PNG"
 if 'PLOT_FORMAT' in brefito_config.keys():
-    PLOT_FORMAT = bool(brefito_config['PLOT_FORMAT'])
+    PLOT_FORMAT = brefito_config['PLOT_FORMAT']
 
 print("Using breseq bam2cov options, --tile-size {} --tile-overlap {} --resolution {} --format {}".format(TILE_SIZE, TILE_OVERLAP, PLOT_RESOLUTION, PLOT_FORMAT))
 print("You can set these using --config TILE_SIZE=<int> --config TILE_OVERLAP=<int> --config PLOT_RESOLUTION=<int> --config PLOT_FORMAT=<PDF/PNG>\n")
