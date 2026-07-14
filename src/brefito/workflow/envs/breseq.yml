@@ -1,5 +1,4 @@
 channels:
-  - https://barricklab.github.io/conda/
   - conda-forge
   - bioconda
   - defaults
