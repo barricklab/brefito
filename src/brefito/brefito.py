@@ -5,6 +5,7 @@ import os
 import os.path
 import argparse
 import re
+import shutil
 import subprocess
 import hashlib
 import json
@@ -479,12 +480,16 @@ def candidate_env_hashes(yaml_file, envs_dir, platform):
 
     return [current.hexdigest(), legacy_content_only, legacy_name_and_content]
 
+def get_conda_executable():
+    return "mamba" if shutil.which("mamba") else "conda"
+
 def remove_installed_conda_env(yaml_file, envs_dir, platform):
+    executable = get_conda_executable()
     for env_hash in candidate_env_hashes(yaml_file, envs_dir, platform):
         for candidate in (env_hash, env_hash + "_", env_hash[:8]):
             env_dir = os.path.join(envs_dir, candidate)
             if os.path.isdir(env_dir):
-                subprocess.run(["conda", "remove", "--all", "--yes", "--prefix", env_dir])
+                subprocess.run([executable, "remove", "--all", "--yes", "--prefix", env_dir])
                 for suffix in (".yaml", ".pin.txt", ".post-deploy.sh", ".env_setup_done"):
                     sidecar = env_dir + suffix
                     if os.path.isfile(sidecar):
