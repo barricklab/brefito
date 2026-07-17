@@ -325,7 +325,7 @@ def main():
         config_options =  ["--config"]
         for i in config_options_list:
             # split once so a value that itself contains '=' is preserved, and so a
-            # value-less flag (e.g. --config NO_ISESCAN) becomes NO_ISESCAN="1"
+            # value-less flag (e.g. --config SKIP_PHISPY) becomes SKIP_PHISPY="1"
             # instead of crashing here on a missing si[1].
             si = i.split('=', 1)
             if len(si) == 1:

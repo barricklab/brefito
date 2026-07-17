@@ -6,8 +6,10 @@ try: sample_info
 except NameError:
     include: "load-sample-info.smk"
 
-# --config NO_ISESCAN[=1] skips ISEScan integration; the final .gbk path is unchanged.
-NO_ISESCAN = config_is_true("NO_ISESCAN")
+# --config SKIP_ISESCAN[=1] (or NO_ISESCAN) skips ISEScan integration; the final .gbk path is unchanged.
+# --config SKIP_PHISPY[=1] (or NO_PHISPY) skips PhiSpy; the annotated GenBank is copied through unchanged.
+SKIP_ISESCAN = config_is_true("SKIP_ISESCAN") or config_is_true("NO_ISESCAN")
+SKIP_PHISPY = config_is_true("SKIP_PHISPY") or config_is_true("NO_PHISPY")
 
 rule all_annotate_genomes:
     input:
@@ -77,7 +79,7 @@ def combine_annotation_inputs(wildcards):
         "prokka_dir": prefix + "-prokka/" + wildcards.sample,
     }
     # Only depend on (and run) ISEScan when it is not being skipped.
-    if not NO_ISESCAN:
+    if not SKIP_ISESCAN:
         inputs["isescan_dir"] = prefix + "-isescan/" + wildcards.sample
     return inputs
 
@@ -85,12 +87,14 @@ rule combine_annotation_with_breseq:
     input:
         unpack(combine_annotation_inputs)
     output:
-        "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gbk"
+        # Intermediate Prokka(+ISEScan) GenBank; PhiSpy consumes it and produces the
+        # final annotated-<prefix>/{sample}.gbk. temp() is safe because PhiSpy copies it.
+        temp("annotated-" + sample_info.get_reference_prefix() + "-prokka-isescan/{sample}.gbk")
     params:
-        # Expected ISEScan csv path (empty when NO_ISESCAN). The shell adds -s only when
+        # Expected ISEScan csv path (empty when SKIP_ISESCAN). The shell adds -s only when
         # this file actually exists and is non-empty, so a zero-IS-element result (no csv)
         # falls back to a Prokka-only conversion instead of crashing.
-        isescan_csv = lambda wildcards: "" if NO_ISESCAN else (
+        isescan_csv = lambda wildcards: "" if SKIP_ISESCAN else (
             "annotated-" + sample_info.get_reference_prefix() + "-isescan/" + wildcards.sample + "/" +
             "annotated-" + sample_info.get_reference_prefix() + "-fasta/" + wildcards.sample + ".fasta.csv")
     log:
@@ -103,5 +107,32 @@ rule combine_annotation_with_breseq:
             breseq CONVERT-REFERENCE -f GENBANK -s "{params.isescan_csv}" -o {output} {input.prokka} > {log} 2>&1
         else
             breseq CONVERT-REFERENCE -f GENBANK -o {output} {input.prokka} > {log} 2>&1
+        fi
+        """
+
+# Run PhiSpy on the annotated GenBank to add prophage annotations. PhiSpy must run
+# after Prokka since it needs an annotated GenBank as input. When SKIP_PHISPY is set,
+# the rule copies the input GenBank through unchanged instead of running PhiSpy.
+rule annotate_with_phispy:
+    input:
+        gbk = "annotated-" + sample_info.get_reference_prefix() + "-prokka-isescan/{sample}.gbk"
+    output:
+        gbk = "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gbk",
+        dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "-phispy/{sample}"))
+    params:
+        skip = "1" if SKIP_PHISPY else ""
+    log:
+        "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-phispy.log"
+    conda:
+        "../envs/phispy.yml"
+    shell:
+        """
+        if [ -n "{params.skip}" ]; then
+            mkdir -p {output.dir}
+            cp {input.gbk} {output.gbk}
+        else
+            PhiSpy.py {input.gbk} -o {output.dir} > {log} 2>&1
+            # PhiSpy's GenBank output (default --output_choice 3) is named after the input basename.
+            cp {output.dir}/$(basename {input.gbk}) {output.gbk}
         fi
         """
