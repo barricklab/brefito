@@ -198,7 +198,7 @@ rule curate_LTEE_gd:
     conda: BRESEQ_ENV
     shell:
         """
-        gdtools VALIDATE -r {input.reference} {input.initial} {input.add} {input.subtracts} {input.header} > {log} 2>&1
+        gdtools VALIDATE -r {input.reference} {input.initial} {input.add} {input.header} > {log} 2>&1
         gdtools SUBTRACT -o {output}.tmp1 {input.initial} {input.subtracts} >> {log} 2>&1
         gdtools UNION    -o {output}.tmp2 {input.add} {output}.tmp1 >> {log} 2>&1
         gdtools REHEADER -o {output} {input.header} {output}.tmp2 >> {log} 2>&1
