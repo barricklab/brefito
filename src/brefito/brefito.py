@@ -485,6 +485,7 @@ def get_conda_executable():
 
 def remove_installed_conda_env(yaml_file, envs_dir, platform):
     executable = get_conda_executable()
+    subprocess.run([executable, "clean", "--index-cache", "--yes"])
     for env_hash in candidate_env_hashes(yaml_file, envs_dir, platform):
         for candidate in (env_hash, env_hash + "_", env_hash[:8]):
             env_dir = os.path.join(envs_dir, candidate)
