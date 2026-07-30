@@ -9,6 +9,8 @@ include: "autocycler-subsample-nanopore-reads.smk"
 READ_SUBSET_IDS=["01","02","03","04"] # autocycler subsample creates 4 subsampled fastqs for a given fastq file
 ASSEMBLERS=["canu","flye","miniasm","necat","metamdbg","raven"]
 
+MAX_CONTIGS_ARGUMENT="--max_contigs 40"
+
 rule all_targets_autocycler:
     input:
         ["assemblies/" + s + ".fasta" for s in sample_info.get_sample_list()]
@@ -167,7 +169,7 @@ rule autocycler_compress:
     threads: 16
     shell:
         """
-        autocycler compress --threads {threads} -i {params.input_assemblies} -a {params.output_directory} > {log} 2>&1
+        autocycler compress --threads {threads} {MAX_CONTIGS_ARGUMENT} -i {params.input_assemblies} -a {params.output_directory} > {log} 2>&1
         """
 
 rule autocycler_all_steps:
@@ -185,7 +187,7 @@ rule autocycler_all_steps:
        input_directory="autocycler/$sample"
 
        # run cluster
-       autocycler cluster -a $input_directory > {log} 2>&1
+       autocycler cluster {MAX_CONTIGS_ARGUMENT} -a $input_directory > {log} 2>&1
 
        for c in "$input_directory/clustering/qc_pass/cluster_"*; do
            autocycler trim  --threads {threads} -c "$c" > {log} 2>&1
