@@ -3,5 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bowtie2 =2.5.3
+  - bowtie2 =2.5.5
 name: bowtie2
