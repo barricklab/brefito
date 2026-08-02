@@ -26,10 +26,6 @@ def find_available_read_files(wildcards):
 
     AUTOMATIC_BRESEQ_ARGS[wildcards.sample] = ""
 
-    if not NO_DEFAULT_BRESEQ_OPTIONS:
-        if (len(nanopore_files) > 0):
-            AUTOMATIC_BRESEQ_ARGS[wildcards.sample] = AUTOMATIC_BRESEQ_ARGS[wildcards.sample] + "-x"
-
     return illumina_files + nanopore_files
 
 def get_breseq_args(sample):
