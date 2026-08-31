@@ -15,8 +15,10 @@ rule _validate_genomediff_gdtools:
         "genome-diffs-validate/{sample}.txt"
     conda:
         BRESEQ_ENV
+    params:
+        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
     threads: 1
     shell:
         """
-        gdtools VALIDATE -r {input.references} {input.genomediff} > {output} 2>&1 
+        gdtools VALIDATE {params.reference_arguments} {input.genomediff} > {output} 2>&1
         """
