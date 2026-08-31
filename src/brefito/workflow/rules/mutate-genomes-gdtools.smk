@@ -37,5 +37,5 @@ rule mutate_genomes_gdtools:
     threads: 1
     shell:
         """
-        gdtools APPLY -o {output} {params.reference_arguments} -f {params.output_format}  {input.genomediff} -r {input.references} > {log} 2>&1
+        gdtools APPLY -o {output} {params.reference_arguments} -f {params.output_format} {input.genomediff} > {log} 2>&1
         """
