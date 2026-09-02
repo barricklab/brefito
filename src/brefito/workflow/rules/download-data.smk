@@ -171,8 +171,16 @@ def get_sra_path_from_local_path(local_path, file_name):
     if not remote_path or not remote_path.startswith("sra://"):
         return []
 
-    #print(f"sra-downloads/{file_name}")
-    return(f"sra-downloads/{file_name}")
+    # Files in sra-downloads are named for the run accession, NOT for the local file
+    # name, which may have had a "-1" style suffix added to deconflict it. This must
+    # agree with the mv command built by remote_path_to_shell_command().
+    run_accession = remote_path[len("sra://"):]
+    for read_ending in (".SE.fastq.gz", ".R1.fastq.gz", ".R2.fastq.gz"):
+        if file_name.endswith(read_ending):
+            return(f"sra-downloads/{run_accession}{read_ending}")
+
+    # Nanopore reads
+    return(f"sra-downloads/{run_accession}.fastq.gz")
 
 rule download_file:
     output:

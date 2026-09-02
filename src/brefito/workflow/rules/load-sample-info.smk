@@ -428,17 +428,45 @@ class SampleInfo():
 
         return [current_file_name, "".join(reversed(extension_list)) ]
 
-    #makes sure that different remote paths aren't mapped to the same local path
+    # Entries that name the same source share one local file. It is downloaded
+    # once and every sample that lists it uses that same copy. Only genuinely
+    # different sources that would land on the same local name get a "-1", "-2",
+    # ... suffix added to keep them separate.
     def deconflict_paths(self, this_row):
 
-        if this_row['local_path'].lower() in (k.lower() for k in self.local_to_remote_path_mapping.keys()):
-        #if this_row['local_path'] in self.local_to_remote_path_mapping.keys():
-        #    if self.local_to_remote_path_mapping[this_row['local_path']] != this_row['remote_path']:
-                i=1
-                file_name, file_extension = self.split_filename_and_extension(this_row['local_path'])
-                while file_name + "-" + str(i) + file_extension in self.local_to_remote_path_mapping.keys():
-                    i = i + 1
-                this_row['local_path'] = file_name + "-" + str(i) + file_extension
+        candidate_path = this_row['local_path']
+        file_name, file_extension = self.split_filename_and_extension(candidate_path)
+
+        i = 0
+        while True:
+            claimed_path = self.find_claimed_local_path(candidate_path)
+
+            # Nobody is using this name yet
+            if claimed_path == None:
+                this_row['local_path'] = candidate_path
+                return
+
+            # Same source file - reuse the local copy already claimed for it
+            if self.local_to_remote_path_mapping[claimed_path] == this_row['remote_path']:
+                this_row['local_path'] = claimed_path
+                return
+
+            # Different sources - rename this one so they don't overwrite each other
+            i = i + 1
+            new_candidate_path = file_name + "-" + str(i) + file_extension
+            print("WARNING: Two different sources map to the same local file name:")
+            print("    " + str(self.local_to_remote_path_mapping[claimed_path]) + " => " + claimed_path)
+            print("    " + str(this_row['remote_path']) + " => " + candidate_path)
+            print("  Renaming the second one to: " + new_candidate_path)
+            candidate_path = new_candidate_path
+
+    # local_to_remote_path_mapping is keyed by the exact local path, but names that
+    # differ only in case would collide on a case-insensitive file system.
+    def find_claimed_local_path(self, local_path):
+        for claimed_path in self.local_to_remote_path_mapping.keys():
+            if claimed_path.lower() == local_path.lower():
+                return claimed_path
+        return None
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):

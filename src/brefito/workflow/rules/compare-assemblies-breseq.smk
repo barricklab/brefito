@@ -50,16 +50,17 @@ rule simulate_reads_breseq:
         references = lambda wildcards: sample_info.get_reference_list(wildcards.sample)
     output:
         reads_gz = "simulated-reads-" + sample_info.get_reference_prefix() + "/{sample}.fastq.gz"
-    log: 
+    log:
         "logs/breseq-simulate-reads-" + sample_info.get_reference_prefix() + "-{sample}.log"
     conda:
         BRESEQ_ENV
     params:
-        reads = "simulated-reads-" + sample_info.get_reference_prefix() + "/{sample}.fastq"
+        reads = "simulated-reads-" + sample_info.get_reference_prefix() + "/{sample}.fastq",
+        reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
     threads: 8
     shell:
         """
-        breseq simulate-reads -m tiled -l 200 -c 80 -r {input.references} -o {params.reads}  > {log} 2>&1
+        breseq simulate-reads -m tiled -l 200 -c 80 {params.reference_arguments} -o {params.reads}  > {log} 2>&1
         gzip {params.reads}
         """
 
