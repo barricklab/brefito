@@ -13,7 +13,7 @@ where = ["src"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["*.smk", "*.yml", "*.pl", "*.R"]
+"*" = ["*.smk", "*.yml", "*.pl", "*.R", "*.sh"]
 
 [project.scripts]
 brefito = "brefito.brefito:main"
