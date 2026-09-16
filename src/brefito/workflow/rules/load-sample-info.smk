@@ -468,10 +468,18 @@ class SampleInfo():
                 return claimed_path
         return None
 
+    # A bare SRA run accession (what an sra:// entry gives us) has no .fastq.gz ending to
+    # strip and is already in simplified form. A real file whose name merely begins with an
+    # accession (SRR13512703_1.fastq.gz) must still be simplified, or the two files of a pair
+    # end up with different base names and no paired rule can be built for them.
+    def is_bare_sra_run_accession(self, in_read_name):
+        return (in_read_name.startswith("SRR") or in_read_name.startswith("ERR")) \
+            and in_read_name[3:].isdigit()
+
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):
 
-        if in_read_name.startswith("SRR") or in_read_name.startswith("ERR"): # sra accesion can be returned as is
+        if self.is_bare_sra_run_accession(in_read_name):
             return in_read_name
 
         # Valid read file names must end in *.fastq.gz for workflows to function!
@@ -602,6 +610,7 @@ class SampleInfo():
 
             if (illumina_R1_base != illumina_R2_base):
                 print("R1 and R2 entries do not match: \n  " + illumina_R1_read_list[i] + "\n  " + illumina_R2_read_list[i])
+                print("  Names must match after the .R1/.R2 part is removed. Check the 'setting' column in data.csv.")
                 sys.exit(1)
             read_base_list.append(os.path.split(illumina_R1_base)[1])
         return read_base_list
