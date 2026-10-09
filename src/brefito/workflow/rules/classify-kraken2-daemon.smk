@@ -37,10 +37,6 @@ rule all_classify_kraken2:
 #   shell:
 #        "k2 clean --stop-daemon"
 
-rule copy_db_to_ram:
-    output:
-        directory("classify-kraken2/kracken2_report/{sample}.txt")
-
 rule classify_kraken2:
     input:
         lambda wildcards: ["illumina-reads-trimmed/" + r for r in sample_info.get_illumina_read_list(wildcards.sample)],
