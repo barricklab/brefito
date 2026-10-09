@@ -34,6 +34,12 @@ if ILLUMINA_TRIMMING.upper()=="NONE":
     ruleorder: trim_illumina_reads_no_trim > trim_SE_illumina_reads_with_fastp
 elif ILLUMINA_TRIMMING.upper()=="FASTP":
     print("fastp used for trimming illumina reads.")
+    # fastp pairs R1 with R2 through a shared {dataset} wildcard. If the names of a pair do
+    # not share a base, no fastp job exists for them and snakemake quietly falls back to
+    # trim_illumina_reads_no_trim, passing the reads through untrimmed. Check here so that
+    # this is an error rather than a silent no-op.
+    for this_sample in sample_info.get_sample_list():
+        sample_info.get_illumina_PE_read_base_list(this_sample)
     ruleorder: trim_PE_illumina_reads_with_fastp > trim_illumina_reads_no_trim 
     ruleorder: trim_SE_illumina_reads_with_fastp > trim_illumina_reads_no_trim
     print("  Single-end fastp options: " + FASTP_SE_OPTIONS)

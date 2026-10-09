@@ -134,3 +134,4 @@ Config is passed as `--config key=value` and accessed in rules as `brefito_confi
 - `samples` — underscore-comma-separated sample filter (set automatically from CLI positional args)
 - `genome_size` — required by autocycler-assemble
 - `BRESEQ_THREADS`, `BRESEQ_OPTIONS`, `NO_DEFAULT_BRESEQ_OPTIONS` — breseq tuning
+- `SRA_IGNORE_LAYOUT_MISMATCH` — downgrade the paired/single-end check on `sra://` downloads from an error to a warning

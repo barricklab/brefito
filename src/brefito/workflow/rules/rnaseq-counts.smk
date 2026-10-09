@@ -11,8 +11,17 @@ if 'HTSEQ_TYPE' in brefito_config.keys():
     HTSEQ_TYPE = brefito_config['HTSEQ_TYPE']
     print("User specified htseq feature type to count " + HTSEQ_TYPE)
 else:
-    print("Used default htseq feature type to count " + HTSEQ_TYPE)
-    print("To change, set --config HTSEQ_TYPE=gene of similar")
+    print("Used default htseq feature type to count: " + HTSEQ_TYPE)
+    print("To change, set --config HTSEQ_TYPE=gene or similar")
+
+HTSEQ_STRANDED = "reverse"
+if 'HTSEQ_STRANDED' in brefito_config.keys():
+    HTSEQ_STRANDED = brefito_config['HTSEQ_STRANDED']
+    print("User specified htseq strand type to count: " + HTSEQ_STRANDED)
+else:
+    print("Used default htseq strand type to count " + HTSEQ_STRANDED)
+    print("To change, set --config HTSEQ_STRANDED=<yes|no|reverse>")
+    print("Using 'reverse' is common for direct Illumina RNAseq library preps.")
 
 # We want bowtiew2 to report one mapping for multimapped pairs
 brefito_config['BOWTIE2_OPTIONS'] = "-k 1"
@@ -69,5 +78,5 @@ rule htseq_rnaseq_counts:
         "../envs/htseq.yml"
     shell:
         """
-        htseq-count --nonunique random --type {HTSEQ_TYPE} -i ID -r name {input.bam} {input.gff3} > {output}
+        htseq-count --nonunique random --type {HTSEQ_TYPE} --stranded {HTSEQ_STRANDED} -i ID -r name {input.bam} {input.gff3} > {output}
         """

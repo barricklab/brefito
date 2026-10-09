@@ -208,24 +208,68 @@ rule download_file:
         """
 
 ruleorder: download_paired_sra > download_single_end_sra > download_nanopore_sra
+ruleorder: download_paired_sra > gzip_sra
+
+# Accessions never contain a period. This keeps the rules below from matching
+# derived names like SRR123.R1 or SRR123.unpaired as if they were accessions.
+SRA_RUN_ACCESSION_CONSTRAINT = "[A-Za-z0-9]+"
+
+# Catch a data.csv row that asks for the wrong kind of reads (illumina-PE for a run
+# that is really single-end, or illumina-SE/nanopore for a run that is really paired)
+# before a long download happens. This only reads run metadata, which takes seconds.
+SRA_LAYOUT_CHECK_SCRIPT = os.path.join(str(workflow.current_basedir), "..", "scripts", "check_sra_layout.sh")
+SRA_LAYOUT_MISMATCH_MODE = "warn" if config_is_true("SRA_IGNORE_LAYOUT_MISMATCH") else "error"
 
 rule download_paired_sra:
     output:
         output_R1_path = temp("sra-downloads/{run_accession}.R1.fastq"),
-        output_R2_path = temp("sra-downloads/{run_accession}.R2.fastq")
+        output_R2_path = temp("sra-downloads/{run_accession}.R2.fastq"),
+        # Reads from spots that only have one mate. This file is a bonus: nothing
+        # downstream uses it, and it is empty when every spot in the run is paired.
+        output_unpaired_path = "sra-downloads/{run_accession}.unpaired.fastq.gz"
     threads: 1
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
         connections=1
+    wildcard_constraints:
+        run_accession=SRA_RUN_ACCESSION_CONSTRAINT
     conda:
         "../envs/download.yml"
     shell:
         """
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} paired {SRA_LAYOUT_MISMATCH_MODE}
+
         cd sra-downloads
-        fastq-dump --split-files {wildcards.run_accession}
+
+        # Clear stale output from an interrupted run so that dumps are never mixed
+        rm -f {wildcards.run_accession}_1.fastq {wildcards.run_accession}_2.fastq {wildcards.run_accession}_3.fastq {wildcards.run_accession}.fastq
+
+        # --split-3 (NOT --split-files) keeps R1 and R2 exactly in sync when the run has
+        # an unequal number of reads per spot: spots that are missing a mate are written
+        # to {wildcards.run_accession}.fastq rather than desynchronizing _1 versus _2.
+        # --skip-technical keeps barcode/adapter reads from being treated as a mate.
+        fastq-dump --split-3 --skip-technical {wildcards.run_accession}
+
+        if [ ! -s {wildcards.run_accession}_1.fastq ] || [ ! -s {wildcards.run_accession}_2.fastq ]; then
+            echo "ERROR: SRA run {wildcards.run_accession} did not yield any paired reads." >&2
+            echo "       It appears to be single-end. Use type 'illumina-SE' (or 'nanopore')" >&2
+            echo "       for this accession in data.csv instead of 'illumina-PE'." >&2
+            exit 1
+        fi
+
         mv {wildcards.run_accession}_1.fastq {wildcards.run_accession}.R1.fastq
         mv {wildcards.run_accession}_2.fastq {wildcards.run_accession}.R2.fastq
+
+        # Compress the unpaired reads here rather than through the gzip_sra rule so that
+        # they are kept. This must also move them off of the {wildcards.run_accession}.fastq
+        # name, which is what the nanopore download rule creates.
+        if [ -e {wildcards.run_accession}.fastq ]; then
+            pigz -f -p {threads} -c {wildcards.run_accession}.fastq > {wildcards.run_accession}.unpaired.fastq.gz
+            rm -f {wildcards.run_accession}.fastq
+        else
+            : | pigz -c > {wildcards.run_accession}.unpaired.fastq.gz
+        fi
         """
 
 rule download_single_end_sra:
@@ -236,14 +280,22 @@ rule download_single_end_sra:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
         connections=1
-    conda:
-        "../envs/download.yml"
+    wildcard_constraints:
+        run_accession=SRA_RUN_ACCESSION_CONSTRAINT
     conda:
         "../envs/download.yml"
     shell:
         """
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+
         cd sra-downloads
-        fastq-dump {wildcards.run_accession}
+
+        # --skip-technical only takes effect when a split option is also given, and
+        # --split-spot always writes the one file this rule expects: it keeps every
+        # biological read as its own record instead of joining the reads of a spot
+        # into a single chimeric read the way a bare fastq-dump does.
+        fastq-dump --split-spot --skip-technical {wildcards.run_accession}
+
         mv {wildcards.run_accession}.fastq {wildcards.run_accession}.SE.fastq
         """
 
@@ -255,14 +307,19 @@ rule download_nanopore_sra:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
         connections=1
-    conda:
-        "../envs/download.yml"
+    wildcard_constraints:
+        run_accession=SRA_RUN_ACCESSION_CONSTRAINT
     conda:
         "../envs/download.yml"
     shell:
         """
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+
         cd sra-downloads
-        fastq-dump {wildcards.run_accession}
+
+        # See the note in download_single_end_sra: --skip-technical needs a split
+        # option to do anything, and --split-spot leaves the output file name alone.
+        fastq-dump --split-spot --skip-technical {wildcards.run_accession}
         """
 
 rule gzip_sra:
