@@ -151,8 +151,8 @@ rule assemble_with_necat:
     output:
         assembly_fasta = "intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta",
 #        assembly_directory = temp(directory("03_necat_assembly_temp/{dataset}/{assembly_id}"))
-#    resources:
-#        necats=1
+    resources:
+        necats=1
     log:
         "logs/{dataset}/necat_{assembly_id}.log"
     conda:
