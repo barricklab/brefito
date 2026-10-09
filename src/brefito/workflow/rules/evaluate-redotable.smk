@@ -3,6 +3,15 @@ if not "redotable_path" in config.keys():
 
 REDOTABLE_PATH = config["redotable_path"]
 
+try: sample_info
+except NameError:
+    include: "load-sample-info.smk"
+
+rule all_evaluate_redotable:
+    input:
+        ["evaluate/dot_plot/" + s + ".svg" for s in sample_info.get_sample_list()]
+    default_target: True
+
 rule evaluate_redotable:
     input:
         assembly = "assemblies/{sample}.fasta",

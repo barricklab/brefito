@@ -1,6 +1,19 @@
+try: sample_info
+except NameError:
+    include: "load-sample-info.smk"
+
+# Provides the per-sample merged trimmed reads (nanopore-reads-trimmed-merged/),
+# and transitively trim-nanopore-reads.smk / download-data.smk.
+include: "filter-nanopore-reads.smk"
+
+rule all_evaluate_nanopore_reads:
+    input:
+        ["nanopore_read_stats/" + s for s in sample_info.get_samples_with_nanopore_reads()]
+    default_target: True
+
 rule evaluate_nanopore_reads:
     input:
-        "01_trimmed_nanopore_reads/{sample}.fastq"
+        "nanopore-reads-trimmed-merged/{sample}.fastq.gz"
     output:
         dir = directory("nanopore_read_stats/{sample}"),
         file = "nanopore_read_stats/{sample}/NanoStats.txt" 

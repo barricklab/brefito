@@ -263,48 +263,10 @@ def main():
             for r in input_reference_assembly_files.keys():
                 smk_targets = smk_targets + [ "02_mummer_results/" + r + "/" + s + ".coords" ]
 
-    if workflow_to_run == "evaluate-nanopore-reads":
-        smk_targets = smk_targets + [ "nanopore_read_stats/{}".format(key) for key in input_nanopore_files ]
+    # Workflows below now carry their own `default_target: True` rule in their .smk
+    # file, so no explicit targets are built here. (evaluate-nanopore-reads,
+    # evaluate-isescan, evaluate-redotable and the trycycler-* workflows.)
 
-    if workflow_to_run == "evaluate-inspector":
-        smk_targets = smk_targets + [ "inspector_assembly_evaluation/{}".format(key) for key in input_assembly_files ]
-
-    if workflow_to_run == "evaluate-coverage":
-        smk_targets = smk_targets + [ "evaluate/coverage_plots/nanopore/{}".format(key) for key in input_assembly_files ]
-
-    if workflow_to_run == "evaluate-breseq-coverage":
-        smk_targets = smk_targets + [ "evaluate/coverage_plots/breseq_nanopore/{}".format(key) for key in input_assembly_files ]
-
-    if workflow_to_run == "evaluate-isescan":
-        smk_targets = smk_targets + [ "evaluate/isescan/{}.csv".format(key) for key in input_assembly_files ]
-    
-    if workflow_to_run == "evaluate-soft-clipping":
-        smk_targets = smk_targets + [ "evaluate/soft_clipping_summary/nanopore/{}_soft_clipping_summary.csv".format(key) for key in input_assembly_files ]
-        config_options_list.append("brefito_package_path=" + str(brefito_package_path))
-
-    if workflow_to_run == "evaluate-redotable":
-        smk_targets = smk_targets + [ "evaluate/dot_plot/{}.svg".format(key) for key in input_assembly_files ]
-        #config_options_list.append("brefito_package_path=" + str(brefito_package_path))
-
-
-    #################################################
-    ### trycycler trifecta
-    #################################################
-
-    if workflow_to_run == "trycycler-assemble":
-        smk_targets = [ "05_trycycler/" + d + "/done" for d in input_nanopore_files.keys() ]
-        #resource_options_list = resource_options_list + ["necats=4"]
-
-    if workflow_to_run == "trycycler-reconcile":
-        input_files=glob.glob("05_trycycler/*/cluster_*")
-        for this_input_file in input_files:
-            smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
-
-    if workflow_to_run == "trycycler-consensus":
-        smk_targets = [ "assemblies/" + d + ".fasta" for d in input_nanopore_files.keys() ]
-
-    #################################################
-        
     ### <---- Commands that haven't yet been updated above
 
     smk_file_path = os.path.join(rules_path, workflow_to_run + ".smk")
