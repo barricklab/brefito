@@ -2,7 +2,7 @@
 # speeds up hash load, but only accommodates serial runs
 
 try: sample_info
-except NameError: 
+except NameError:
     include: "load-sample-info.smk"
 
 include: "trim-nanopore-reads.smk"
@@ -21,12 +21,12 @@ if 'BRACKEN_READ_LENGTH' in brefito_config.keys():
 
 
 #Default -t, threshold option is 10, this makes it explicit
-BRACKEN_OPTIONS = "-r " + BRACKEN_READ_LENGTH + " -t 10"
+BRACKEN_OPTIONS = "-r 100 -l S -t 10"
+BRACKEN_OPTIONS = "S"
 if 'BRACKEN_OPTIONS' in brefito_config.keys():
     BRACKEN_OPTIONS = brefito_config['BRACKEN_OPTIONS']
 
 classification_levels=["P","C","O","F","G","S"]
-
 
 rule all_classify_kraken2:
     input:
@@ -34,22 +34,23 @@ rule all_classify_kraken2:
     default_target: True
     conda:
         "../envs/kraken2.yml"
-#   shell:
-#        "k2 clean --stop-daemon"
+    shell:
+        "k2 clean --stop-daemon"
 
 rule classify_kraken2:
     input:
-        lambda wildcards: ["illumina-reads-trimmed/" + r for r in sample_info.get_illumina_read_list(wildcards.sample)],
+        lambda wildcards: ["illumina-reads-trimmed/" + r for r in sample_info.get_illumina_read_list(wildcards.sample)]
     output:
         report = "classify-kraken2/kracken2_report/{sample}.txt"
     log:
         "logs/classify-kraken2-{sample}.log"
     conda:
         "../envs/kraken2.yml"
-    threads: 8
+    threads: 6
+    resources:
+        singleton=1
     shell:
-        #"k2 classify --use-daemon --db {KRAKEN2_DB} --threads {threads} --report {output.report} --output /dev/null  {input} > {log} 2>&1"
-        "k2 classify --memory-mapping --db {KRAKEN2_DB} --threads {threads} --report {output.report} --output /dev/null  {input} > {log} 2>&1"
+        "k2 classify --use-daemon --db {KRAKEN2_DB} --threads {threads} --report {output.report} --output /dev/null  {input} > {log} 2>&1"
 
 rule classify_bracken:
     input:
@@ -62,5 +63,4 @@ rule classify_bracken:
         "../envs/kraken2.yml"
     threads: 1
     shell:
-        "bracken -d {KRAKEN2_DB} -i {input} -o {output} {BRACKEN_OPTIONS} -l {wildcards.classification_level} > {log} 2>&1"
-
+        "bracken -d {KRAKEN2_DB} -i {input} -o {output} -l {wildcards.classification_level} {BRACKEN_OPTIONS} > {log} 2>&1"
