@@ -1,6 +1,10 @@
 import glob
 import os.path
 
+try: sample_info
+except NameError: 
+    include: "load-sample-info.smk"
+
 if "trycycler_options" in config.keys():
     TRYCYCLER_OPTIONS = config["trycycler_options"]
 else:
@@ -15,9 +19,9 @@ print()
 
 def get_all_trycycler_reconcile_outputs():
     smk_targets = []
-    input_files=glob.glob("trycycler/*/cluster_*")
-    for this_input_file in input_files:
-        smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
+    for s in sample_info.get_samples_with_nanopore_reads():
+        for this_input_file in glob.glob(os.path.join("trycycler", s, "cluster_*")):
+            smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
     return(smk_targets)
 
 rule all_trycycler_reconcile:

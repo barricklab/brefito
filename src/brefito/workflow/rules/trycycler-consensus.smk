@@ -7,7 +7,7 @@ except NameError:
 
 rule all_trycycler_consensus:
     input:
-        ["assemblies/" + s + ".fasta" for s in sample_info.get_sample_list() ]
+        ["assemblies/" + s + ".fasta" for s in sample_info.get_samples_with_nanopore_reads() ]
     default_target: True
 
 def find_all_contigs_for_sample(wildcards):
