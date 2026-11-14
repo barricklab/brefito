@@ -57,6 +57,10 @@ def main():
     #Snakemake passthroughs
     parser.add_argument('--cores', type=int, default=0, help='--cores argument passed through to Snakemake (0 = all)') # 0 means "all"
     parser.add_argument('--config', action='append', default=[], help='--config argument passed through to Snakemake. Individual workflows support different settings.')
+    parser.add_argument('--config-add', action='append', default=[], metavar='KEY=VALUE',
+                         help='Like --config, but the value is added in front of any setting of KEY '
+                              'for a sample in the data file instead of overriding it. '
+                              'Equivalent to --config KEY_ADD=VALUE. Can be specified multiple times.')
     parser.add_argument('--resources', action='append', default=[], help='--resources argument passed through to Snakemake. Individual workflows support different settings.')
     parser.add_argument('--rerun-incomplete', action='store_true', help='argument passed through to Snakemake') 
     parser.add_argument('--rerun-triggers', nargs='+', default=None, help='argument passed through to Snakemake. Takes one or more space-separated triggers under a single flag (e.g. "--rerun-triggers mtime code input"), matching Snakemake\'s own syntax. Providing it replaces the default set (mtime, code, input) rather than adding to it. Add "params" to also re-run when a rule\'s params change (e.g. to force re-download of references).')
@@ -97,6 +101,29 @@ def main():
     samples_to_run = args.samples
 
     config_options_list = args.config
+
+    # --config-add KEY=VALUE is passed to Snakemake as KEY_ADD=VALUE. Repeats of the
+    # same key are joined with spaces, in command-line order.
+    # An explicit --config KEY_ADD=... is merged with --config-add KEY=... (it comes first).
+    config_add_values = {}
+    if args.config_add:
+        remaining_config_options = []
+        for i in config_options_list:
+            si = i.split('=', 1)
+            if len(si) == 2 and si[0].strip().upper().endswith("_ADD"):
+                config_add_values.setdefault(si[0].strip().upper(), []).append(si[1])
+            else:
+                remaining_config_options.append(i)
+        config_options_list = remaining_config_options
+    for i in args.config_add:
+        si = i.split('=', 1)
+        if len(si) == 1 or si[0].strip() == "":
+            print("Error: --config-add requires KEY=VALUE, got: " + i)
+            sys.exit(1)
+        add_key = si[0].strip().upper() + "_ADD"
+        config_add_values.setdefault(add_key, []).append(si[1])
+    for add_key, add_values in config_add_values.items():
+        config_options_list.append(add_key + "=" + " ".join(add_values))
     resource_options_list = args.resources
     references_argument = args.references
 

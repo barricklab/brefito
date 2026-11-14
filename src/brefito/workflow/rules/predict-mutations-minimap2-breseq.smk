@@ -6,17 +6,11 @@ include: "align-reads.smk"
 
 import os.path
 
-BRESEQ_THREADS = 8
-if 'BRESEQ_THREADS' in brefito_config.keys():
-    BRESEQ_THREADS = int(brefito_config['BRESEQ_THREADS'])
+BRESEQ_THREADS = int(get_uniform_config_value('BRESEQ_THREADS', 8))
 
-BRESEQ_OPTIONS = ""
-if 'BRESEQ_OPTIONS' in brefito_config.keys():
-    BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
-
-NO_DEFAULT_BRESEQ_OPTIONS = config_is_true("NO_DEFAULT_BRESEQ_OPTIONS")
-
-AUTOMATIC_BRESEQ_ARGS = {}
+# BRESEQ_OPTIONS and NO_DEFAULT_BRESEQ_OPTIONS can be set per sample in data.csv
+def get_breseq_options(sample):
+    return get_config_value('BRESEQ_OPTIONS', "", sample)
 
 def find_available_read_files(wildcards):
 
@@ -24,15 +18,12 @@ def find_available_read_files(wildcards):
 
     nanopore_files = [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/nanopore_reads." + d + ".sam" for d in sample_info.get_nanopore_read_base_list(wildcards.sample)] 
 
-    AUTOMATIC_BRESEQ_ARGS[wildcards.sample] = ""
-
-    if not NO_DEFAULT_BRESEQ_OPTIONS:
-        AUTOMATIC_BRESEQ_ARGS[wildcards.sample] = AUTOMATIC_BRESEQ_ARGS[wildcards.sample] + "-x --require-match-fraction 0.0"
-
     return nanopore_files
 
 def get_breseq_args(sample):
-    return AUTOMATIC_BRESEQ_ARGS[sample]
+    if config_is_true("NO_DEFAULT_BRESEQ_OPTIONS", sample=sample):
+        return ""
+    return "-x --require-match-fraction 0.0"
 
 rule all_predict_mutations_minimap2_breseq:
     input:
@@ -58,6 +49,7 @@ rule predict_mutations_minimap2_breseq:
     params:
         gd_dir = directory("minimap2-breseq-" + sample_info.get_reference_prefix() + "/gd"),
         automatic_breseq_args = lambda wildcards: get_breseq_args(wildcards.sample),
+        breseq_options = lambda wildcards: get_breseq_options(wildcards.sample),
         reference_arguments = lambda wildcards: sample_info.get_reference_arguments(wildcards.sample, '-r ')
     threads: BRESEQ_THREADS
     shell:
@@ -65,7 +57,7 @@ rule predict_mutations_minimap2_breseq:
         # Create outer directories for moved files
         mkdir -p {params.gd_dir}
 
-        breseq -j {threads} --aligned-sam {params.automatic_breseq_args} {BRESEQ_OPTIONS} {params.reference_arguments} -o {output.breseq_dir}  {input.reads} > {log} 2>&1
+        breseq -j {threads} --aligned-sam {params.automatic_breseq_args} {params.breseq_options} {params.reference_arguments} -o {output.breseq_dir}  {input.reads} > {log} 2>&1
         
         # Copy/move output files
         cp {output.breseq_dir}/output/output.gd {output.gd_file}

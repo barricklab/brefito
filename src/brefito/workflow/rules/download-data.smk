@@ -218,7 +218,17 @@ SRA_RUN_ACCESSION_CONSTRAINT = "[A-Za-z0-9]+"
 # that is really single-end, or illumina-SE/nanopore for a run that is really paired)
 # before a long download happens. This only reads run metadata, which takes seconds.
 SRA_LAYOUT_CHECK_SCRIPT = os.path.join(str(workflow.current_basedir), "..", "scripts", "check_sra_layout.sh")
-SRA_LAYOUT_MISMATCH_MODE = "warn" if config_is_true("SRA_IGNORE_LAYOUT_MISMATCH") else "error"
+# Can be set per sample in data.csv; applies to a run if any sample listing it sets it.
+def get_sra_layout_mismatch_mode(run_accession):
+    run_samples = []
+    for this_sample in sample_info.get_sample_list():
+        for this_file_list in sample_info.file_lists_by_sample_by_type.get(this_sample, {}).values():
+            if any(os.path.basename(f).split(".")[0] == run_accession for f in this_file_list):
+                run_samples.append(this_sample)
+                break
+    if len(run_samples) == 0:
+        return "warn" if config_is_true("SRA_IGNORE_LAYOUT_MISMATCH") else "error"
+    return "warn" if any(config_is_true("SRA_IGNORE_LAYOUT_MISMATCH", sample=s) for s in run_samples) else "error"
 
 rule download_paired_sra:
     output:
@@ -234,11 +244,13 @@ rule download_paired_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} paired {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} paired {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 
@@ -282,11 +294,13 @@ rule download_single_end_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 
@@ -309,11 +323,13 @@ rule download_nanopore_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 

@@ -7,13 +7,13 @@ include: "trim-illumina-reads.smk"
 
 # Different options
 
-if 'KRAKEN2_FILTER_TAXID' in brefito_config.keys():
-    KRAKEN2_FILTER_TAXID = brefito_config['KRAKEN2_FILTER_TAXID']
+if get_uniform_config_value('KRAKEN2_FILTER_TAXID') != None:
+    KRAKEN2_FILTER_TAXID = get_uniform_config_value('KRAKEN2_FILTER_TAXID')
 else:
     raise Exception("Must provide --config KRAKEN2_FILTER_TAXID=<NCBI tax id>")
 
-if 'KRAKEN2_DB' in brefito_config.keys():
-    KRAKEN2_DB = brefito_config['KRAKEN2_DB']
+if get_uniform_config_value('KRAKEN2_DB') != None:
+    KRAKEN2_DB = get_uniform_config_value('KRAKEN2_DB')
 else:
     raise Exception("Must provide --config KRAKEN2_DB=<path to database>")
 

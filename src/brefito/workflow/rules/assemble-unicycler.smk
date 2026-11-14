@@ -9,8 +9,8 @@ except NameError:
 include: "trim-illumina-reads.smk"
 include: "filter-nanopore-reads.smk"
 
-if 'UNICYCLER_THREADS' in brefito_config.keys():
-    UNICYCLER_THREADS = brefito_config['UNICYCLER_THREADS']
+if get_uniform_config_value('UNICYCLER_THREADS') != None:
+    UNICYCLER_THREADS = get_uniform_config_value('UNICYCLER_THREADS')
 
 rule subsample_nanopore_reads:
     input:

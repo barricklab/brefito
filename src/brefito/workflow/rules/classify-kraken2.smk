@@ -13,23 +13,19 @@ include: "trim-illumina-reads.smk"
 
 # Different options
 
-if 'KRAKEN2_DB' in brefito_config.keys():
-    KRAKEN2_DB = brefito_config['KRAKEN2_DB']
-else:
+KRAKEN2_DB = get_uniform_config_value('KRAKEN2_DB')
+if KRAKEN2_DB == None:
     raise Exception("Must provide --config KRAKEN2_DB=<path to database>")
 
 # Location in shared memory to copy
 SHM_DB = f"/dev/shm/{os.environ['USER']}/k2db"
 
-BRACKEN_READ_LENGTH = "100"
-if 'BRACKEN_READ_LENGTH' in brefito_config.keys():
-    BRACKEN_READ_LENGTH = brefito_config['BRACKEN_READ_LENGTH']
+BRACKEN_READ_LENGTH = str(get_uniform_config_value('BRACKEN_READ_LENGTH', "100"))
 
 
 #Default -t, threshold option is 10, this makes it explicit
 BRACKEN_OPTIONS = "-r " + BRACKEN_READ_LENGTH + " -t 10"
-if 'BRACKEN_OPTIONS' in brefito_config.keys():
-    BRACKEN_OPTIONS = brefito_config['BRACKEN_OPTIONS']
+# BRACKEN_OPTIONS can be set per sample in data.csv
 
 classification_levels=["P","C","O","F","G","S"]
 
@@ -88,7 +84,9 @@ rule classify_bracken:
         "logs/classify-bracken-{sample}-{classification_level}.log"
     conda:
         "../envs/kraken2.yml"
+    params:
+        bracken_options = lambda wildcards: get_config_value('BRACKEN_OPTIONS', BRACKEN_OPTIONS, wildcards.sample)
     threads: 1
     shell:
-        "bracken -d {KRAKEN2_DB} -i {input} -o {output} {BRACKEN_OPTIONS} -l {wildcards.classification_level} > {log} 2>&1"
+        "bracken -d {KRAKEN2_DB} -i {input} -o {output} {params.bracken_options} -l {wildcards.classification_level} > {log} 2>&1"
 

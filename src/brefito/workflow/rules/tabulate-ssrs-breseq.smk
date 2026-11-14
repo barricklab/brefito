@@ -10,8 +10,8 @@ def str2bool(v):
 print("Config options for workflow :: tabulate-ssrs-breseq-*")
 print()
 SSR_MINIMUM_LENGTH = 6
-if 'SSR_MINIMUM_LENGTH' in brefito_config.keys():
-    SSR_MINIMUM_LENGTH = brefito_config['SSR_MINIMUM_LENGTH'] 
+if get_uniform_config_value('SSR_MINIMUM_LENGTH') != None:
+    SSR_MINIMUM_LENGTH = get_uniform_config_value('SSR_MINIMUM_LENGTH') 
     print("  User set --minimum-length to " + str(SSR_MINIMUM_LENGTH))
 else:
     print("  Using default --minimum-length " + str(SSR_MINIMUM_LENGTH))
@@ -20,8 +20,8 @@ else:
 print()
 
 SSR_STRICT_MODE = True
-if 'SSR_STRICT_MODE' in brefito_config.keys():
-    SSR_STRICT_MODE = str2bool(str(brefito_config['SSR_STRICT_MODE']))
+if get_uniform_config_value('SSR_STRICT_MODE') != None:
+    SSR_STRICT_MODE = str2bool(str(get_uniform_config_value('SSR_STRICT_MODE')))
     print("  User set --strict mode to " + str(SSR_STRICT_MODE))
 else:
     print("  Using default --strict mode of True")

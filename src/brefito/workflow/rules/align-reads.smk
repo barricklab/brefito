@@ -10,14 +10,10 @@ MERGE = 0      # Merge together all of the BAM files
 SORT = 1      # Sort reads by coordinate in the BAM file
 INDEX = 1     # Create BAM indexes *.bai
 
-if 'SORT' in brefito_config.keys():
-    SORT = brefito_config['SORT']
-
-if 'MERGE' in brefito_config.keys():
-    MERGE = brefito_config['MERGE']
-
-if 'INDEX' in brefito_config.keys():
-    INDEX = brefito_config['INDEX']
+# These change which output files exist, so they can't vary between samples
+SORT = int(config_is_true_for_all_samples('SORT', SORT))
+MERGE = int(config_is_true_for_all_samples('MERGE', MERGE))
+INDEX = int(config_is_true_for_all_samples('INDEX', INDEX))
 
 # Can't index if we don't sort
 if SORT == 0:
@@ -85,17 +81,7 @@ else: # Not merged
         SAMTOOLS_MERGE_OUTPUT_SUFFIX =   ".unused.4"
 
 
-BOWTIE2_OPTIONS = ""
-if 'BOWTIE2_OPTIONS' in brefito_config.keys():
-    BOWTIE2_OPTIONS = brefito_config['BOWTIE2_OPTIONS'] 
-
-BOWTIE2_PE_OPTIONS = ""
-if 'BOWTIE2_PE_OPTIONS' in brefito_config.keys():
-    BOWTIE2_PE_OPTIONS = brefito_config['BOWTIE2_PE_OPTIONS'] 
-
-BOWTIE2_SE_OPTIONS = ""
-if 'BOWTIE2_SE_OPTIONS' in brefito_config.keys():
-    BOWTIE2_SE_OPTIONS = brefito_config['BOWTIE2_SE_OPTIONS'] 
+# BOWTIE2_OPTIONS, BOWTIE2_PE_OPTIONS and BOWTIE2_SE_OPTIONS can be set per sample in data.csv
 
 ## The output files change depending on the options
 
@@ -170,12 +156,14 @@ rule align_PE_illumina_reads:
     conda:
         "../envs/bowtie2.yml"
     params:
-        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.PE.bowtie2_index"
+        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.PE.bowtie2_index",
+        bowtie2_options = lambda wildcards: get_config_value('BOWTIE2_OPTIONS', "", wildcards.sample),
+        bowtie2_pe_options = lambda wildcards: get_config_value('BOWTIE2_PE_OPTIONS', "", wildcards.sample),
     threads: 12
     shell:
         """
         bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 {BOWTIE2_PE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
+        bowtie2 {params.bowtie2_pe_options} {params.bowtie2_options} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 
@@ -190,12 +178,14 @@ rule align_SE_illumina_reads:
     conda:
         "../envs/bowtie2.yml"
     params:
-        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.SE.bowtie2_index"
+        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.SE.bowtie2_index",
+        bowtie2_options = lambda wildcards: get_config_value('BOWTIE2_OPTIONS', "", wildcards.sample),
+        bowtie2_se_options = lambda wildcards: get_config_value('BOWTIE2_SE_OPTIONS', "", wildcards.sample),
     threads: 12
     shell:
         """
         bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 {BOWTIE2_SE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
+        bowtie2 {params.bowtie2_se_options} {params.bowtie2_options} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 

@@ -5,9 +5,8 @@ except NameError:
 include: "trim-nanopore-reads.smk"
 
 do_filtering = True
-NANOPORE_FILTERING = "TRUE"
-if 'NANOPORE_FILTERING' in brefito_config.keys():
-    NANOPORE_FILTERING = brefito_config['NANOPORE_FILTERING']
+# Picks the rule order, so it can't vary between samples
+NANOPORE_FILTERING = str(get_uniform_config_value('NANOPORE_FILTERING', "TRUE"))
 
 if NANOPORE_FILTERING.upper() == "NONE" or NANOPORE_FILTERING.upper() == "FALSE" or NANOPORE_FILTERING.upper() == "F" or NANOPORE_FILTERING == "0":
     print("Nanopore reads are not filtered.")
@@ -18,15 +17,14 @@ else:
 
 FILTLONG_OPTIONS = "--min_length 1000 --keep_percent 90"
 if (do_filtering):
-    if "FILTLONG_OPTIONS" not in config.keys():
-        print("Filtering nanopore reads using default filtlong command-line options:")
+    if "FILTLONG_OPTIONS" not in brefito_config.keys():
+        print("Filtering nanopore reads using default filtlong command-line options (unless set per sample in data.csv):")
         print("  " + FILTLONG_OPTIONS)
         print("To change these options add something like this to your brefito command")
         print("  --config FILTLONG_OPTIONS=\"--min_length 5000 --keep_percent 95 --target_bases 500000000\"")
     else:
-        FILTLONG_OPTIONS = config["FILTLONG_OPTIONS"]
         print("Filtering nanopore reads with user-specified filtlong command-line options:")
-        print("  " + FILTLONG_OPTIONS)
+        print("  " + brefito_config["FILTLONG_OPTIONS"])
 
 rule all_filter_nanopore_reads:
     input:
@@ -52,8 +50,10 @@ rule filter_nanopore_reads:
         "logs/filtlong_{sample}.log"
     conda:
         "../envs/filtlong.yml"
+    params:
+        filtlong_options = lambda wildcards: get_config_value('FILTLONG_OPTIONS', FILTLONG_OPTIONS, wildcards.sample)
     shell:
-        "filtlong {FILTLONG_OPTIONS} {input} > {output} 2> {log}"
+        "filtlong {params.filtlong_options} {input} > {output} 2> {log}"
 
 
 rule filter_nanopore_reads_no_filter:

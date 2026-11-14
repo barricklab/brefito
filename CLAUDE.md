@@ -93,7 +93,22 @@ except NameError:
 - `assemblies/` — `*.fasta`, `*.fna`, `*.fa`
 - `references/` — genome/annotation files
 
-The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or arbitrary option keys (e.g., `breseq_option`). SRA accessions are supported via `sra://SRRxxxxxx`.
+The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA accessions are supported via `sra://SRRxxxxxx`.
+
+A `sample` containing `*`, `?` or `[...]` is a shell glob (no regex). Glob rows are expanded after the whole file is read, so they apply to every sample named exactly anywhere in the file, not just earlier rows. A glob matching nothing is warned about.
+
+**Per-sample options in data.csv.** A row whose `type` is a config key (case-insensitive) sets that option for the matching sample(s), e.g. `REL1166A,BRESEQ_OPTIONS,--polymorphism-mode`. Resolution for key `K` (`get_config_value()` in `load-sample-info.smk`):
+1. Workflow default.
+2. data.csv `K`: a row naming the sample exactly beats a glob row; among rows at the same level, the later row wins. Replaces the default.
+3. data.csv `K_ADD`: every matching row is appended, in file order.
+4. Command-line `--config K=...` replaces all of the above, with a WARNING listing the affected samples.
+5. Command-line `--config K_ADD=...` or `brefito --config-add K=...` is put in front of the result (command line first, then data.csv).
+
+On/off flags (`config_is_true(name, default, sample=None)`): a blank data.csv setting means on; `0/false/no/off` means off. Keys brefito sets itself (`SAMPLES`, `REFERENCES`, `DATA_CSV`, `BREFITO_PACKAGE_PATH`, `QUERY_FILE_PATH`, `BRESEQ_PRERELEASE`) cannot be set in data.csv.
+
+Some options cannot vary between samples. These are rule-order choices like `ILLUMINA_TRIMMING`/`NANOPORE_TRIMMING`/`NANOPORE_FILTERING`, thread counts, and keys that name output files (`*_REGION`, `*_FORMAT`, `SORT`/`MERGE`/`INDEX`). Per-read-file options like `FASTP_*` also cannot vary between the samples that share a read file. Workflows read these with `get_uniform_config_value()`, which accepts a data.csv value only if every relevant sample agrees and otherwise exits with an error.
+
+When writing workflows, read per-sample options in a rule's `params:` (`lambda wildcards: get_config_value('KEY', DEFAULT, wildcards.sample)`) and use `{params.x}` in `shell:`, rather than a module-level global.
 
 `SampleInfo` methods used in rules:
 - `get_sample_list()` — all sample names
@@ -132,6 +147,8 @@ Config is passed as `--config key=value` and accessed in rules as `brefito_confi
 - `data_csv` — path to data CSV (default: `data.csv`)
 - `references` — reference directory name (default: `references`)
 - `samples` — underscore-comma-separated sample filter (set automatically from CLI positional args)
-- `genome_size` — required by autocycler-assemble
+- `genome_size` — required by autocycler-assemble (can be set per sample in data.csv)
 - `BRESEQ_THREADS`, `BRESEQ_OPTIONS`, `NO_DEFAULT_BRESEQ_OPTIONS` — breseq tuning
 - `SRA_IGNORE_LAYOUT_MISMATCH` — downgrade the paired/single-end check on `sra://` downloads from an error to a warning
+
+Any of these can also be set per sample in data.csv (see above). Use `--config-add KEY=VALUE` (same as `--config KEY_ADD=VALUE`) to add to data.csv settings instead of overriding them.

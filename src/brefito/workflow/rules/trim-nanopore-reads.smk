@@ -6,9 +6,8 @@ try: DOWNLOAD_DATA_INCLUDED
 except NameError: 
     include: "download-data.smk"
     
-NANOPORE_TRIMMING = "none"
-if 'NANOPORE_TRIMMING' in brefito_config.keys():
-    NANOPORE_TRIMMING = brefito_config['NANOPORE_TRIMMING']
+# Picks the rule order, so it can't vary between samples
+NANOPORE_TRIMMING = str(get_uniform_config_value('NANOPORE_TRIMMING', "none"))
     
 if NANOPORE_TRIMMING.upper() == "NONE" or NANOPORE_TRIMMING.upper() == "FALSE" or NANOPORE_TRIMMING.upper() == "F" or NANOPORE_TRIMMING == "0":
     print("Nanopore reads are not trimmed.")

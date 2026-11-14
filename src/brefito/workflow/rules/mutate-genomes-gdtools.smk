@@ -4,8 +4,8 @@ except NameError:
 
 OUTPUT_FORMAT="GENBANK"
 
-if "OUTPUT_FORMAT" in brefito_config.keys():
-    OUTPUT_FORMAT = brefito_config['OUTPUT_FORMAT'].upper()
+if get_uniform_config_value('OUTPUT_FORMAT') != None:
+    OUTPUT_FORMAT = get_uniform_config_value('OUTPUT_FORMAT').upper()
     print(f"User specified output format is {OUTPUT_FORMAT}")
 else:
     print("Using default output format: " + OUTPUT_FORMAT)

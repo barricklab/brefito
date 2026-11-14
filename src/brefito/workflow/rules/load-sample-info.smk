@@ -7,14 +7,28 @@
 # DATA_CSV
 #
 # This file must have the following columns:
-#  1 sample = main sample name, must match for reads that will be used together
-#  2 type = either a file type: 'nanopore', 'illumina', 'illumina_R1', 'illumina_R2'
-#           or an option setting, like breseq_option
+#  1 sample = main sample name, must match for reads that will be used together.
+#             May be a shell-style glob (containing *, ? or [...]) that applies the
+#             row to every sample named exactly anywhere in the file (before or after).
+#  2 type = either a file type: 'nanopore', 'illumina-SE', 'illumina-R1', 'illumina-R2',
+#           'illumina-PE', 'reference'
+#           or the name of any --config option, like BRESEQ_OPTIONS (case-insensitive)
 #  3 setting = for file types, a way of downloading the file:
 #                 lftp@bookmark://path/to/file (if bookmark is present and refers to a location)
 #                 wget://example.com/path/to/file
-#              for others, the value of the setting
-#                 XXXXXXX
+#              for options, the value of the setting (blank = true for on/off flags)
+#
+# PER-SAMPLE OPTIONS
+#
+#   *,BRESEQ_OPTIONS,--brief-html-output
+#   REL1166A,BRESEQ_OPTIONS,--polymorphism-mode
+#   REL*,BRESEQ_OPTIONS_ADD,--junction-only
+#   REL1166A,NO_DEFAULT_BRESEQ_OPTIONS,
+#
+# For KEY: a row naming the sample exactly beats a glob row; among rows at the same
+# level the later one wins. Every matching KEY_ADD row is appended after that, in file
+# order. On the command line, --config KEY=... overrides data.csv (with a warning) and
+# --config KEY_ADD=... (or brefito --config-add KEY=...) is put in front of it.
 #
 # SETUP BOOKMARK
 #
@@ -29,6 +43,16 @@ import csv
 import os
 import glob
 import copy
+import fnmatch
+
+# Sample names containing any of these characters in data.csv are globs
+SAMPLE_PATTERN_CHARACTERS = set("*?[")
+
+def is_sample_pattern(name):
+    return any(c in SAMPLE_PATTERN_CHARACTERS for c in name)
+
+# --config keys brefito sets itself; data.csv may not set these
+RESERVED_CONFIG_KEYS = set({"SAMPLES", "REFERENCES", "DATA_CSV", "BREFITO_PACKAGE_PATH", "QUERY_FILE_PATH", "BRESEQ_PRERELEASE"})
 
 def rreplace(s, old, new, maxreplace):
     return(new.join(s.rsplit(old, maxreplace)))
@@ -46,7 +70,17 @@ class SampleInfo():
 
     # Dictionary of lists with keys that are types of data and then lists of files
     file_lists_by_sample_by_type = {}
-    option_lists_by_sample_by_type = {}
+
+    # data.csv rows that set options, in file order. Each is a dict with keys
+    # pattern, is_pattern, key (upper case), value, row_index. Matched lazily
+    # against whatever sample is being looked up.
+    option_rows = []
+
+    # File rows whose sample is a glob. Expanded once the whole CSV is read.
+    pending_pattern_file_rows = []
+
+    # Globs (file or option rows) that matched no sample
+    unmatched_sample_patterns = []
 
     # used to check for duplicates and deconflict
     local_to_remote_path_mapping = {}
@@ -68,7 +102,7 @@ class SampleInfo():
         with open(sample_info_csv_name, encoding='utf-8-sig') as data_file:
             data_reader = csv.DictReader(data_file, delimiter=',', quotechar='"')
             first_column_name = data_reader.fieldnames[0] if data_reader.fieldnames else None
-            for row in data_reader:
+            for row_index, row in enumerate(data_reader):
                 #print(row)
 
                 first_column_value = row.get(first_column_name)
@@ -108,7 +142,7 @@ class SampleInfo():
                 if (row['type'] == "nanopore"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("nanopore-reads", simplified_read_file_base_name + ".fastq.gz")
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "nanopore",
                         'file_type' : "nanopore",
@@ -119,7 +153,7 @@ class SampleInfo():
                 elif (row['type'] == "illumina") or (row['type'] == "illumina-SE"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".SE.fastq.gz")
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "illumina-SE",
                         'file_type' : "illumina",
@@ -130,7 +164,7 @@ class SampleInfo():
                 elif (row['type'] == "illumina-R1"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R1.fastq.gz")
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "illumina-R1",
                         'file_type' : "illumina",
@@ -141,7 +175,7 @@ class SampleInfo():
                 elif (row['type'] == "illumina-R2"):
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
                     local_path = os.path.join("illumina-reads", simplified_read_file_base_name + ".R2.fastq.gz")
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "illumina-R2",
                         'file_type' : "illumina",
@@ -175,14 +209,14 @@ class SampleInfo():
                         remote_path_1 = row['setting'].replace("{1|2}", "1")
                         remote_path_2 = row['setting'].replace("{1|2}", "2")
 
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "illumina-R1",
                         'file_type' : "illumina",
                         'remote_path' : remote_path_1,
                         'local_path' : os.path.join("illumina-reads", simplified_read_file_base_name_1 + ".R1.fastq.gz")
                         })
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "illumina-R2",
                         'file_type' : "illumina",
@@ -192,7 +226,7 @@ class SampleInfo():
 
                 elif (row['type'] == "reference"):
                     local_path = os.path.join("references", file_name)
-                    self.add_file({
+                    self.add_csv_file({
                         'sample' : row['sample'],
                         'type' : "reference",
                         'file_type' : "reference",
@@ -200,18 +234,48 @@ class SampleInfo():
                         'local_path' : local_path
                         })
                 else:
-                    # add this to the options dictionary
-                    if not row['sample'] in self.option_lists_by_sample_by_type:
-                        self.option_lists_by_sample_by_type[row['sample']] = {}
-                    if not row['type'] in self.option_lists_by_sample_by_type[row['sample']]:
-                        self.option_lists_by_sample_by_type[row['sample']][row['type']] = []
-                    self.option_lists_by_sample_by_type[row['sample']][row['type']].append(row['setting'])
+                    # Any other type is the name of a --config option
+                    option_key = row['type'].strip().upper()
+                    option_base_key = option_key[:-len("_ADD")] if option_key.endswith("_ADD") else option_key
+                    if option_base_key in RESERVED_CONFIG_KEYS:
+                        raise ValueError("option '" + row['type'] + "' cannot be set in a data file "
+                                         "(it is set by brefito itself). Use the brefito command line instead.")
+                    self.option_rows.append({
+                        'pattern' : row['sample'].strip(),
+                        'is_pattern' : is_sample_pattern(row['sample'].strip()),
+                        'key' : option_key,
+                        'value' : row['setting'].strip(),
+                        'row_index' : row_index,
+                        })
 
                 #else:
                 #    print("Skipping row with unknown type:" + row['type'])
 
+        # Globs apply to every sample named exactly anywhere in the file, so they
+        # can only be expanded now that the whole file has been read.
+        exact_samples = sorted(self.sample_set)
+        for row in self.pending_pattern_file_rows:
+            matched_samples = [s for s in exact_samples if fnmatch.fnmatchcase(s, row['sample'])]
+            if len(matched_samples) == 0:
+                self.unmatched_sample_patterns.append(row['sample'] + " (" + row['type'] + " " + str(row['remote_path']) + ")")
+            for this_sample in matched_samples:
+                this_row = copy.deepcopy(row)
+                this_row['sample'] = this_sample
+                self.add_file(this_row)
+
+        for option_row in self.option_rows:
+            if option_row['is_pattern'] and not any(fnmatch.fnmatchcase(s, option_row['pattern']) for s in exact_samples):
+                self.unmatched_sample_patterns.append(option_row['pattern'] + " (" + option_row['key'] + ")")
+
         self.sample_list = list(self.sample_set)
         return True
+
+    # File rows from data.csv: glob samples are held back until the whole file is read
+    def add_csv_file(self, row):
+        if is_sample_pattern(row['sample']):
+            self.pending_pattern_file_rows.append(row)
+        else:
+            self.add_file(row)
 
     # Helper function for identifying valid input files
     # Returns a dict with key as sample name determined from file
@@ -371,11 +435,8 @@ class SampleInfo():
         #    print(row)
         #    return
 
-        # * means to apply to all previous entries
-        if row['sample'] == '*':
-            this_sample_list = list(self.sample_set)
-        else:
-            this_sample_list = [row['sample']]
+        # Glob samples from data.csv are expanded before reaching here (see add_csv_file)
+        this_sample_list = [row['sample']]
 
         self.deconflict_paths(row)
 
@@ -718,7 +779,6 @@ class SampleInfo():
         # Do this to avoid duplicates
         self.sample_set = set(sample_list)
         self.sample_list = list(self.sample_set)
-        self.option_lists_by_sample_by_type = {key: self.option_lists_by_sample_by_type[key] for key in sample_list if key in self.option_lists_by_sample_by_type}
         self.file_lists_by_sample_by_type = {key: self.file_lists_by_sample_by_type[key] for key in sample_list if key in self.file_lists_by_sample_by_type}
 
         # Must also prune local_paths to avoid downloads
@@ -729,21 +789,129 @@ class SampleInfo():
 
         self.local_to_remote_path_mapping = {key: self.local_to_remote_path_mapping[key] for key in local_path_set if key in self.local_to_remote_path_mapping}
 
+
+    ## Per-sample options from data.csv
+
+    def get_matching_option_rows(self, sample, key):
+        return [r for r in self.option_rows if r['key'] == key and
+                (fnmatch.fnmatchcase(sample, r['pattern']) if r['is_pattern'] else r['pattern'] == sample)]
+
+    # Returns (replace_value_or_None, [add_values]) for an option key (upper case,
+    # without _ADD). For KEY rows, one naming the sample exactly beats a glob; among
+    # rows at the same level, the later row wins. All KEY_ADD rows apply, in file order.
+    def get_csv_option(self, sample, key):
+        key = key.upper()
+        replace_rows = self.get_matching_option_rows(sample, key)
+        replace_value = None
+        if len(replace_rows) > 0:
+            exact_rows = [r for r in replace_rows if not r['is_pattern']]
+            winning_rows = exact_rows if len(exact_rows) > 0 else replace_rows
+            replace_value = winning_rows[-1]['value']
+        add_values = [r['value'] for r in self.get_matching_option_rows(sample, key + "_ADD")]
+        return (replace_value, add_values)
+
+    def csv_sets_option(self, sample, key):
+        replace_value, add_values = self.get_csv_option(sample, key)
+        return replace_value != None or len(add_values) > 0
+
+    # Base option keys (no _ADD suffix) that data.csv sets for a sample
+    def get_csv_option_keys(self, sample):
+        keys = []
+        for r in self.option_rows:
+            base_key = r['key'][:-len("_ADD")] if r['key'].endswith("_ADD") else r['key']
+            if base_key not in keys and self.csv_sets_option(sample, base_key):
+                keys.append(base_key)
+        return keys
+
+    # Which samples list this read file (by base name or local path)?
+    def get_samples_for_read_file(self, read_file_name):
+        read_file_name = os.path.basename(read_file_name)
+        samples = []
+        for this_sample, files_by_type in self.file_lists_by_sample_by_type.items():
+            for this_type, file_list in files_by_type.items():
+                if read_file_name in file_list and this_sample not in samples:
+                    samples.append(this_sample)
+        return samples
+
 #### Initialize from config values
 brefito_config = {key.upper(): value for key, value in config.items()}
 
-def config_is_true(name, default=False):
-    """Interpret an on/off --config flag as a boolean, consistently across workflows.
+def join_option_values(values):
+    return " ".join([str(v) for v in values if v != None and str(v).strip() != ""])
 
-    Handles `--config NAME` (the brefito wrapper turns a value-less flag into "1"),
-    `--config NAME=1|true|yes|on`, and `NAME=0|false|no|off`. An absent key returns
-    `default`. Unlike a bare bool(brefito_config[...]), this treats the string "0"/"false"
-    as False. Use ONLY for genuine flags - not for value-bearing options.
+def get_config_value(key, default=None, sample=None):
+    """Resolve a --config option, optionally for one sample.
+
+    Order: the workflow default; replaced by data.csv KEY for this sample (exact name
+    beats glob, later row beats earlier); then data.csv KEY_ADD values appended. A
+    command-line --config KEY replaces all of that. A command-line KEY_ADD (also set by
+    brefito --config-add KEY=...) is put in front. Returns default unchanged if nothing
+    sets the key.
     """
-    v = brefito_config.get(name.upper(), default)
+    key = key.upper()
+    value = default
+    if sample != None and sample_info != None:
+        csv_replace_value, csv_add_values = sample_info.get_csv_option(sample, key)
+        if csv_replace_value != None:
+            value = csv_replace_value
+        if len(csv_add_values) > 0:
+            value = join_option_values([value] + csv_add_values)
+    if key in brefito_config:
+        value = brefito_config[key]
+    if key + "_ADD" in brefito_config:
+        value = join_option_values([brefito_config[key + "_ADD"], value])
+    return value
+
+def get_uniform_config_value(key, default=None, samples=None):
+    """Resolve an option that cannot vary between the given samples (all selected
+    samples by default), e.g. one that picks a rule order or names output files. Exits
+    with an error if data.csv gives them different values."""
+    if samples == None:
+        samples = sample_info.get_sample_list() if sample_info != None else []
+    if len(samples) == 0:
+        return get_config_value(key, default)
+    values_by_sample = {s : get_config_value(key, default, s) for s in sorted(samples)}
+    distinct_values = []
+    for v in values_by_sample.values():
+        if v not in distinct_values:
+            distinct_values.append(v)
+    if len(distinct_values) > 1:
+        print()
+        print("ERROR: Option " + key.upper() + " must be the same for these samples, but data.csv sets it differently:")
+        for s, v in values_by_sample.items():
+            print("    " + s + " : " + str(v))
+        print("  Set it the same way for all of them in data.csv (e.g. with a '*' row),")
+        print("  or override it for all samples with --config " + key.upper() + "=<value>.")
+        exit(1)
+    return distinct_values[0]
+
+def value_is_true(v):
     if isinstance(v, bool):
         return v
-    return str(v).strip().lower() not in ("", "0", "false", "no", "off")
+    # A blank data.csv setting means "on" (the flag was listed without a value)
+    if str(v).strip() == "":
+        return True
+    return str(v).strip().lower() not in ("0", "false", "no", "off", "f", "none")
+
+def config_is_true(name, default=False, sample=None):
+    """Interpret an on/off option as a boolean, consistently across workflows.
+
+    Handles `--config NAME` (the brefito wrapper turns a value-less flag into "1"),
+    `--config NAME=1|true|yes|on`, and `NAME=0|false|no|off`, plus the same values (or a
+    blank setting, meaning true) in data.csv for `sample`. An unset option returns
+    `default`. Use ONLY for genuine flags - not for value-bearing options.
+    """
+    v = get_config_value(name, None, sample)
+    if v == None:
+        return default
+    return value_is_true(v)
+
+def config_is_true_for_all_samples(name, default=False):
+    """Like config_is_true for a flag that cannot vary between samples."""
+    v = get_uniform_config_value(name, None)
+    if v == None:
+        return default
+    return value_is_true(v)
 
 BRESEQ_ENV = "../envs/breseq-prerelease.yml" if brefito_config.get("BRESEQ_PRERELEASE") else "../envs/breseq.yml"
 
@@ -785,6 +953,38 @@ if 'SAMPLES' in brefito_config.keys():
 
 sample_info.print_file_lists()
 print()
+
+def print_per_sample_config():
+    selected_samples = sorted(sample_info.get_sample_list())
+    samples_with_options = [s for s in selected_samples if len(sample_info.get_csv_option_keys(s)) > 0]
+    if len(samples_with_options) > 0:
+        print("PER-SAMPLE CONFIG (data.csv)")
+        for this_sample in samples_with_options:
+            print()
+            print("SAMPLE :: " + this_sample)
+            for this_key in sample_info.get_csv_option_keys(this_sample):
+                this_value = str(get_config_value(this_key, "", this_sample))
+                print("  " + this_key + " : " + (this_value if this_value.strip() != "" else "(blank = on)"))
+        print()
+
+    # Command-line --config KEY replaces data.csv settings for KEY: say so once per key
+    overridden = {}
+    for this_sample in selected_samples:
+        for this_key in sample_info.get_csv_option_keys(this_sample):
+            if this_key in brefito_config:
+                overridden.setdefault(this_key, []).append(this_sample)
+    for this_key, these_samples in overridden.items():
+        print("WARNING: --config " + this_key + "=" + str(brefito_config[this_key]) + " on the command line overrides")
+        print("  the data.csv setting of " + this_key + " for samples: " + ", ".join(these_samples))
+        print("  Use --config-add " + this_key + "=... (or --config " + this_key + "_ADD=...) to add to it instead.")
+        print()
+
+    for this_pattern in sample_info.unmatched_sample_patterns:
+        print("WARNING: data.csv sample pattern matched no samples: " + this_pattern)
+    if len(sample_info.unmatched_sample_patterns) > 0:
+        print()
+
+print_per_sample_config()
 
 if (sample_info.reads_with_bad_endings):
   print("ERROR: Read file names not of the expected form (*.fastq.gz) found.")

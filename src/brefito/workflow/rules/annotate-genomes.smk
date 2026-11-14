@@ -8,8 +8,12 @@ except NameError:
 
 # --config SKIP_ISESCAN[=1] (or NO_ISESCAN) skips ISEScan integration; the final .gbk path is unchanged.
 # --config SKIP_PHISPY[=1] (or NO_PHISPY) skips PhiSpy; the annotated GenBank is copied through unchanged.
-SKIP_ISESCAN = config_is_true("SKIP_ISESCAN") or config_is_true("NO_ISESCAN")
-SKIP_PHISPY = config_is_true("SKIP_PHISPY") or config_is_true("NO_PHISPY")
+# Both can also be set per sample in data.csv.
+def skip_isescan(sample):
+    return config_is_true("SKIP_ISESCAN", sample=sample) or config_is_true("NO_ISESCAN", sample=sample)
+
+def skip_phispy(sample):
+    return config_is_true("SKIP_PHISPY", sample=sample) or config_is_true("NO_PHISPY", sample=sample)
 
 rule all_annotate_genomes:
     input:
@@ -79,7 +83,7 @@ def combine_annotation_inputs(wildcards):
         "prokka_dir": prefix + "-prokka/" + wildcards.sample,
     }
     # Only depend on (and run) ISEScan when it is not being skipped.
-    if not SKIP_ISESCAN:
+    if not skip_isescan(wildcards.sample):
         inputs["isescan_dir"] = prefix + "-isescan/" + wildcards.sample
     return inputs
 
@@ -94,7 +98,7 @@ rule combine_annotation_with_breseq:
         # Expected ISEScan csv path (empty when SKIP_ISESCAN). The shell adds -s only when
         # this file actually exists and is non-empty, so a zero-IS-element result (no csv)
         # falls back to a Prokka-only conversion instead of crashing.
-        isescan_csv = lambda wildcards: "" if SKIP_ISESCAN else (
+        isescan_csv = lambda wildcards: "" if skip_isescan(wildcards.sample) else (
             "annotated-" + sample_info.get_reference_prefix() + "-isescan/" + wildcards.sample + "/" +
             "annotated-" + sample_info.get_reference_prefix() + "-fasta/" + wildcards.sample + ".fasta.csv")
     log:
@@ -120,7 +124,7 @@ rule annotate_with_phispy:
         gbk = "annotated-" + sample_info.get_reference_prefix() + "/{sample}.gbk",
         dir = temp(directory("annotated-" + sample_info.get_reference_prefix() + "-phispy/{sample}"))
     params:
-        skip = "1" if SKIP_PHISPY else ""
+        skip = lambda wildcards: "1" if skip_phispy(wildcards.sample) else ""
     log:
         "logs/" + "annotated-" + sample_info.get_reference_prefix() + "-{sample}-phispy.log"
     conda:

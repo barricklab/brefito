@@ -29,10 +29,11 @@ rule canu_assemble:
     log:
         "logs/{dataset}/canu_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/canu_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/canu_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper canu --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper canu --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 rule flye_assemble:
@@ -48,10 +49,11 @@ rule flye_assemble:
     log:
         "logs/{dataset}/flye_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/flye_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/flye_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper flye --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper flye --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 rule miniasm_assemble:
@@ -67,10 +69,11 @@ rule miniasm_assemble:
     log:
         "logs/{dataset}/miniasm_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/miniasm_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/miniasm_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper miniasm --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper miniasm --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 rule necat_assemble:
@@ -86,10 +89,11 @@ rule necat_assemble:
     log:
         "logs/{dataset}/necat_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/necat_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/necat_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper necat --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper necat --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 #rule nextdenovo_assemble:
@@ -124,10 +128,11 @@ rule metamdbg_assemble:
     log:
         "logs/{dataset}/metamdbg_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/metamdbg_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/metamdbg_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper metamdbg --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper metamdbg --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 rule raven_assemble:
@@ -143,10 +148,11 @@ rule raven_assemble:
     log:
         "logs/{dataset}/raven_{assembly_id}.log"
     params:
-        output_prefix="intermediate-assemblies/{dataset}/raven_assembly_{assembly_id}"
+        output_prefix="intermediate-assemblies/{dataset}/raven_assembly_{assembly_id}",
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
     shell:
         """
-        autocycler helper raven --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {config[genome_size]} > {log} 2>&1
+        autocycler helper raven --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
         """
 
 # compress all of the input assemblies (6 assemblers x 4 subsets each = 24 assemblies per sample) with autocycler
