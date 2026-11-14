@@ -52,7 +52,7 @@ def is_sample_pattern(name):
     return any(c in SAMPLE_PATTERN_CHARACTERS for c in name)
 
 # --config keys brefito sets itself; data.csv may not set these
-RESERVED_CONFIG_KEYS = set({"SAMPLES", "REFERENCES", "DATA_CSV", "BREFITO_PACKAGE_PATH", "QUERY_FILE_PATH", "BRESEQ_PRERELEASE"})
+RESERVED_CONFIG_KEYS = set({"SAMPLES", "REFERENCES", "DATA_CSV", "BREFITO_PACKAGE_PATH", "QUERY_FILE_PATH", "BRESEQ_PRERELEASE", "BRESEQ_PATH"})
 
 def rreplace(s, old, new, maxreplace):
     return(new.join(s.rsplit(old, maxreplace)))
@@ -914,6 +914,12 @@ def config_is_true_for_all_samples(name, default=False):
     return value_is_true(v)
 
 BRESEQ_ENV = "../envs/breseq-prerelease.yml" if brefito_config.get("BRESEQ_PRERELEASE") else "../envs/breseq.yml"
+
+# --breseq-path DIR: prefer breseq/gdtools from a local build over the conda package.
+# Applied to every rule, so a locally built binary is used wherever one is called.
+if brefito_config.get("BRESEQ_PATH"):
+    print("Using breseq/gdtools from: " + brefito_config.get("BRESEQ_PATH"))
+    shell.prefix('export PATH="' + brefito_config.get("BRESEQ_PATH") + ':$PATH"; ')
 
 data_csv_name = 'data.csv'
 if "data_csv" in config:

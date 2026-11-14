@@ -75,6 +75,10 @@ def main():
                          help='Use the prerelease breseq build (breseq-prerelease conda env) '
                               'instead of the stable release. Use --reinstall breseq-prerelease '
                               'to force-reinstall the prerelease env when a new build is pushed.')
+    parser.add_argument('--breseq-path', metavar='DIR',
+                         help='Directory holding breseq and gdtools binaries to use in preference to '
+                              'the ones in the conda environment. DIR is prepended to PATH for every '
+                              'rule. Use this to test a local build before it has been packaged.')
     parser.add_argument('--notemp', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--keep-going', action='store_true', help='argument passed through to Snakemake')
     parser.add_argument('--nolock', action='store_true', help='argument passed through to Snakemake')
@@ -308,6 +312,13 @@ def main():
 
     if args.breseq_prerelease:
         config_options_list.append("BRESEQ_PRERELEASE=True")
+
+    if args.breseq_path:
+        breseq_path = os.path.abspath(os.path.expanduser(os.path.expandvars(args.breseq_path)))
+        if not os.path.isdir(breseq_path):
+            print("Directory given by --breseq-path does not exist: " + breseq_path)
+            sys.exit(1)
+        config_options_list.append("BRESEQ_PATH=" + breseq_path)
 
     config_options = []
     if len(config_options_list) > 0:

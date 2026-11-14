@@ -128,8 +128,15 @@ Each `.smk` file is a self-contained workflow. Key workflows:
 | Read QC | `trim-illumina-reads`, `trim-nanopore-reads`, `filter-nanopore-reads`, `evaluate-nanopore-reads` |
 | Annotation | `annotate-genomes` |
 | Comparison | `compare-syri`, `compare-assemblies-breseq`, `compare-mutations-breseq`, `compare-genome-diffs-breseq` |
+| GenomeDiff files | `validate-genome-diff-gdtools`, `clean-genome-diffs-gdtools` |
 | Reads/data | `download-data`, `data-to-sra`, `merge-reads`, `align-reads` |
 | Analysis | `classify-kraken2`, `search-blast`, `predict-cnv-breseq`, `tabulate-ssrs-breseq`, `evaluate-coverage-breseq` |
+
+`clean-genome-diffs-gdtools` rewrites `genome-diffs/<sample>.gd` into `genome-diffs-clean/<sample>.gd`,
+keeping only mutation entries and writing a dot (`.`) for the id and parent-ids columns, so that editing a
+GenomeDiff file under version control does not renumber every entry after the change. It needs a breseq
+build that has `gdtools REMOVE --clear-ids`: pass `--breseq-prerelease`, or `--breseq-path DIR` to use a
+local build.
 
 `autocycler-assemble` runs 6 assemblers (canu, flye, miniasm, necat, metamdbg, raven) × 4 subsampled read sets, then uses autocycler cluster/trim/resolve/combine to produce a consensus assembly in `assemblies/<sample>.fasta`. It requires `--config genome_size=<bp>`.
 
