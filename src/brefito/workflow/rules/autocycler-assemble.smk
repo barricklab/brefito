@@ -159,8 +159,8 @@ rule raven_assemble:
 
 rule autocycler_compress:
     input:
-        expand("intermediate-assemblies/{dataset}/{assembler}_assembly_{assembly_id}.fasta",
-               dataset=sample_info.get_sample_list(),
+        # only this dataset's assemblies; {{dataset}} stays a wildcard of this rule
+        expand("intermediate-assemblies/{{dataset}}/{assembler}_assembly_{assembly_id}.fasta",
                assembly_id=READ_SUBSET_IDS,
                assembler=ASSEMBLERS)
     output:

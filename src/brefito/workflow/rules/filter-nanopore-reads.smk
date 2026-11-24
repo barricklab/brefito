@@ -58,7 +58,8 @@ rule filter_nanopore_reads:
 
 rule filter_nanopore_reads_no_filter:
     input:
-        "nanopore-reads/{sample}.fastq.gz"
+        # the same trimmed and merged reads filtlong would have filtered
+        "nanopore-reads-trimmed-merged/{sample}.fastq.gz"
     output:
         "nanopore-reads-filtered/{sample}.fastq"
     threads: 1

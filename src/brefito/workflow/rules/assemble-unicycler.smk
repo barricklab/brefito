@@ -9,12 +9,12 @@ except NameError:
 include: "trim-illumina-reads.smk"
 include: "filter-nanopore-reads.smk"
 
-if get_uniform_config_value('UNICYCLER_THREADS') != None:
-    UNICYCLER_THREADS = get_uniform_config_value('UNICYCLER_THREADS')
+# Without --config UNICYCLER_THREADS the rule below had no thread count at all (NameError)
+UNICYCLER_THREADS = int(get_uniform_config_value('UNICYCLER_THREADS', 16))
 
 rule subsample_nanopore_reads:
     input:
-        "nanopore-reads0filtered/{sample}.fastq"
+        "nanopore-reads-filtered/{sample}.fastq"
     output:
         "nanopore-reads-subsampled/{sample}.fastq"
     conda:
@@ -72,8 +72,15 @@ rule subsample_illumina_reads:
         """
 
 # Helper functions for setting up arguments
+# Long reads are filtered and subsampled per sample, so there is one file for each sample that has
+# any, named after the sample, not one per read file.
+def get_subsampled_nanopore_reads(sample):
+    if sample_info.get_nanopore_read_list(sample):
+        return [os.path.join("nanopore-reads-subsampled", sample + ".fastq.gz")]
+    return []
+
 def find_available_read_files(wildcards):
-    nanopore_files = [os.path.join("nanopore-reads-subsampled", os.path.basename(d)) for d in sample_info.get_nanopore_read_list(wildcards.sample)]
+    nanopore_files = get_subsampled_nanopore_reads(wildcards.sample)
     illumina_files = [os.path.join("illumina-reads-subsampled", os.path.basename(d)) for d in sample_info.get_illumina_read_list(wildcards.sample)]
     return illumina_files + nanopore_files
 
@@ -82,7 +89,7 @@ def get_paired_short_read_args(wildcards):
     return sample_info.get_illumina_PE_read_arguments(wildcards.sample, "-1 illumina-reads-subsampled/", "-2 illumina-reads-subsampled/")
 
 def get_long_read_args(wildcards):
-    return sample_info.get_nanopore_read_arguments(wildcards.sample, "-l ")
+    return " ".join("-l " + f for f in get_subsampled_nanopore_reads(wildcards.sample))
 
 rule assemble_all:
     input:
