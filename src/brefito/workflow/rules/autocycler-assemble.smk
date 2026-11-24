@@ -9,16 +9,33 @@ include: "autocycler-subsample-nanopore-reads.smk"
 READ_SUBSET_IDS=["01","02","03","04"] # autocycler subsample creates 4 subsampled fastqs for a given fastq file
 ASSEMBLERS=["canu","flye","miniasm","necat","metamdbg","raven"]
 
+# Assemblers run for a dataset, by its long-read type: NECAT assembles nanopore reads only, and
+# metaMDBG does not take PacBio CLR reads.
+def get_assemblers(dataset):
+    long_read_type = sample_info.get_long_read_type(dataset)
+    assemblers = list(ASSEMBLERS)
+    if long_read_type != "nanopore":
+        assemblers.remove("necat")
+    if long_read_type == "pacbio-clr":
+        assemblers.remove("metamdbg")
+    return assemblers
+
+# autocycler helper --read_type for the dataset's reads. Nothing is passed for nanopore reads, so
+# they keep autocycler's default (ont_r10), as before.
+def get_autocycler_read_type_argument(dataset):
+    read_type = long_read_setting(sample_info.get_long_read_type(dataset), "autocycler")
+    return "--read_type " + read_type if read_type else ""
+
 MAX_CONTIGS_ARGUMENT="--max_contigs 40"
 
 rule all_targets_autocycler:
     input:
-        ["assemblies/" + s + ".fasta" for s in sample_info.get_sample_list()]
+        ["assemblies/" + s + ".fasta" for s in sample_info.get_samples_with_long_reads()]
     default_target: True
 
 rule canu_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -30,15 +47,16 @@ rule canu_assemble:
         "logs/{dataset}/canu_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/canu_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper canu --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper canu --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 rule flye_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -50,15 +68,16 @@ rule flye_assemble:
         "logs/{dataset}/flye_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/flye_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper flye --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper flye --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 rule miniasm_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -70,15 +89,16 @@ rule miniasm_assemble:
         "logs/{dataset}/miniasm_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/miniasm_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper miniasm --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper miniasm --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 rule necat_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -90,10 +110,11 @@ rule necat_assemble:
         "logs/{dataset}/necat_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/necat_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper necat --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper necat --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 #rule nextdenovo_assemble:
@@ -117,7 +138,7 @@ rule necat_assemble:
 
 rule metamdbg_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -129,15 +150,16 @@ rule metamdbg_assemble:
         "logs/{dataset}/metamdbg_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/metamdbg_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper metamdbg --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper metamdbg --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 rule raven_assemble:
     input:
-        "autocycler-nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_autocycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(READ_SUBSET_IDS)
     conda:
@@ -149,20 +171,22 @@ rule raven_assemble:
         "logs/{dataset}/raven_{assembly_id}.log"
     params:
         output_prefix="intermediate-assemblies/{dataset}/raven_assembly_{assembly_id}",
-        genome_size=lambda wildcards: get_genome_size(wildcards.dataset)
+        genome_size=lambda wildcards: get_genome_size(wildcards.dataset),
+        read_type=lambda wildcards: get_autocycler_read_type_argument(wildcards.dataset)
     shell:
         """
-        autocycler helper raven --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} > {log} 2>&1
+        autocycler helper raven --reads {input} --out_prefix {params.output_prefix} --threads {threads} --genome_size {params.genome_size} {params.read_type} > {log} 2>&1
         """
 
 # compress all of the input assemblies (6 assemblers x 4 subsets each = 24 assemblies per sample) with autocycler
 
 rule autocycler_compress:
     input:
-        # only this dataset's assemblies; {{dataset}} stays a wildcard of this rule
-        expand("intermediate-assemblies/{{dataset}}/{assembler}_assembly_{assembly_id}.fasta",
+        # only this dataset's assemblies, from the assemblers its read type allows
+        lambda wildcards: expand("intermediate-assemblies/{dataset}/{assembler}_assembly_{assembly_id}.fasta",
+               dataset=wildcards.dataset,
                assembly_id=READ_SUBSET_IDS,
-               assembler=ASSEMBLERS)
+               assembler=get_assemblers(wildcards.dataset))
     output:
         "autocycler/{dataset}/input_assemblies.gfa"
     conda:

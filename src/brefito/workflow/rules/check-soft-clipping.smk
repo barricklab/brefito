@@ -10,8 +10,9 @@ rule all_evaluate_soft_clipping:
 
 def get_bam_for_sample(sample):
     bam_list = []
-    for r in sample_info.get_nanopore_read_base_list(sample):
-        bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/nanopore_reads." + r + ".bam"]
+    long_read_type = sample_info.get_long_read_type(sample)
+    for r in sample_info.get_long_read_base_list(sample):
+        bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/" + long_read_bam_prefix(long_read_type) + "." + r + ".bam"]
     for r in sample_info.get_illumina_SE_read_base_list(sample):
         bam_list += ["aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + sample + "/illumina_reads." + r + ".SE.bam"]
     for r in sample_info.get_illumina_PE_read_base_list(sample):

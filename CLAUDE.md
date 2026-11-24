@@ -88,12 +88,26 @@ except NameError:
 ```
 
 `load-sample-info.smk` defines the `SampleInfo` class and instantiates `sample_info`. It loads from `data.csv` if present, otherwise auto-scans these directories:
-- `nanopore-reads/` — `*.fastq.gz`
+- `nanopore-reads/`, `pacbio-clr-reads/`, `pacbio-hifi-reads/` — `*.fastq.gz`
 - `illumina-reads/` — `*.R1.fastq.gz`, `*.R2.fastq.gz`, `*.fastq.gz` (SE)
 - `assemblies/` — `*.fasta`, `*.fna`, `*.fa`
 - `references/` — genome/annotation files
 
-The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA run accessions are supported via `sra://SRRxxxxxx` (or `ERR…`/`DRR…`, the ENA and DDBJ run accessions, which the SRA also serves).
+The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `pacbio-clr` (PacBio RS II/Sequel continuous long reads), `pacbio-hifi` (PacBio HiFi/CCS), `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA run accessions are supported via `sra://SRRxxxxxx` (or `ERR…`/`DRR…`, the ENA and DDBJ run accessions, which the SRA also serves).
+
+**Long reads.** `nanopore`, `pacbio-clr` and `pacbio-hifi` are the long-read types (`LONG_READ_TYPES` in `load-sample-info.smk`). A sample may have reads of at most one of them; mixing them in one sample is an error at load time. Each type has its own directories, `<type>-reads/`, `<type>-reads-trimmed/`, `<type>-reads-filtered/`, `<type>-reads-subsampled/`, so nanopore paths are unchanged. Aligned reads are `nanopore_reads.*`, `pacbio_clr_reads.*` or `pacbio_hifi_reads.*`. Rules take the read type from an `{lrt}` wildcard (or `{long_read_prefix}` in align-reads), and per-type tool settings come from `LONG_READ_SETTINGS` via `long_read_setting(type, key)`:
+
+| | nanopore | pacbio-clr | pacbio-hifi |
+|---|---|---|---|
+| minimap2 (align-reads) | `map-ont` | `map-pb` | `map-hifi` |
+| minimap2 overlaps (miniasm) | `ava-ont` | `ava-pb` | `ava-pb` |
+| flye | `--nano-raw` | `--pacbio-raw` | `--pacbio-hifi` |
+| canu | `-nanopore` | `-pacbio` | `-pacbio-hifi` |
+| autocycler helper `--read_type` | (default, `ont_r10`) | `pacbio_clr` | `pacbio_hifi` |
+| filtlong default | `--min_length 1000 --keep_percent 90` | same | `--min_length 1000` |
+| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | `--require-match-fraction 0.0` | `--require-match-fraction 0.0` |
+
+ONT-only steps: porechop/porechop_ABI (`NANOPORE_TRIMMING` applies to nanopore reads only; PacBio reads are linked through untrimmed), medaka (`polish-medaka` stops with an error for PacBio samples), NECAT (left out of autocycler and trycycler for PacBio), and metaMDBG has no CLR mode (left out of autocycler for `pacbio-clr`). `NANOPORE_FILTERING` and `FILTLONG_OPTIONS` apply to every long-read type. Rule and workflow names keep their historical `nanopore` names (`filter-nanopore-reads`, `align_nanopore_reads`, ...) although they handle all long reads.
 
 A `sample` containing `*`, `?` or `[...]` is a shell glob (no regex). Glob rows are expanded after the whole file is read, so they apply to every sample named exactly anywhere in the file, not just earlier rows. A glob matching nothing is warned about.
 
@@ -113,6 +127,7 @@ When writing workflows, read per-sample options in a rule's `params:` (`lambda w
 `SampleInfo` methods used in rules:
 - `get_sample_list()` — all sample names
 - `get_nanopore_read_list(sample)` / `get_illumina_PE_read_base_list(sample)` — file lists
+- `get_long_read_type(sample)` (None, `nanopore`, `pacbio-clr` or `pacbio-hifi`), `get_long_read_list(sample)`, `get_long_read_base_list(sample)`, `get_samples_with_long_reads()`, `get_long_read_path(sample, stage, suffix)` — long reads of whichever type the sample has; use these, not the nanopore ones, in new workflows
 - `get_reference_list(sample)` / `get_reference_arguments(sample, '-r ')` — reference files
 - `get_reference_prefix()` — the active reference directory name
 

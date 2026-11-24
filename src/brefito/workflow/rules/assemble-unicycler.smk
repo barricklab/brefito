@@ -14,24 +14,28 @@ UNICYCLER_THREADS = int(get_uniform_config_value('UNICYCLER_THREADS', 16))
 
 rule subsample_nanopore_reads:
     input:
-        "nanopore-reads-filtered/{sample}.fastq"
+        "{lrt}-reads-filtered/{sample}.fastq"
     output:
-        "nanopore-reads-subsampled/{sample}.fastq"
+        "{lrt}-reads-subsampled/{sample}.fastq"
+    wildcard_constraints:
+        lrt=LONG_READ_TYPE_REGEX
     conda:
         "../envs/trycycler.yml"
     threads: 1
     shell:
         """
-        trycycler subsample --genome_size {config[genome_size]} --reads {input} --count 2 --out_dir nanopore-reads-subsampled/{wildcards.sample}
-        mv nanopore-reads-subsampled/{wildcards.sample}/sample_01.fastq {output}
-        rm -r nanopore-reads-subsampled/{wildcards.sample}
+        trycycler subsample --genome_size {config[genome_size]} --reads {input} --count 2 --out_dir {wildcards.lrt}-reads-subsampled/{wildcards.sample}
+        mv {wildcards.lrt}-reads-subsampled/{wildcards.sample}/sample_01.fastq {output}
+        rm -r {wildcards.lrt}-reads-subsampled/{wildcards.sample}
         """
 
 rule gzip_subsampled_nanopore_reads:
     input:
-        "nanopore-reads-subsampled/{sample}.fastq"
+        "{lrt}-reads-subsampled/{sample}.fastq"
     output:
-        "nanopore-reads-subsampled/{sample}.fastq.gz"
+        "{lrt}-reads-subsampled/{sample}.fastq.gz"
+    wildcard_constraints:
+        lrt=LONG_READ_TYPE_REGEX
     threads: 1
     shell:
         """
@@ -72,12 +76,11 @@ rule subsample_illumina_reads:
         """
 
 # Helper functions for setting up arguments
-# Long reads are filtered and subsampled per sample, so there is one file for each sample that has
-# any, named after the sample, not one per read file.
+# Long reads (of any type; unicycler -l takes them all) are filtered and subsampled per sample,
+# so there is one file for each sample that has any, named after the sample, not one per read file.
 def get_subsampled_nanopore_reads(sample):
-    if sample_info.get_nanopore_read_list(sample):
-        return [os.path.join("nanopore-reads-subsampled", sample + ".fastq.gz")]
-    return []
+    path = sample_info.get_long_read_path(sample, "subsampled", ".fastq.gz")
+    return [path] if path else []
 
 def find_available_read_files(wildcards):
     nanopore_files = get_subsampled_nanopore_reads(wildcards.sample)

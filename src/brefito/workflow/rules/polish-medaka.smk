@@ -1,5 +1,15 @@
 include: "filter-nanopore-reads.smk"
 
+# medaka's models are trained on nanopore reads only, so it cannot polish with PacBio reads.
+# Stop with a clear message rather than running it on reads it was not built for.
+pacbio_samples = [s for s in sample_info.get_sample_list()
+                  if sample_info.get_long_read_type(s) not in (None, "nanopore")]
+if pacbio_samples:
+    print("ERROR: polish-medaka polishes with nanopore reads only, but these samples have PacBio reads:")
+    print("  " + " ".join(sorted(pacbio_samples)))
+    print("  Polish them with Illumina reads instead (polish-polypolish, polish-polca or polish-breseq).")
+    exit(1)
+
 rule polish_with_medaka:
     input:
         reference = "assemblies/{sample}.fasta",

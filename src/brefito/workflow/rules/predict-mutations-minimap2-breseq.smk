@@ -12,22 +12,28 @@ BRESEQ_THREADS = int(get_uniform_config_value('BRESEQ_THREADS', 8))
 def get_breseq_options(sample):
     return get_config_value('BRESEQ_OPTIONS', "", sample)
 
+# The sample's long reads (nanopore, pacbio-clr or pacbio-hifi), aligned by minimap2 with the
+# preset for their type (align-reads.smk)
 def find_available_read_files(wildcards):
+    long_read_type = sample_info.get_long_read_type(wildcards.sample)
+    if long_read_type is None:
+        return []
+    prefix = long_read_bam_prefix(long_read_type)
+    return [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/" + prefix + "." + d + ".sam" for d in sample_info.get_long_read_base_list(wildcards.sample)]
 
-    temp("aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads.{reads}.sam")
-
-    nanopore_files = [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/nanopore_reads." + d + ".sam" for d in sample_info.get_nanopore_read_base_list(wildcards.sample)] 
-
-    return nanopore_files
-
+# -x (--nanopore) tunes breseq for the homopolymer indels of nanopore reads, so it is only the
+# default for nanopore reads. PacBio reads get --require-match-fraction 0.0 alone, since minimap2
+# has already decided how much of each read aligns.
 def get_breseq_args(sample):
     if config_is_true("NO_DEFAULT_BRESEQ_OPTIONS", sample=sample):
         return ""
-    return "-x --require-match-fraction 0.0"
+    if sample_info.get_long_read_type(sample) == "nanopore":
+        return "-x --require-match-fraction 0.0"
+    return "--require-match-fraction 0.0"
 
 rule all_predict_mutations_minimap2_breseq:
     input:
-        ["minimap2-breseq-" + sample_info.get_reference_prefix() + "/html/" + s + "/output.done" for s in sample_info.get_sample_list()]
+        ["minimap2-breseq-" + sample_info.get_reference_prefix() + "/html/" + s + "/output.done" for s in sample_info.get_samples_with_long_reads()]
     default_target: True
 
 rule predict_mutations_minimap2_breseq:

@@ -152,7 +152,7 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
             shell_command = f"mv sra-downloads/{remote_path}.R1.fastq.gz {output_path}"
         elif output_path.endswith("R2.fastq.gz"): #this is R2 of PE data
             shell_command = f"mv sra-downloads/{remote_path}.R2.fastq.gz {output_path}"
-        elif "nanopore" in output_path: #this is nanopore data
+        elif output_path.split("/", 1)[0] in [t + "-reads" for t in LONG_READ_TYPES]: #this is long-read data (nanopore or PacBio)
             shell_command = f"mv sra-downloads/{remote_path}.fastq.gz {output_path}"
         return shell_command
 
@@ -179,7 +179,7 @@ def get_sra_path_from_local_path(local_path, file_name):
         if file_name.endswith(read_ending):
             return(f"sra-downloads/{run_accession}{read_ending}")
 
-    # Nanopore reads
+    # Long reads (nanopore or PacBio): one read per spot, all in one file
     return(f"sra-downloads/{run_accession}.fastq.gz")
 
 rule download_file:
@@ -193,7 +193,7 @@ rule download_file:
         shell_command = lambda wildcards: remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample, wildcards.download_type + "/" + wildcards.sample)
     threads: 1
     wildcard_constraints:
-        download_type="(references|illumina-reads|nanopore-reads)"
+        download_type="(references|illumina-reads|" + "|".join(t + "-reads" for t in LONG_READ_TYPES) + ")"
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
@@ -265,7 +265,7 @@ rule download_paired_sra:
 
         if [ ! -s {wildcards.run_accession}_1.fastq ] || [ ! -s {wildcards.run_accession}_2.fastq ]; then
             echo "ERROR: SRA run {wildcards.run_accession} did not yield any paired reads." >&2
-            echo "       It appears to be single-end. Use type 'illumina-SE' (or 'nanopore')" >&2
+            echo "       It appears to be single-end. Use type 'illumina-SE' (or 'nanopore', 'pacbio-clr', 'pacbio-hifi')" >&2
             echo "       for this accession in data.csv instead of 'illumina-PE'." >&2
             exit 1
         fi
