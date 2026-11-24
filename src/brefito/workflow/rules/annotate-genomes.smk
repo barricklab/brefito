@@ -6,14 +6,25 @@ try: sample_info
 except NameError:
     include: "load-sample-info.smk"
 
+# So a reference given in data.csv as a remote location (ncbi-genome://, a URL, ...) is fetched,
+# as in search-blast and normalize-assemblies. Without this the workflow only ran when the
+# reference files already happened to be in references/.
+include: "download-data.smk"
+
 # --config SKIP_ISESCAN[=1] (or NO_ISESCAN) skips ISEScan integration; the final .gbk path is unchanged.
 # --config SKIP_PHISPY[=1] (or NO_PHISPY) skips PhiSpy; the annotated GenBank is copied through unchanged.
-# Both can also be set per sample in data.csv.
+# --config SKIP_PROKKA[=1] (or NO_PROKKA) keeps the reference's own gene annotations instead of
+#   re-annotating with Prokka, so the only thing added is the ISEScan (and PhiSpy) output. Use this to
+#   add IS element annotations to a reference that lacks them without disturbing the rest of it.
+# All three can also be set per sample in data.csv.
 def skip_isescan(sample):
     return config_is_true("SKIP_ISESCAN", sample=sample) or config_is_true("NO_ISESCAN", sample=sample)
 
 def skip_phispy(sample):
     return config_is_true("SKIP_PHISPY", sample=sample) or config_is_true("NO_PHISPY", sample=sample)
+
+def skip_prokka(sample):
+    return config_is_true("SKIP_PROKKA", sample=sample) or config_is_true("NO_PROKKA", sample=sample)
 
 rule all_annotate_genomes:
     input:
@@ -78,10 +89,16 @@ rule annotate_with_isescan:
 
 def combine_annotation_inputs(wildcards):
     prefix = "annotated-" + sample_info.get_reference_prefix()
-    inputs = {
-        "prokka": prefix + "-prokka/" + wildcards.sample + "/reference.gff",
-        "prokka_dir": prefix + "-prokka/" + wildcards.sample,
-    }
+    # With SKIP_PROKKA the reference itself is annotated, so nothing depends on the Prokka
+    # output and that rule never runs. ISEScan reads the FASTA converted from this same
+    # reference, so its seqIDs then match breseq's seq ids by construction.
+    if skip_prokka(wildcards.sample):
+        inputs = {"annotation_source": sample_info.get_reference_list(wildcards.sample)}
+    else:
+        inputs = {
+            "annotation_source": prefix + "-prokka/" + wildcards.sample + "/reference.gff",
+            "prokka_dir": prefix + "-prokka/" + wildcards.sample,
+        }
     # Only depend on (and run) ISEScan when it is not being skipped.
     if not skip_isescan(wildcards.sample):
         inputs["isescan_dir"] = prefix + "-isescan/" + wildcards.sample
@@ -91,8 +108,8 @@ rule combine_annotation_with_breseq:
     input:
         unpack(combine_annotation_inputs)
     output:
-        # Intermediate Prokka(+ISEScan) GenBank; PhiSpy consumes it and produces the
-        # final annotated-<prefix>/{sample}.gbk. temp() is safe because PhiSpy copies it.
+        # Intermediate Prokka-or-reference (+ISEScan) GenBank; PhiSpy consumes it and produces
+        # the final annotated-<prefix>/{sample}.gbk. temp() is safe because PhiSpy copies it.
         temp("annotated-" + sample_info.get_reference_prefix() + "-prokka-isescan/{sample}.gbk")
     params:
         # Expected ISEScan csv path (empty when SKIP_ISESCAN). The shell adds -s only when
@@ -108,9 +125,9 @@ rule combine_annotation_with_breseq:
     shell:
         """
         if [ -n "{params.isescan_csv}" ] && [ -s "{params.isescan_csv}" ]; then
-            breseq CONVERT-REFERENCE -f GENBANK -s "{params.isescan_csv}" -o {output} {input.prokka} > {log} 2>&1
+            breseq CONVERT-REFERENCE -f GENBANK -s "{params.isescan_csv}" -o {output} {input.annotation_source} > {log} 2>&1
         else
-            breseq CONVERT-REFERENCE -f GENBANK -o {output} {input.prokka} > {log} 2>&1
+            breseq CONVERT-REFERENCE -f GENBANK -o {output} {input.annotation_source} > {log} 2>&1
         fi
         """
 
