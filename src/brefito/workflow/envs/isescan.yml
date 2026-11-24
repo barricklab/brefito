@@ -4,5 +4,5 @@ channels:
   - defaults
 dependencies:
   - fraggenescan >=1.32
-  - isescan =1.7.2.3
+  - isescan =1.7.3
 name: isescan
