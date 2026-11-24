@@ -45,6 +45,13 @@ import glob
 import copy
 import fnmatch
 
+# Run accessions of the three INSDC archives: SRR (NCBI SRA), ERR (ENA) and DRR (DDBJ). The SRA
+# serves all three, so an sra:// setting may name any of them.
+SRA_RUN_ACCESSION_PREFIXES = ("SRR", "ERR", "DRR")
+
+def is_sra_run_accession(name):
+    return name.startswith(SRA_RUN_ACCESSION_PREFIXES) and name[3:].isdigit()
+
 # Sample names containing any of these characters in data.csv are globs
 SAMPLE_PATTERN_CHARACTERS = set("*?[")
 
@@ -186,8 +193,9 @@ class SampleInfo():
                 # paired end reads
                 elif row['type'] in ["illumina-pair", "illumina-paired", "illumina-PE"]:
                     
-                    # Don't do the automatic read name simplification step for sra://SRR or sra://ERR entries
-                    if row['setting'].startswith("sra://SRR") or row['setting'].startswith("sra://ERR"):
+                    # Don't do the automatic read name simplification step for sra:// run accessions
+                    # (SRR, ERR or DRR)
+                    if row['setting'].startswith("sra://") and is_sra_run_accession(row['setting'][6:]):
 
                         #Make sure we cut off the sra:// part using slice
                         simplified_read_file_base_name_1 = row['setting'][6:] # this value is already simplified
@@ -534,8 +542,7 @@ class SampleInfo():
     # accession (SRR13512703_1.fastq.gz) must still be simplified, or the two files of a pair
     # end up with different base names and no paired rule can be built for them.
     def is_bare_sra_run_accession(self, in_read_name):
-        return (in_read_name.startswith("SRR") or in_read_name.startswith("ERR")) \
-            and in_read_name[3:].isdigit()
+        return is_sra_run_accession(in_read_name)
 
     ## We want the read names to be standardized... this should do it in most cases
     def get_simplified_read_file_base_name(self, in_read_name):

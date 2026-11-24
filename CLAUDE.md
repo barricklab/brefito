@@ -93,7 +93,7 @@ except NameError:
 - `assemblies/` — `*.fasta`, `*.fna`, `*.fa`
 - `references/` — genome/annotation files
 
-The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA accessions are supported via `sra://SRRxxxxxx`.
+The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA run accessions are supported via `sra://SRRxxxxxx` (or `ERR…`/`DRR…`, the ENA and DDBJ run accessions, which the SRA also serves).
 
 A `sample` containing `*`, `?` or `[...]` is a shell glob (no regex). Glob rows are expanded after the whole file is read, so they apply to every sample named exactly anywhere in the file, not just earlier rows. A glob matching nothing is warned about.
 
@@ -131,6 +131,13 @@ Each `.smk` file is a self-contained workflow. Key workflows:
 | GenomeDiff files | `validate-genome-diff-gdtools`, `clean-genome-diffs-gdtools` |
 | Reads/data | `download-data`, `data-to-sra`, `merge-reads`, `align-reads` |
 | Analysis | `classify-kraken2`, `search-blast`, `predict-cnv-breseq`, `tabulate-ssrs-breseq`, `evaluate-coverage-breseq` |
+
+`annotate-genomes` runs Prokka, then ISEScan, then PhiSpy, and combines them with
+`breseq CONVERT-REFERENCE`. Each stage has a skip flag, settable globally or per sample in data.csv:
+`SKIP_PROKKA` keeps the reference's own gene annotations (so the only additions are ISEScan's IS elements
+and PhiSpy's prophages), `SKIP_ISESCAN` and `SKIP_PHISPY` drop those stages. The output path
+`annotated-<references>/<sample>.gbk` is the same whichever are set. Adding IS element annotations to a
+reference that lacks them is `--config SKIP_PROKKA=1 SKIP_PHISPY=1`.
 
 `clean-genome-diffs-gdtools` rewrites `genome-diffs/<sample>.gd` into `genome-diffs-clean/<sample>.gd`,
 keeping only mutation entries and writing a dot (`.`) for the id and parent-ids columns, so that editing a
