@@ -24,8 +24,8 @@ else:
     exit(0)
 
 # Long reads of every type end up in <type>-reads-trimmed/. NANOPORE_TRIMMING picks how nanopore
-# reads of every accuracy (nanopore, nanopore-raw, nanopore-hq) are trimmed (porechop and
-# porechop_ABI look for ONT adapters only). PacBio reads are not trimmed: HiFi reads come
+# reads of every accuracy (nanopore, nanopore-fast, nanopore-hac, nanopore-sup) are trimmed
+# (porechop and porechop_ABI look for ONT adapters only). PacBio reads are not trimmed: HiFi reads come
 # adapter-free, and CLR subreads have already had their SMRTbell adapters removed by the
 # instrument software.
 def get_all_trimmed_nanopore_read_names():

@@ -12,8 +12,9 @@ if pacbio_samples:
     exit(1)
 
 # The medaka model must match the flow cell and basecaller of the reads. The default comes from
-# the read type (LONG_READ_SETTINGS): an R9.4.1 SUP model for nanopore and nanopore-raw reads,
-# an R10.4.1 SUP model for nanopore-hq reads. MEDAKA_MODEL (per sample in data.csv, or
+# the read type (LONG_READ_SETTINGS): an R9.4.1 SUP model for nanopore and nanopore-fast reads,
+# an R10.4.1 HAC model for nanopore-hac reads and an R10.4.1 SUP model for nanopore-sup reads.
+# MEDAKA_MODEL (per sample in data.csv, or
 # --config) sets it explicitly; 'medaka tools list_models' lists the choices.
 def get_medaka_model(sample):
     default_model = long_read_setting(sample_info.get_long_read_type(sample), "medaka_model")

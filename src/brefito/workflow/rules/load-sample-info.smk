@@ -10,9 +10,10 @@
 #  1 sample = main sample name, must match for reads that will be used together.
 #             May be a shell-style glob (containing *, ? or [...]) that applies the
 #             row to every sample named exactly anywhere in the file (before or after).
-#  2 type = either a file type: 'nanopore', 'nanopore-raw', 'nanopore-hq', 'pacbio',
-#           'pacbio-clr', 'pacbio-hifi', 'illumina-SE', 'illumina-R1', 'illumina-R2',
-#           'illumina-PE', 'reference' (see LONG_READ_TYPES below)
+#  2 type = either a file type: 'nanopore', 'nanopore-fast', 'nanopore-hac', 'nanopore-sup',
+#           'pacbio', 'pacbio-clr', 'pacbio-hifi', 'illumina-SE', 'illumina-R1', 'illumina-R2',
+#           'illumina-PE', 'reference' (see LONG_READ_TYPES below; 'nanopore-raw' and
+#           'nanopore-hq' are accepted as synonyms, see LONG_READ_TYPE_SYNONYMS)
 #           or the name of any --config option, like BRESEQ_OPTIONS (case-insensitive)
 #  3 setting = for file types, a way of downloading the file:
 #                 lftp@bookmark://path/to/file (if bookmark is present and refers to a location)
@@ -63,12 +64,17 @@ def is_sample_pattern(name):
 # <type>-reads-filtered/, ..., so the nanopore paths are exactly what they always were. A sample
 # may have reads of at most one long-read type; get_long_read_type() names it.
 #
-#  nanopore      nanopore reads of unstated accuracy: run with the nanopore-raw settings
-#  nanopore-raw  older, noisier nanopore reads (R9.4.1, or basecalled before Guppy 5 SUP)
-#  nanopore-hq   high-accuracy nanopore reads (R10.4.1 SUP, Q20+, under ~5% error)
-#  pacbio        PacBio reads of unstated kind: run with the pacbio-clr settings
-#  pacbio-clr    PacBio RS II/Sequel continuous long reads
-#  pacbio-hifi   PacBio HiFi/CCS reads
+# The nanopore types are named for the Dorado basecaller model that called the reads (fast, hac,
+# sup). The hac and sup settings assume R10.4.1 reads.
+#
+#  nanopore       nanopore reads of unstated accuracy: run with the nanopore-fast settings
+#  nanopore-fast  noisier nanopore reads: Dorado/Guppy fast model, or older R9.4.1 reads
+#                 (synonym: nanopore-raw)
+#  nanopore-hac   Dorado high-accuracy (hac) model reads, R10.4.1 (synonym: nanopore-hq)
+#  nanopore-sup   Dorado super-accuracy (sup) model reads, R10.4.1 (Q20+, under ~5% error)
+#  pacbio         PacBio reads of unstated kind: run with the pacbio-clr settings
+#  pacbio-clr     PacBio RS II/Sequel continuous long reads
+#  pacbio-hifi    PacBio HiFi/CCS reads
 #
 # The unqualified types use the settings for the noisier reads, since those still work (if not
 # optimally) on accurate reads, while settings for accurate reads give poor results on noisy ones.
@@ -83,20 +89,25 @@ def is_sample_pattern(name):
 #  necat         NECAT can assemble these reads (it is built for nanopore reads)
 #  metamdbg      metaMDBG can assemble these reads (it takes only HiFi and Q20+ nanopore reads)
 #  medaka_model  default medaka model (MEDAKA_MODEL overrides it); None = medaka refuses them
-_NANOPORE_RAW_SETTINGS = {"platform": "ont", "minimap2": "map-ont", "minimap2_ava": "ava-ont",
+_NANOPORE_FAST_SETTINGS = {"platform": "ont", "minimap2": "map-ont", "minimap2_ava": "ava-ont",
     "flye": "--nano-raw", "canu": "-nanopore", "autocycler": "ont_r9", "necat": True,
     "metamdbg": False, "medaka_model": "r941_min_sup_g507"}
+# hac and sup reads get the same tool settings; only the medaka model (named for the
+# basecaller model) differs
+_NANOPORE_ACCURATE_SETTINGS = {"platform": "ont", "minimap2": "lr:hq", "minimap2_ava": "ava-ont",
+    "flye": "--nano-hq", "canu": "-nanopore", "autocycler": "ont_r10", "necat": True,
+    "metamdbg": True}
 _PACBIO_CLR_SETTINGS = {"platform": "pacbio", "minimap2": "map-pb", "minimap2_ava": "ava-pb",
     "flye": "--pacbio-raw", "canu": "-pacbio", "autocycler": "pacbio_clr", "necat": False,
     "metamdbg": False, "medaka_model": None}
 
 LONG_READ_SETTINGS = {
-    "nanopore":     dict(_NANOPORE_RAW_SETTINGS, label="nanopore"),
-    "nanopore-raw": dict(_NANOPORE_RAW_SETTINGS, label="nanopore (raw)"),
-    "nanopore-hq":  {"platform": "ont", "minimap2": "lr:hq", "minimap2_ava": "ava-ont",
-                     "flye": "--nano-hq", "canu": "-nanopore", "autocycler": "ont_r10", "necat": True,
-                     "metamdbg": True, "medaka_model": "r1041_e82_400bps_sup_v4.3.0",
-                     "label": "nanopore (high accuracy)"},
+    "nanopore":      dict(_NANOPORE_FAST_SETTINGS, label="nanopore"),
+    "nanopore-fast": dict(_NANOPORE_FAST_SETTINGS, label="nanopore (fast)"),
+    "nanopore-hac":  dict(_NANOPORE_ACCURATE_SETTINGS, medaka_model="r1041_e82_400bps_hac_v4.3.0",
+                          label="nanopore (high accuracy, hac)"),
+    "nanopore-sup":  dict(_NANOPORE_ACCURATE_SETTINGS, medaka_model="r1041_e82_400bps_sup_v4.3.0",
+                          label="nanopore (super accuracy, sup)"),
     "pacbio":       dict(_PACBIO_CLR_SETTINGS, label="PacBio"),
     "pacbio-clr":   dict(_PACBIO_CLR_SETTINGS, label="PacBio CLR"),
     "pacbio-hifi":  {"platform": "pacbio", "minimap2": "map-hifi", "minimap2_ava": "ava-pb",
@@ -106,6 +117,19 @@ LONG_READ_SETTINGS = {
 }
 
 LONG_READ_TYPES = list(LONG_READ_SETTINGS)
+
+# Older names accepted in data.csv. They are turned into the canonical name as data.csv is read,
+# so only the names in LONG_READ_TYPES appear in directories, file names and wildcards.
+LONG_READ_TYPE_SYNONYMS = {
+    "nanopore-raw": "nanopore-fast",
+    "nanopore-hq":  "nanopore-hac",
+}
+
+def canonical_long_read_type(name):
+    """The LONG_READ_TYPES name for a long-read type or its synonym; None if it is neither."""
+    name = LONG_READ_TYPE_SYNONYMS.get(name, name)
+    return name if name in LONG_READ_SETTINGS else None
+
 NANOPORE_TYPES = [t for t in LONG_READ_TYPES if LONG_READ_SETTINGS[t]["platform"] == "ont"]
 PACBIO_TYPES = [t for t in LONG_READ_TYPES if LONG_READ_SETTINGS[t]["platform"] == "pacbio"]
 
@@ -123,7 +147,7 @@ def long_read_setting(long_read_type, key):
 def is_nanopore_type(long_read_type):
     return long_read_type in NANOPORE_TYPES
 
-# Aligned long reads are named <prefix>.<reads>.bam: nanopore_reads, nanopore_hq_reads, pacbio_clr_reads, ...
+# Aligned long reads are named <prefix>.<reads>.bam: nanopore_reads, nanopore_hac_reads, pacbio_clr_reads, ...
 def long_read_bam_prefix(long_read_type):
     return long_read_type.replace("-", "_") + "_reads"
 
@@ -218,13 +242,15 @@ class SampleInfo():
                 file_name = os.path.basename(row['setting'])
                 base_file_name = os.path.basename(row['setting'])
 
-                if (row['type'] in LONG_READ_TYPES):
+                # A synonym (nanopore-hq, ...) is stored under its canonical name
+                long_read_type = canonical_long_read_type(row['type'])
+                if long_read_type is not None:
                     simplified_read_file_base_name = self.get_simplified_read_file_base_name(base_file_name)
-                    local_path = os.path.join(row['type'] + "-reads", simplified_read_file_base_name + ".fastq.gz")
+                    local_path = os.path.join(long_read_type + "-reads", simplified_read_file_base_name + ".fastq.gz")
                     self.add_csv_file({
                         'sample' : row['sample'],
-                        'type' : row['type'],
-                        'file_type' : row['type'],
+                        'type' : long_read_type,
+                        'file_type' : long_read_type,
                         'remote_path' : row['setting'],
                         'local_path' : local_path
                         })
@@ -384,6 +410,15 @@ class SampleInfo():
         assemblies_path = "assemblies"
         references_path = "references"
         illumina_input_path = "illumina-reads"
+
+        # Only canonical type names are directory names. Reads in a directory named for a
+        # synonym (nanopore-hq-reads/, ...) would be silently left out, so stop instead.
+        for synonym, long_read_type in LONG_READ_TYPE_SYNONYMS.items():
+            if len(self.find_matching_input_files(synonym + "-reads", ".fastq.gz")):
+                print("ERROR: Found read files in " + synonym + "-reads/, but '" + synonym + "' reads are now")
+                print("  typed '" + long_read_type + "' and are looked for in " + long_read_type + "-reads/.")
+                print("  Rename the directory to " + long_read_type + "-reads/ (or list the files in a data.csv).")
+                exit(1)
 
         for long_read_type in LONG_READ_TYPES:
             long_read_input_path = long_read_type + "-reads"
@@ -709,7 +744,7 @@ class SampleInfo():
                     print("  " + this_type + " : " + this_item)
         #print(self.local_to_remote_path_mapping)
 
-    # Nanopore reads of any accuracy (nanopore, nanopore-raw, nanopore-hq)
+    # Nanopore reads of any accuracy (nanopore, nanopore-fast, nanopore-hac, nanopore-sup)
     def get_nanopore_read_list(self, sample):
         return [f for t in NANOPORE_TYPES for f in self.get_file_list(sample, t)]
 

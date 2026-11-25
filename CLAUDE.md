@@ -113,40 +113,43 @@ except NameError:
 ```
 
 `load-sample-info.smk` defines the `SampleInfo` class and instantiates `sample_info`. It loads from `data.csv` if present, otherwise auto-scans these directories:
-- `<type>-reads/` for each long-read type (`nanopore-reads/`, `nanopore-hq-reads/`, `pacbio-hifi-reads/`, …) — `*.fastq.gz`
+- `<type>-reads/` for each long-read type (`nanopore-reads/`, `nanopore-sup-reads/`, `pacbio-hifi-reads/`, …) — `*.fastq.gz`
 - `illumina-reads/` — `*.R1.fastq.gz`, `*.R2.fastq.gz`, `*.fastq.gz` (SE)
 - `assemblies/` — `*.fasta`, `*.fna`, `*.fa`
 - `references/` — genome/annotation files
 
 The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: the long-read types below, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA run accessions are supported via `sra://SRRxxxxxx` (or `ERR…`/`DRR…`, the ENA and DDBJ run accessions, which the SRA also serves).
 
-**Long reads.** The long-read types (`LONG_READ_TYPES`, from `LONG_READ_SETTINGS` in `load-sample-info.smk`) are:
-- `nanopore-raw`: older, noisier nanopore reads (R9.4.1, or basecalled before Guppy 5 SUP)
-- `nanopore-hq`: high-accuracy nanopore reads (R10.4.1 SUP, Q20+, under ~5% error)
-- `nanopore`: accuracy not stated; runs with the `nanopore-raw` settings
+**Long reads.** The long-read types (`LONG_READ_TYPES`, from `LONG_READ_SETTINGS` in `load-sample-info.smk`) are below. The nanopore types are named for the Dorado basecaller model (fast, hac, sup); the hac and sup settings assume R10.4.1 reads.
+- `nanopore-fast`: reads from the Dorado (or Guppy) fast model, and other noisy nanopore reads such as older R9.4.1 data. Synonym: `nanopore-raw`
+- `nanopore-hac`: reads from the Dorado high-accuracy (hac) model, R10.4.1. Synonym: `nanopore-hq`
+- `nanopore-sup`: reads from the Dorado super-accuracy (sup) model, R10.4.1 (Q20+, under ~5% error)
+- `nanopore`: accuracy not stated; runs with the `nanopore-fast` settings
 - `pacbio-clr`: PacBio RS II/Sequel continuous long reads
 - `pacbio-hifi`: PacBio HiFi/CCS
 - `pacbio`: kind not stated; runs with the `pacbio-clr` settings
 
-The unqualified types get the settings for the noisier reads. Those still work, if not optimally, on accurate reads, but settings for accurate reads give poor results on noisy ones. Use `nanopore-hq` for modern R10.4.1 data.
+The unqualified types get the settings for the noisier reads. Those still work, if not optimally, on accurate reads, but settings for accurate reads give poor results on noisy ones. Use `nanopore-hac` or `nanopore-sup` for modern R10.4.1 data.
 
-A sample may have reads of at most one long-read type; mixing them in one sample (even `nanopore` and `nanopore-hq`) is an error at load time. Each type has its own directories, `<type>-reads/`, `<type>-reads-trimmed/`, `<type>-reads-filtered/`, `<type>-reads-subsampled/`, so nanopore paths are unchanged. Aligned reads are `<type with _>_reads.*` (`nanopore_reads.*`, `nanopore_hq_reads.*`, `pacbio_clr_reads.*`, …). Rules take the read type from an `{lrt}` wildcard (or `{long_read_prefix}` in align-reads), and per-type tool settings come from `LONG_READ_SETTINGS` via `long_read_setting(type, key)`; `is_nanopore_type(type)` tells ONT types from PacBio ones:
+The synonyms (`LONG_READ_TYPE_SYNONYMS`, `nanopore-raw` → `nanopore-fast`, `nanopore-hq` → `nanopore-hac`) are accepted only as data.csv types. `canonical_long_read_type()` turns them into the canonical name as data.csv is read, so every directory, file name, wildcard, `{lrt}` regex and `get_long_read_type()` result uses canonical names only, and a sample with both `nanopore-hq` and `nanopore-hac` rows has one type. The directory scan (no data.csv) looks only in canonical `<type>-reads/` directories and stops with an error if a synonym directory such as `nanopore-hq-reads/` holds reads.
 
-| | `nanopore`, `nanopore-raw` | `nanopore-hq` | `pacbio`, `pacbio-clr` | `pacbio-hifi` |
-|---|---|---|---|---|
-| minimap2 (align-reads) | `map-ont` | `lr:hq` | `map-pb` | `map-hifi` |
-| minimap2 overlaps (miniasm) | `ava-ont` | `ava-ont` | `ava-pb` | `ava-pb` |
-| flye | `--nano-raw` | `--nano-hq` | `--pacbio-raw` | `--pacbio-hifi` |
-| canu | `-nanopore` | `-nanopore` | `-pacbio` | `-pacbio-hifi` |
-| autocycler helper `--read_type` | `ont_r9` | `ont_r10` | `pacbio_clr` | `pacbio_hifi` |
-| metaMDBG (autocycler) | left out | yes | left out | yes |
-| NECAT (autocycler, trycycler) | yes | yes | left out | left out |
-| porechop trimming (`NANOPORE_TRIMMING`) | yes | yes | no (linked through) | no (linked through) |
-| medaka model (`MEDAKA_MODEL` overrides) | `r941_min_sup_g507` | `r1041_e82_400bps_sup_v4.3.0` | refused | refused |
-| filtlong default | `--min_length 1000 --keep_percent 90` | same | same | `--min_length 1000` |
-| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | same | `--require-match-fraction 0.0` | same |
+A sample may have reads of at most one long-read type; mixing them in one sample (even `nanopore` and `nanopore-fast`) is an error at load time. Each type has its own directories, `<type>-reads/`, `<type>-reads-trimmed/`, `<type>-reads-filtered/`, `<type>-reads-subsampled/`, so nanopore paths are unchanged. Aligned reads are `<type with _>_reads.*` (`nanopore_reads.*`, `nanopore_sup_reads.*`, `pacbio_clr_reads.*`, …). Rules take the read type from an `{lrt}` wildcard (or `{long_read_prefix}` in align-reads), and per-type tool settings come from `LONG_READ_SETTINGS` via `long_read_setting(type, key)`; `is_nanopore_type(type)` tells ONT types from PacBio ones:
 
-`polish-medaka` stops with an error for PacBio samples. Set `MEDAKA_MODEL` (per sample in data.csv, or `--config`) when the default model does not match the reads' flow cell and basecaller, e.g. for R9.4.1 SUP reads typed `nanopore-hq`. `NANOPORE_FILTERING` and `FILTLONG_OPTIONS` apply to every long-read type. Rule and workflow names keep their historical `nanopore` names (`filter-nanopore-reads`, `align_nanopore_reads`, ...) although they handle all long reads.
+| | `nanopore`, `nanopore-fast` | `nanopore-hac` | `nanopore-sup` | `pacbio`, `pacbio-clr` | `pacbio-hifi` |
+|---|---|---|---|---|---|
+| minimap2 (align-reads) | `map-ont` | `lr:hq` | `lr:hq` | `map-pb` | `map-hifi` |
+| minimap2 overlaps (miniasm) | `ava-ont` | `ava-ont` | `ava-ont` | `ava-pb` | `ava-pb` |
+| flye | `--nano-raw` | `--nano-hq` | `--nano-hq` | `--pacbio-raw` | `--pacbio-hifi` |
+| canu | `-nanopore` | `-nanopore` | `-nanopore` | `-pacbio` | `-pacbio-hifi` |
+| autocycler helper `--read_type` | `ont_r9` | `ont_r10` | `ont_r10` | `pacbio_clr` | `pacbio_hifi` |
+| metaMDBG (autocycler) | left out | yes | yes | left out | yes |
+| NECAT (autocycler, trycycler) | yes | yes | yes | left out | left out |
+| porechop trimming (`NANOPORE_TRIMMING`) | yes | yes | yes | no (linked through) | no (linked through) |
+| medaka model (`MEDAKA_MODEL` overrides) | `r941_min_sup_g507` | `r1041_e82_400bps_hac_v4.3.0` | `r1041_e82_400bps_sup_v4.3.0` | refused | refused |
+| filtlong default | `--min_length 1000 --keep_percent 90` | same | same | same | `--min_length 1000` |
+| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | same | same | `--require-match-fraction 0.0` | same |
+
+`polish-medaka` stops with an error for PacBio samples. Set `MEDAKA_MODEL` (per sample in data.csv, or `--config`) when the default model does not match the reads' flow cell and basecaller, e.g. for R9.4.1 SUP reads typed `nanopore-sup`. `NANOPORE_FILTERING` and `FILTLONG_OPTIONS` apply to every long-read type. Rule and workflow names keep their historical `nanopore` names (`filter-nanopore-reads`, `align_nanopore_reads`, ...) although they handle all long reads.
 
 A `sample` containing `*`, `?` or `[...]` is a shell glob (no regex). Glob rows are expanded after the whole file is read, so they apply to every sample named exactly anywhere in the file, not just earlier rows. A glob matching nothing is warned about.
 
