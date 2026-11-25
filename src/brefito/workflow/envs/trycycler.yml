@@ -5,4 +5,5 @@ channels:
 dependencies:
   - trycycler =0.5.5
   - minimap2 =2.28  # minimap2 >=2.29 rejects trycycler consensus scoring (-B 1): "--score-N should be within [0,{-B})"
+  - setuptools <81  # trycycler 0.5.5 imports pkg_resources, removed in setuptools 81
 name: trycycler
