@@ -27,7 +27,7 @@ rule all_trycycler_reconcile:
 
 rule trycycler_reconcile:
     input:
-        reads = "nanopore-reads-filtered/{dataset}.fastq",
+        reads = lambda wildcards: sample_info.get_long_read_path(wildcards.dataset, "filtered"),
     output:
         "trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta"
     conda:

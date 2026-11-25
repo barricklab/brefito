@@ -98,10 +98,12 @@ def get_all_output_files_list():
         all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.gff3")
         
         if not MERGE:
-            for n in sample_info.get_nanopore_read_base_list(s):
-                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam".format(n))
+            long_read_type = sample_info.get_long_read_type(s)
+            for n in sample_info.get_long_read_base_list(s):
+                prefix = long_read_bam_prefix(long_read_type)
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + ".{}.bam".format(n))
                 if INDEX:
-                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam.bai".format(n))
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + ".{}.bam.bai".format(n))
 
             for i_se in sample_info.get_illumina_SE_read_base_list(s):
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam".format(i_se))
@@ -114,10 +116,11 @@ def get_all_output_files_list():
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam.bai".format(i_pe))
 
         else: # MERGE
-            if len(sample_info.get_nanopore_read_base_list(s)) > 0:
-                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads_merged.bam")
+            if len(sample_info.get_long_read_base_list(s)) > 0:
+                prefix = long_read_bam_prefix(sample_info.get_long_read_type(s))
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + "_merged.bam")
                 if INDEX:
-                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads_merged.bam.bai")
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + "_merged.bam.bai")
             if len(sample_info.get_illumina_SE_read_base_list(s) + sample_info.get_illumina_PE_read_base_list(s)) > 0:
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads_merged.bam")
                 if INDEX:
@@ -131,19 +134,24 @@ rule all_align_reads:
         get_all_output_files_list()
     default_target: True
 
+# Long reads of any type, with the minimap2 preset for that type (map-ont, map-pb, map-hifi)
 rule align_nanopore_reads:
     input:
-        reads = "nanopore-reads-trimmed/{reads}.fastq.gz",
+        reads = lambda wildcards: LONG_READ_BAM_PREFIXES[wildcards.long_read_prefix] + "-reads-trimmed/" + wildcards.reads + ".fastq.gz",
         reference = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta"
     output:
-        temp("aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads.{reads}.sam")
+        temp("aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{long_read_prefix}.{reads}.sam")
+    wildcard_constraints:
+        long_read_prefix=LONG_READ_BAM_PREFIX_REGEX
     log:
-        "logs/align-nanopore-reads-" + sample_info.get_reference_prefix() + "-{sample}-{reads}.log"
+        "logs/align-{long_read_prefix}-" + sample_info.get_reference_prefix() + "-{sample}-{reads}.log"
     conda:
         "../envs/minimap2.yml"
+    params:
+        preset = lambda wildcards: long_read_setting(LONG_READ_BAM_PREFIXES[wildcards.long_read_prefix], "minimap2")
     threads: 12
     shell:
-        "minimap2 --secondary=no -t {threads} -x map-ont -a -o {output} {input.reference} {input.reads} > {log} 2>&1"
+        "minimap2 --secondary=no -t {threads} -x {params.preset} -a -o {output} {input.reference} {input.reads} > {log} 2>&1"
 
 rule align_PE_illumina_reads:
     input:
@@ -224,11 +232,13 @@ rule samtools_sort:
 # This operates on sorted BAM files
 rule samtools_merge_nanopore:
     input:
-        lambda wildcards: [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/nanopore_reads." + s + SAMTOOLS_MERGE_INPUT_SUFFIX for s in sample_info.get_nanopore_read_base_list(wildcards.sample)]
+        lambda wildcards: [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/" + wildcards.long_read_prefix + "." + s + SAMTOOLS_MERGE_INPUT_SUFFIX for s in sample_info.get_long_read_base_list(wildcards.sample)]
     output:
-        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads_merged" + SAMTOOLS_MERGE_OUTPUT_SUFFIX
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{long_read_prefix}_merged" + SAMTOOLS_MERGE_OUTPUT_SUFFIX
+    wildcard_constraints:
+        long_read_prefix=LONG_READ_BAM_PREFIX_REGEX
     log:
-        "logs/samtools-merge-" + sample_info.get_reference_prefix() + "-{sample}-nanopore.log"
+        "logs/samtools-merge-" + sample_info.get_reference_prefix() + "-{sample}-{long_read_prefix}.log"
     conda:
         "../envs/samtools.yml"
     threads: 12

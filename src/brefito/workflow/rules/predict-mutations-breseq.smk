@@ -15,10 +15,13 @@ def get_breseq_options(sample):
 
 def find_available_read_files(wildcards):
 
-    nanopore_files = [ "nanopore-reads-trimmed/" + d for d in sample_info.get_nanopore_read_list(wildcards.sample)] 
+    # long reads of any type; breseq aligns them itself here (for PacBio CLR reads, the
+    # minimap2 route in predict-mutations-minimap2-breseq usually maps them better)
+    long_read_type = sample_info.get_long_read_type(wildcards.sample)
+    long_read_files = [ long_read_type + "-reads-trimmed/" + d for d in sample_info.get_long_read_list(wildcards.sample)] if long_read_type else []
     illumina_files = [ "illumina-reads-trimmed/" + d for d in sample_info.get_illumina_read_list(wildcards.sample)]
 
-    return illumina_files + nanopore_files
+    return illumina_files + long_read_files
 
 def get_breseq_args(sample):
     return ""

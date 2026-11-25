@@ -7,7 +7,8 @@ include: "trim-illumina-reads.smk"
 
 rule merge_all_trimmed_reads:
     input:
-        nanopore_reads = ["merged-reads-trimmed/{}.nanopore.fastq.gz".format(s) for s in sample_info.get_samples_with_nanopore_reads()],
+        # long reads of every type: <sample>.nanopore, <sample>.pacbio-clr or <sample>.pacbio-hifi
+        long_reads = ["merged-reads-trimmed/{}.{}.fastq.gz".format(s, sample_info.get_long_read_type(s)) for s in sample_info.get_samples_with_long_reads()],
         illumina_SE_reads = ["merged_reads_trimmed/{}.illumina.SE.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_SE_reads()],
         illumina_R1_reads = ["merged_reads_trimmed/{}.illumina.R1.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_PE_reads()],
         illumina_R2_reads = ["merged_reads_trimmed/{}.illumina.R2.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_PE_reads()]
@@ -15,9 +16,11 @@ rule merge_all_trimmed_reads:
 
 rule merge_nanopore_reads:
     input:
-        lambda wildcards: [ "nanopore-reads-trimmed/" + d for d in sample_info.get_nanopore_read_list(wildcards.sample)]
+        lambda wildcards: [ wildcards.lrt + "-reads-trimmed/" + d for d in sample_info.get_long_read_list(wildcards.sample)]
     output:
-        "merged-reads-trimmed/{sample}.nanopore.fastq.gz"
+        "merged-reads-trimmed/{sample}.{lrt}.fastq.gz"
+    wildcard_constraints:
+        lrt=LONG_READ_TYPE_REGEX
     threads: 1
     shell:
         """
