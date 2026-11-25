@@ -258,7 +258,7 @@ def main():
     # What are appropriate targets for the workflow we are running?
     smk_targets = []
 
-    if workflow_to_run in ["polish-breseq", "polish-polypolish", "polish-polca", "polish-medaka"]:
+    if workflow_to_run in ["polish-breseq", "polish-polypolish", "polish-medaka"]:
         print()
         print("Genome assembly files found (*.fasta) in " + assemblies_path)
         print()
@@ -394,8 +394,6 @@ def main():
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "breseq")
     if workflow_to_run == "polish-polypolish":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polypolish")
-    elif workflow_to_run == "polish-polca":
-        copy_and_rename_assemblies(input_assembly_files.values(), "polished", "polca")
     elif workflow_to_run == "polish-medaka":
         copy_and_rename_assemblies(input_assembly_files.values(), "polished", "medaka")
     elif workflow_to_run == "normalize-assemblies":

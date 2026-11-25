@@ -5,8 +5,9 @@ except NameError:
 include: "filter-nanopore-reads.smk"
 
 
-# The default is the read-type option for the sample's long reads: --nano-raw (nanopore),
-# --pacbio-raw (PacBio CLR) or --pacbio-hifi (PacBio HiFi). FLYE_OPTIONS replaces it, so it must
+# The default is the read-type option for the sample's long reads: --nano-raw (nanopore,
+# nanopore-raw), --nano-hq (nanopore-hq), --pacbio-raw (pacbio, pacbio-clr) or --pacbio-hifi
+# (pacbio-hifi). FLYE_OPTIONS replaces it, so it must
 # include the read-type option itself.
 DEFAULT_FLYE_OPTIONS = "--nano-raw"
 def get_default_flye_options(sample):
@@ -17,7 +18,7 @@ if 'FLYE_OPTIONS' in brefito_config.keys():
     print("  " + brefito_config['FLYE_OPTIONS'])
 else:
     print("flye assembly with default command-line options (unless set per sample in data.csv):")
-    print("  " + DEFAULT_FLYE_OPTIONS + "   (PacBio CLR: --pacbio-raw, PacBio HiFi: --pacbio-hifi)")
+    print("  " + DEFAULT_FLYE_OPTIONS + "   (nanopore-hq: --nano-hq, pacbio/pacbio-clr: --pacbio-raw, pacbio-hifi: --pacbio-hifi)")
     print("To change these options add something like this to your brefito command")
     print("  --config FLYE_OPTIONS=\"--meta --nano-hq\"")
 

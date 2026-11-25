@@ -10,21 +10,17 @@ READ_SUBSET_IDS=["01","02","03","04"] # autocycler subsample creates 4 subsample
 ASSEMBLERS=["canu","flye","miniasm","necat","metamdbg","raven"]
 
 # Assemblers run for a dataset, by its long-read type: NECAT assembles nanopore reads only, and
-# metaMDBG does not take PacBio CLR reads.
+# metaMDBG only PacBio HiFi and high-accuracy (nanopore-hq) nanopore reads.
 def get_assemblers(dataset):
     long_read_type = sample_info.get_long_read_type(dataset)
-    assemblers = list(ASSEMBLERS)
-    if long_read_type != "nanopore":
-        assemblers.remove("necat")
-    if long_read_type == "pacbio-clr":
-        assemblers.remove("metamdbg")
-    return assemblers
+    return [a for a in ASSEMBLERS
+            if (a != "necat" or long_read_setting(long_read_type, "necat"))
+            and (a != "metamdbg" or long_read_setting(long_read_type, "metamdbg"))]
 
-# autocycler helper --read_type for the dataset's reads. Nothing is passed for nanopore reads, so
-# they keep autocycler's default (ont_r10), as before.
+# autocycler helper --read_type for the dataset's reads (ont_r9 for nanopore and nanopore-raw,
+# ont_r10 for nanopore-hq, pacbio_clr, pacbio_hifi)
 def get_autocycler_read_type_argument(dataset):
-    read_type = long_read_setting(sample_info.get_long_read_type(dataset), "autocycler")
-    return "--read_type " + read_type if read_type else ""
+    return "--read_type " + long_read_setting(sample_info.get_long_read_type(dataset), "autocycler")
 
 MAX_CONTIGS_ARGUMENT="--max_contigs 40"
 

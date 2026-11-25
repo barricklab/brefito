@@ -24,9 +24,10 @@ else:
     exit(0)
 
 # Long reads of every type end up in <type>-reads-trimmed/. NANOPORE_TRIMMING picks how nanopore
-# reads are trimmed (porechop and porechop_ABI look for ONT adapters only). PacBio reads are not
-# trimmed: HiFi reads come adapter-free, and CLR subreads have already had their SMRTbell
-# adapters removed by the instrument software.
+# reads of every accuracy (nanopore, nanopore-raw, nanopore-hq) are trimmed (porechop and
+# porechop_ABI look for ONT adapters only). PacBio reads are not trimmed: HiFi reads come
+# adapter-free, and CLR subreads have already had their SMRTbell adapters removed by the
+# instrument software.
 def get_all_trimmed_nanopore_read_names():
     long_read_files = []
     for sample in sample_info.get_sample_list():
@@ -41,7 +42,7 @@ rule trim_pacbio_reads_no_trim:
     output:
         "{pacbio_type}-reads-trimmed/{sample}.fastq.gz"
     wildcard_constraints:
-        pacbio_type="pacbio-clr|pacbio-hifi"
+        pacbio_type=PACBIO_TYPE_REGEX
     threads: 1
     shell:
         "ln -s ../{input} {output}"
@@ -53,20 +54,24 @@ rule all_trim_nanopore_reads:
 
 rule trim_nanopore_reads_no_trim:
     input:
-        "nanopore-reads/{sample}.fastq.gz"
+        "{ont_type}-reads/{sample}.fastq.gz"
     output:
-        "nanopore-reads-trimmed/{sample}.fastq.gz"
+        "{ont_type}-reads-trimmed/{sample}.fastq.gz"
+    wildcard_constraints:
+        ont_type=NANOPORE_TYPE_REGEX
     threads: 1
     shell:
         "ln -s ../{input} {output}"
 
 rule trim_nanopore_reads_porechop:
     input:
-        "nanopore-reads/{sample}.fastq.gz"
+        "{ont_type}-reads/{sample}.fastq.gz"
     output:
-        "nanopore-reads-trimmed/{sample}.fastq.gz"
+        "{ont_type}-reads-trimmed/{sample}.fastq.gz"
+    wildcard_constraints:
+        ont_type=NANOPORE_TYPE_REGEX
     log:
-        "logs/porechop-{sample}.log"
+        "logs/porechop-{ont_type}-{sample}.log"
     conda:
         "../envs/porechop.yml"
     threads: 12
@@ -76,11 +81,13 @@ rule trim_nanopore_reads_porechop:
 
 rule trim_nanopore_reads_porechop_abi:
     input:
-        "nanopore-reads/{sample}.fastq.gz"
+        "{ont_type}-reads/{sample}.fastq.gz"
     output:
-        "nanopore-reads-trimmed/{sample}.fastq.gz"
+        "{ont_type}-reads-trimmed/{sample}.fastq.gz"
+    wildcard_constraints:
+        ont_type=NANOPORE_TYPE_REGEX
     log:
-        "logs/porechop-{sample}.log"
+        "logs/porechop-{ont_type}-{sample}.log"
     conda:
         "../envs/porechop_abi.yml"
     threads: 12

@@ -26,7 +26,7 @@ ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLIS
 # minimap2 overlaps for miniasm); NECAT assembles nanopore reads only, so it is left out of the
 # clustering for PacBio datasets.
 def get_trycycler_assembly_ids(dataset):
-    if sample_info.get_long_read_type(dataset) == "nanopore":
+    if long_read_setting(sample_info.get_long_read_type(dataset), "necat"):
         return ALL_RESAMPLED_IDS
     return [i for i in ALL_RESAMPLED_IDS if i not in NECAT_RESAMPLED_IDS]
 

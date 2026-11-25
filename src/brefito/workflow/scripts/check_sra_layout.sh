@@ -77,7 +77,7 @@ fi
 
 if [ "$expected_layout" = "paired" ]; then
     problem="data.csv asks for paired-end reads, but SRA run ${run_accession} is single-end."
-    suggestion="Use type 'illumina-SE' (or 'nanopore', 'pacbio-clr' or 'pacbio-hifi') for this accession instead of 'illumina-PE'."
+    suggestion="Use type 'illumina-SE' (or a long-read type such as 'nanopore-hq' or 'pacbio-hifi') for this accession instead of 'illumina-PE'."
 else
     problem="data.csv asks for single-end reads, but SRA run ${run_accession} is paired-end."
     suggestion="Use type 'illumina-PE' for this accession. Reading paired data as single-end joins both mates into one read."

@@ -4,7 +4,7 @@ except NameError:
 
 include: "trim-nanopore-reads.smk"
 
-# Filters long reads of every type (nanopore, pacbio-clr, pacbio-hifi), each in its own
+# Filters long reads of every type (LONG_READ_TYPES), each in its own
 # <type>-reads-filtered/ directory. NANOPORE_FILTERING turns filtering on or off for all of them.
 do_filtering = True
 # Picks the rule order, so it can't vary between samples

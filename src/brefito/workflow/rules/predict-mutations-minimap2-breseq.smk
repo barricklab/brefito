@@ -12,7 +12,7 @@ BRESEQ_THREADS = int(get_uniform_config_value('BRESEQ_THREADS', 8))
 def get_breseq_options(sample):
     return get_config_value('BRESEQ_OPTIONS', "", sample)
 
-# The sample's long reads (nanopore, pacbio-clr or pacbio-hifi), aligned by minimap2 with the
+# The sample's long reads (any of LONG_READ_TYPES), aligned by minimap2 with the
 # preset for their type (align-reads.smk)
 def find_available_read_files(wildcards):
     long_read_type = sample_info.get_long_read_type(wildcards.sample)
@@ -27,7 +27,7 @@ def find_available_read_files(wildcards):
 def get_breseq_args(sample):
     if config_is_true("NO_DEFAULT_BRESEQ_OPTIONS", sample=sample):
         return ""
-    if sample_info.get_long_read_type(sample) == "nanopore":
+    if is_nanopore_type(sample_info.get_long_read_type(sample)):
         return "-x --require-match-fraction 0.0"
     return "--require-match-fraction 0.0"
 

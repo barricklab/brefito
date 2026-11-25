@@ -265,7 +265,7 @@ rule download_paired_sra:
 
         if [ ! -s {wildcards.run_accession}_1.fastq ] || [ ! -s {wildcards.run_accession}_2.fastq ]; then
             echo "ERROR: SRA run {wildcards.run_accession} did not yield any paired reads." >&2
-            echo "       It appears to be single-end. Use type 'illumina-SE' (or 'nanopore', 'pacbio-clr', 'pacbio-hifi')" >&2
+            echo "       It appears to be single-end. Use type 'illumina-SE' (or a long-read type such as 'nanopore-hq' or 'pacbio-hifi')" >&2
             echo "       for this accession in data.csv instead of 'illumina-PE'." >&2
             exit 1
         fi

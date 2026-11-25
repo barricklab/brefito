@@ -6,7 +6,7 @@ include: "download-data.smk"
 
 rule merge_all_reads:
     input:
-        # long reads of every type: <sample>.nanopore, <sample>.pacbio-clr or <sample>.pacbio-hifi
+        # long reads of every type: <sample>.<type>, e.g. <sample>.nanopore or <sample>.pacbio-hifi
         long_reads = ["merged-reads/{}.{}.fastq.gz".format(s, sample_info.get_long_read_type(s)) for s in sample_info.get_samples_with_long_reads()],
         illumina_SE_reads = ["merged-reads/{}.illumina.SE.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_SE_reads()],
         illumina_R1_reads = ["merged-reads/{}.illumina.R1.fastq.gz".format(s) for s in sample_info.get_samples_with_illumina_PE_reads()],

@@ -10,8 +10,9 @@
 #  1 sample = main sample name, must match for reads that will be used together.
 #             May be a shell-style glob (containing *, ? or [...]) that applies the
 #             row to every sample named exactly anywhere in the file (before or after).
-#  2 type = either a file type: 'nanopore', 'pacbio-clr', 'pacbio-hifi', 'illumina-SE',
-#           'illumina-R1', 'illumina-R2', 'illumina-PE', 'reference'
+#  2 type = either a file type: 'nanopore', 'nanopore-raw', 'nanopore-hq', 'pacbio',
+#           'pacbio-clr', 'pacbio-hifi', 'illumina-SE', 'illumina-R1', 'illumina-R2',
+#           'illumina-PE', 'reference' (see LONG_READ_TYPES below)
 #           or the name of any --config option, like BRESEQ_OPTIONS (case-insensitive)
 #  3 setting = for file types, a way of downloading the file:
 #                 lftp@bookmark://path/to/file (if bookmark is present and refers to a location)
@@ -58,40 +59,78 @@ SAMPLE_PATTERN_CHARACTERS = set("*?[")
 def is_sample_pattern(name):
     return any(c in SAMPLE_PATTERN_CHARACTERS for c in name)
 
-# --config keys brefito sets itself; data.csv may not set these
 # Long-read types. Each has its own read directories, <type>-reads/, <type>-reads-trimmed/,
 # <type>-reads-filtered/, ..., so the nanopore paths are exactly what they always were. A sample
 # may have reads of at most one long-read type; get_long_read_type() names it.
-LONG_READ_TYPES = ["nanopore", "pacbio-clr", "pacbio-hifi"]
-LONG_READ_TYPE_REGEX = "|".join(LONG_READ_TYPES)
+#
+#  nanopore      nanopore reads of unstated accuracy: run with the nanopore-raw settings
+#  nanopore-raw  older, noisier nanopore reads (R9.4.1, or basecalled before Guppy 5 SUP)
+#  nanopore-hq   high-accuracy nanopore reads (R10.4.1 SUP, Q20+, under ~5% error)
+#  pacbio        PacBio reads of unstated kind: run with the pacbio-clr settings
+#  pacbio-clr    PacBio RS II/Sequel continuous long reads
+#  pacbio-hifi   PacBio HiFi/CCS reads
+#
+# The unqualified types use the settings for the noisier reads, since those still work (if not
+# optimally) on accurate reads, while settings for accurate reads give poor results on noisy ones.
 
-# How each tool is told which kind of long reads it has. None means "pass nothing" (the tool's
-# default already fits), which is how nanopore reads were always run.
+# How each tool is told which kind of long reads it has.
+#  platform      "ont" or "pacbio": ONT-only steps (porechop, medaka, breseq -x) need "ont"
 #  minimap2      -x preset for mapping reads to a reference
 #  minimap2_ava  -x preset for all-vs-all overlaps (miniasm)
 #  flye          read-type option
 #  canu          read-type option
 #  autocycler    --read_type for autocycler helper
-#  ont_only      steps that only work on nanopore reads (medaka, porechop, NECAT)
+#  necat         NECAT can assemble these reads (it is built for nanopore reads)
+#  metamdbg      metaMDBG can assemble these reads (it takes only HiFi and Q20+ nanopore reads)
+#  medaka_model  default medaka model (MEDAKA_MODEL overrides it); None = medaka refuses them
+_NANOPORE_RAW_SETTINGS = {"platform": "ont", "minimap2": "map-ont", "minimap2_ava": "ava-ont",
+    "flye": "--nano-raw", "canu": "-nanopore", "autocycler": "ont_r9", "necat": True,
+    "metamdbg": False, "medaka_model": "r941_min_sup_g507"}
+_PACBIO_CLR_SETTINGS = {"platform": "pacbio", "minimap2": "map-pb", "minimap2_ava": "ava-pb",
+    "flye": "--pacbio-raw", "canu": "-pacbio", "autocycler": "pacbio_clr", "necat": False,
+    "metamdbg": False, "medaka_model": None}
+
 LONG_READ_SETTINGS = {
-    "nanopore":    {"minimap2": "map-ont",  "minimap2_ava": "ava-ont", "flye": "--nano-raw",
-                    "canu": "-nanopore",    "autocycler": None,        "label": "nanopore"},
-    "pacbio-clr":  {"minimap2": "map-pb",   "minimap2_ava": "ava-pb",  "flye": "--pacbio-raw",
-                    "canu": "-pacbio",      "autocycler": "pacbio_clr",  "label": "PacBio CLR"},
-    "pacbio-hifi": {"minimap2": "map-hifi", "minimap2_ava": "ava-pb",  "flye": "--pacbio-hifi",
-                    "canu": "-pacbio-hifi", "autocycler": "pacbio_hifi", "label": "PacBio HiFi"},
+    "nanopore":     dict(_NANOPORE_RAW_SETTINGS, label="nanopore"),
+    "nanopore-raw": dict(_NANOPORE_RAW_SETTINGS, label="nanopore (raw)"),
+    "nanopore-hq":  {"platform": "ont", "minimap2": "lr:hq", "minimap2_ava": "ava-ont",
+                     "flye": "--nano-hq", "canu": "-nanopore", "autocycler": "ont_r10", "necat": True,
+                     "metamdbg": True, "medaka_model": "r1041_e82_400bps_sup_v4.3.0",
+                     "label": "nanopore (high accuracy)"},
+    "pacbio":       dict(_PACBIO_CLR_SETTINGS, label="PacBio"),
+    "pacbio-clr":   dict(_PACBIO_CLR_SETTINGS, label="PacBio CLR"),
+    "pacbio-hifi":  {"platform": "pacbio", "minimap2": "map-hifi", "minimap2_ava": "ava-pb",
+                     "flye": "--pacbio-hifi", "canu": "-pacbio-hifi", "autocycler": "pacbio_hifi",
+                     "necat": False, "metamdbg": True, "medaka_model": None,
+                     "label": "PacBio HiFi"},
 }
+
+LONG_READ_TYPES = list(LONG_READ_SETTINGS)
+NANOPORE_TYPES = [t for t in LONG_READ_TYPES if LONG_READ_SETTINGS[t]["platform"] == "ont"]
+PACBIO_TYPES = [t for t in LONG_READ_TYPES if LONG_READ_SETTINGS[t]["platform"] == "pacbio"]
+
+# Wildcard regexes, longest names first so a prefix (nanopore) never cuts off a longer name
+def _type_regex(names):
+    return "|".join(sorted(names, key=len, reverse=True))
+
+LONG_READ_TYPE_REGEX = _type_regex(LONG_READ_TYPES)
+NANOPORE_TYPE_REGEX = _type_regex(NANOPORE_TYPES)
+PACBIO_TYPE_REGEX = _type_regex(PACBIO_TYPES)
 
 def long_read_setting(long_read_type, key):
     return LONG_READ_SETTINGS[long_read_type][key]
 
-# Aligned long reads are named <prefix>.<reads>.bam: nanopore_reads, pacbio_clr_reads, pacbio_hifi_reads
+def is_nanopore_type(long_read_type):
+    return long_read_type in NANOPORE_TYPES
+
+# Aligned long reads are named <prefix>.<reads>.bam: nanopore_reads, nanopore_hq_reads, pacbio_clr_reads, ...
 def long_read_bam_prefix(long_read_type):
     return long_read_type.replace("-", "_") + "_reads"
 
 LONG_READ_BAM_PREFIXES = {long_read_bam_prefix(t): t for t in LONG_READ_TYPES}
-LONG_READ_BAM_PREFIX_REGEX = "|".join(LONG_READ_BAM_PREFIXES)
+LONG_READ_BAM_PREFIX_REGEX = _type_regex(LONG_READ_BAM_PREFIXES)
 
+# --config keys brefito sets itself; data.csv may not set these
 RESERVED_CONFIG_KEYS = set({"SAMPLES", "REFERENCES", "DATA_CSV", "BREFITO_PACKAGE_PATH", "QUERY_FILE_PATH", "BRESEQ_PRERELEASE", "BRESEQ_PATH"})
 
 def rreplace(s, old, new, maxreplace):
@@ -349,8 +388,8 @@ class SampleInfo():
         for long_read_type in LONG_READ_TYPES:
             long_read_input_path = long_read_type + "-reads"
             input_long_read_files = self.find_matching_input_files(long_read_input_path, ".fastq.gz")
-            # Only nanopore-reads/ is reported when empty, as it always was; the PacBio
-            # directories are mentioned only when they hold reads.
+            # Only nanopore-reads/ is reported when empty, as it always was; the other
+            # long-read directories are mentioned only when they hold reads.
             if long_read_type != "nanopore" and len(input_long_read_files) == 0:
                 continue
             print()
@@ -670,19 +709,20 @@ class SampleInfo():
                     print("  " + this_type + " : " + this_item)
         #print(self.local_to_remote_path_mapping)
 
-    def get_nanopore_read_arguments(self, sample, argument_prefix=''):
-        return " ".join([argument_prefix + item for item in self.get_file_list(sample, "nanopore")])
-
+    # Nanopore reads of any accuracy (nanopore, nanopore-raw, nanopore-hq)
     def get_nanopore_read_list(self, sample):
-        return self.get_file_list(sample, "nanopore")
+        return [f for t in NANOPORE_TYPES for f in self.get_file_list(sample, t)]
+
+    def get_nanopore_read_arguments(self, sample, argument_prefix=''):
+        return " ".join([argument_prefix + item for item in self.get_nanopore_read_list(sample)])
 
     def get_nanopore_read_base_list(self, sample):
-        return [os.path.split(n.replace(".fastq.gz", ""))[1] for n in self.get_file_list(sample, "nanopore")]
+        return [os.path.split(n.replace(".fastq.gz", ""))[1] for n in self.get_nanopore_read_list(sample)]
 
     def get_samples_with_nanopore_reads(self):
         return [sample for sample in self.get_sample_list() if len(self.get_nanopore_read_list(sample))]
 
-    ## Long reads of any type (nanopore, pacbio-clr, pacbio-hifi). A sample has at most one type.
+    ## Long reads of any type (LONG_READ_TYPES). A sample has at most one type.
 
     def get_long_read_type(self, sample):
         """The long-read type of this sample's reads, or None if it has none."""
@@ -1094,6 +1134,6 @@ except NameError: SAMPLE_INFO_REQUIRED = True
 if SAMPLE_INFO_REQUIRED and not sample_info.get_sample_list():
     print("ERROR: This workflow requires sample information, but none was found.")
     print("  Provide a data.csv (or a file via -d) describing your samples, or place input")
-    print("  files in the expected directories (nanopore-reads/, pacbio-clr-reads/,")
-    print("  pacbio-hifi-reads/, illumina-reads/, assemblies/, references/).")
+    print("  files in the expected directories (" + ", ".join(t + "-reads/" for t in LONG_READ_TYPES) + ",")
+    print("  illumina-reads/, assemblies/, references/).")
     exit(1)

@@ -134,7 +134,8 @@ rule all_align_reads:
         get_all_output_files_list()
     default_target: True
 
-# Long reads of any type, with the minimap2 preset for that type (map-ont, map-pb, map-hifi)
+# Long reads of any type, with the minimap2 preset for that type (map-ont, lr:hq, map-pb, map-hifi;
+# see LONG_READ_SETTINGS)
 rule align_nanopore_reads:
     input:
         reads = lambda wildcards: LONG_READ_BAM_PREFIXES[wildcards.long_read_prefix] + "-reads-trimmed/" + wildcards.reads + ".fastq.gz",
