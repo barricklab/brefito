@@ -125,13 +125,15 @@ The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: the 
 - `nanopore-hac`: reads from the Dorado high-accuracy (hac) model, R10.4.1. Synonym: `nanopore-hq`
 - `nanopore-sup`: reads from the Dorado super-accuracy (sup) model, R10.4.1 (Q20+, under ~5% error)
 - `nanopore`: accuracy not stated; runs with the `nanopore-fast` settings
+
+Each nanopore type can also be written with `ont` in place of `nanopore` (`ont`, `ont-fast`, `ont-hac`, `ont-sup`, and `ont-raw`, `ont-hq`).
 - `pacbio-clr`: PacBio RS II/Sequel continuous long reads
 - `pacbio-hifi`: PacBio HiFi/CCS
 - `pacbio`: kind not stated; runs with the `pacbio-clr` settings
 
 The unqualified types get the settings for the noisier reads. Those still work, if not optimally, on accurate reads, but settings for accurate reads give poor results on noisy ones. Use `nanopore-hac` or `nanopore-sup` for modern R10.4.1 data.
 
-The synonyms (`LONG_READ_TYPE_SYNONYMS`, `nanopore-raw` → `nanopore-fast`, `nanopore-hq` → `nanopore-hac`) are accepted only as data.csv types. `canonical_long_read_type()` turns them into the canonical name as data.csv is read, so every directory, file name, wildcard, `{lrt}` regex and `get_long_read_type()` result uses canonical names only, and a sample with both `nanopore-hq` and `nanopore-hac` rows has one type. The directory scan (no data.csv) looks only in canonical `<type>-reads/` directories and stops with an error if a synonym directory such as `nanopore-hq-reads/` holds reads.
+The synonyms (`LONG_READ_TYPE_SYNONYMS`: `nanopore-raw` → `nanopore-fast`, `nanopore-hq` → `nanopore-hac`, and the `ont-*` names) are accepted only as data.csv types. `canonical_long_read_type()` turns them into the canonical name as data.csv is read, so every directory, file name, wildcard, `{lrt}` regex and `get_long_read_type()` result uses canonical names only, and a sample with both `nanopore-hq` and `nanopore-hac` rows has one type. The directory scan (no data.csv) looks only in canonical `<type>-reads/` directories and stops with an error if a synonym directory such as `nanopore-hq-reads/` or `ont-sup-reads/` holds reads.
 
 A sample may have reads of at most one long-read type; mixing them in one sample (even `nanopore` and `nanopore-fast`) is an error at load time. Each type has its own directories, `<type>-reads/`, `<type>-reads-trimmed/`, `<type>-reads-filtered/`, `<type>-reads-subsampled/`, so nanopore paths are unchanged. Aligned reads are `<type with _>_reads.*` (`nanopore_reads.*`, `nanopore_sup_reads.*`, `pacbio_clr_reads.*`, …). Rules take the read type from an `{lrt}` wildcard (or `{long_read_prefix}` in align-reads), and per-type tool settings come from `LONG_READ_SETTINGS` via `long_read_setting(type, key)`; `is_nanopore_type(type)` tells ONT types from PacBio ones:
 
@@ -147,7 +149,7 @@ A sample may have reads of at most one long-read type; mixing them in one sample
 | porechop trimming (`NANOPORE_TRIMMING`) | yes | yes | yes | no (linked through) | no (linked through) |
 | medaka model (`MEDAKA_MODEL` overrides) | `r941_min_sup_g507` | `r1041_e82_400bps_hac_v4.3.0` | `r1041_e82_400bps_sup_v4.3.0` | refused | refused |
 | filtlong default | `--min_length 1000 --keep_percent 90` | same | same | same | `--min_length 1000` |
-| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | same | same | `--require-match-fraction 0.0` | same |
+| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | `--require-match-fraction 0.0` (no `-x`) | same as hac | `--require-match-fraction 0.0` | same |
 
 `polish-medaka` stops with an error for PacBio samples. Set `MEDAKA_MODEL` (per sample in data.csv, or `--config`) when the default model does not match the reads' flow cell and basecaller, e.g. for R9.4.1 SUP reads typed `nanopore-sup`. `NANOPORE_FILTERING` and `FILTLONG_OPTIONS` apply to every long-read type. Rule and workflow names keep their historical `nanopore` names (`filter-nanopore-reads`, `align_nanopore_reads`, ...) although they handle all long reads.
 

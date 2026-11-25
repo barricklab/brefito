@@ -21,13 +21,14 @@ def find_available_read_files(wildcards):
     prefix = long_read_bam_prefix(long_read_type)
     return [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/" + prefix + "." + d + ".sam" for d in sample_info.get_long_read_base_list(wildcards.sample)]
 
-# -x (--nanopore) tunes breseq for the homopolymer indels of nanopore reads, so it is only the
-# default for nanopore reads. PacBio reads get --require-match-fraction 0.0 alone, since minimap2
-# has already decided how much of each read aligns.
+# -x (--nanopore) tunes breseq for the many homopolymer indels of noisier nanopore reads, so it is
+# the default only for the types whose breseq_x setting is on (nanopore, nanopore-fast); accurate
+# nanopore-hac and nanopore-sup reads do not need it. Every type gets --require-match-fraction 0.0,
+# since minimap2 has already decided how much of each read aligns.
 def get_breseq_args(sample):
     if config_is_true("NO_DEFAULT_BRESEQ_OPTIONS", sample=sample):
         return ""
-    if is_nanopore_type(sample_info.get_long_read_type(sample)):
+    if long_read_setting(sample_info.get_long_read_type(sample), "breseq_x"):
         return "-x --require-match-fraction 0.0"
     return "--require-match-fraction 0.0"
 

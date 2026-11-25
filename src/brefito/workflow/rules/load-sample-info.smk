@@ -12,8 +12,8 @@
 #             row to every sample named exactly anywhere in the file (before or after).
 #  2 type = either a file type: 'nanopore', 'nanopore-fast', 'nanopore-hac', 'nanopore-sup',
 #           'pacbio', 'pacbio-clr', 'pacbio-hifi', 'illumina-SE', 'illumina-R1', 'illumina-R2',
-#           'illumina-PE', 'reference' (see LONG_READ_TYPES below; 'nanopore-raw' and
-#           'nanopore-hq' are accepted as synonyms, see LONG_READ_TYPE_SYNONYMS)
+#           'illumina-PE', 'reference' (see LONG_READ_TYPES below; 'nanopore-raw',
+#           'nanopore-hq' and 'ont-*' names are accepted as synonyms, see LONG_READ_TYPE_SYNONYMS)
 #           or the name of any --config option, like BRESEQ_OPTIONS (case-insensitive)
 #  3 setting = for file types, a way of downloading the file:
 #                 lftp@bookmark://path/to/file (if bookmark is present and refers to a location)
@@ -72,6 +72,9 @@ def is_sample_pattern(name):
 #                 (synonym: nanopore-raw)
 #  nanopore-hac   Dorado high-accuracy (hac) model reads, R10.4.1 (synonym: nanopore-hq)
 #  nanopore-sup   Dorado super-accuracy (sup) model reads, R10.4.1 (Q20+, under ~5% error)
+#
+# Every nanopore type can also be written with ont in place of nanopore (ont, ont-fast, ont-hac,
+# ont-sup, and ont-raw and ont-hq for the older synonyms).
 #  pacbio         PacBio reads of unstated kind: run with the pacbio-clr settings
 #  pacbio-clr     PacBio RS II/Sequel continuous long reads
 #  pacbio-hifi    PacBio HiFi/CCS reads
@@ -80,7 +83,7 @@ def is_sample_pattern(name):
 # optimally) on accurate reads, while settings for accurate reads give poor results on noisy ones.
 
 # How each tool is told which kind of long reads it has.
-#  platform      "ont" or "pacbio": ONT-only steps (porechop, medaka, breseq -x) need "ont"
+#  platform      "ont" or "pacbio": ONT-only steps (porechop, medaka) need "ont"
 #  minimap2      -x preset for mapping reads to a reference
 #  minimap2_ava  -x preset for all-vs-all overlaps (miniasm)
 #  flye          read-type option
@@ -88,18 +91,20 @@ def is_sample_pattern(name):
 #  autocycler    --read_type for autocycler helper
 #  necat         NECAT can assemble these reads (it is built for nanopore reads)
 #  metamdbg      metaMDBG can assemble these reads (it takes only HiFi and Q20+ nanopore reads)
+#  breseq_x      breseq gets -x (--nanopore), its mode for the many homopolymer indels of noisier
+#                nanopore reads; accurate (hac, sup) reads do not need it
 #  medaka_model  default medaka model (MEDAKA_MODEL overrides it); None = medaka refuses them
 _NANOPORE_FAST_SETTINGS = {"platform": "ont", "minimap2": "map-ont", "minimap2_ava": "ava-ont",
     "flye": "--nano-raw", "canu": "-nanopore", "autocycler": "ont_r9", "necat": True,
-    "metamdbg": False, "medaka_model": "r941_min_sup_g507"}
+    "metamdbg": False, "medaka_model": "r941_min_sup_g507", "breseq_x": True}
 # hac and sup reads get the same tool settings; only the medaka model (named for the
 # basecaller model) differs
 _NANOPORE_ACCURATE_SETTINGS = {"platform": "ont", "minimap2": "lr:hq", "minimap2_ava": "ava-ont",
     "flye": "--nano-hq", "canu": "-nanopore", "autocycler": "ont_r10", "necat": True,
-    "metamdbg": True}
+    "metamdbg": True, "breseq_x": False}
 _PACBIO_CLR_SETTINGS = {"platform": "pacbio", "minimap2": "map-pb", "minimap2_ava": "ava-pb",
     "flye": "--pacbio-raw", "canu": "-pacbio", "autocycler": "pacbio_clr", "necat": False,
-    "metamdbg": False, "medaka_model": None}
+    "metamdbg": False, "medaka_model": None, "breseq_x": False}
 
 LONG_READ_SETTINGS = {
     "nanopore":      dict(_NANOPORE_FAST_SETTINGS, label="nanopore"),
@@ -112,7 +117,7 @@ LONG_READ_SETTINGS = {
     "pacbio-clr":   dict(_PACBIO_CLR_SETTINGS, label="PacBio CLR"),
     "pacbio-hifi":  {"platform": "pacbio", "minimap2": "map-hifi", "minimap2_ava": "ava-pb",
                      "flye": "--pacbio-hifi", "canu": "-pacbio-hifi", "autocycler": "pacbio_hifi",
-                     "necat": False, "metamdbg": True, "medaka_model": None,
+                     "necat": False, "metamdbg": True, "medaka_model": None, "breseq_x": False,
                      "label": "PacBio HiFi"},
 }
 
@@ -123,6 +128,13 @@ LONG_READ_TYPES = list(LONG_READ_SETTINGS)
 LONG_READ_TYPE_SYNONYMS = {
     "nanopore-raw": "nanopore-fast",
     "nanopore-hq":  "nanopore-hac",
+    # ont for nanopore, for every nanopore type and older synonym
+    "ont":          "nanopore",
+    "ont-fast":     "nanopore-fast",
+    "ont-raw":      "nanopore-fast",
+    "ont-hac":      "nanopore-hac",
+    "ont-hq":       "nanopore-hac",
+    "ont-sup":      "nanopore-sup",
 }
 
 def canonical_long_read_type(name):
@@ -415,8 +427,8 @@ class SampleInfo():
         # synonym (nanopore-hq-reads/, ...) would be silently left out, so stop instead.
         for synonym, long_read_type in LONG_READ_TYPE_SYNONYMS.items():
             if len(self.find_matching_input_files(synonym + "-reads", ".fastq.gz")):
-                print("ERROR: Found read files in " + synonym + "-reads/, but '" + synonym + "' reads are now")
-                print("  typed '" + long_read_type + "' and are looked for in " + long_read_type + "-reads/.")
+                print("ERROR: Found read files in " + synonym + "-reads/, but '" + synonym + "' is a synonym of")
+                print("  '" + long_read_type + "', whose reads are looked for in " + long_read_type + "-reads/.")
                 print("  Rename the directory to " + long_read_type + "-reads/ (or list the files in a data.csv).")
                 exit(1)
 
