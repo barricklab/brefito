@@ -4,9 +4,8 @@ except NameError:
 
 #include: "annotate-genomes.smk"
 
-BRESEQ_OPTIONS = "--max-displayed-reads 40 --junction-score-cutoff 0 --junction-minimum-pos-hash-score 10 --brief-html-output"
-if 'BRESEQ_OPTIONS' in brefito_config.keys():
-    BRESEQ_OPTIONS = brefito_config['BRESEQ_OPTIONS'] 
+# Default; BRESEQ_OPTIONS can be set per sample in data.csv or with --config
+DEFAULT_BRESEQ_OPTIONS = "--max-displayed-reads 40 --junction-score-cutoff 0 --junction-minimum-pos-hash-score 10 --brief-html-output"
 
 
 rule convert_annotated_references_to_genbank:
@@ -84,13 +83,14 @@ rule predict_mutations_breseq:
         BRESEQ_ENV
     params:
         gd_dir = directory("breseq-" + sample_info.get_reference_prefix() + "/gd"),
+        breseq_options = lambda wildcards: get_config_value('BRESEQ_OPTIONS', DEFAULT_BRESEQ_OPTIONS, wildcards.sample),
     threads: 8
     shell:
         """
         # Create outer directories for moved files
         mkdir -p {params.gd_dir}
 
-        breseq -j {threads} {BRESEQ_OPTIONS} -s {input.mobile_element_references} -r {input.main_reference} -o {output.breseq_dir}  {input.reads} > {log} 2>&1
+        breseq -j {threads} {params.breseq_options} -s {input.mobile_element_references} -r {input.main_reference} -o {output.breseq_dir}  {input.reads} > {log} 2>&1
         
         # Copy/move output files
         cp {output.breseq_dir}/output/output.gd {output.gd_file}

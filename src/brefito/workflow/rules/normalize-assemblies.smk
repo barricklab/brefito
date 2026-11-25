@@ -21,8 +21,8 @@ print("=========================================================")
 
 NORMALIZE_NAMING_OPTIONS = ""
 RENAME_CONTIGS = ""
-if 'RENAME_CONTIGS' in brefito_config.keys():
-    RENAME_CONTIGS = brefito_config['RENAME_CONTIGS'].upper()
+if get_uniform_config_value('RENAME_CONTIGS') != None:
+    RENAME_CONTIGS = get_uniform_config_value('RENAME_CONTIGS').upper()
 
 ruleorder: normalize_genomes_no_rename > normalize_genomes_rename_sample > normalize_genomes_rename_reference
 if RENAME_CONTIGS == "SAMPLE":

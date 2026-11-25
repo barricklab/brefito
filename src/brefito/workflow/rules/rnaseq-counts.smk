@@ -6,18 +6,17 @@ brefito_config['SORT'] = 0
 brefito_config['MERGE'] = 1
 brefito_config['INDEX'] = 0
 
+# HTSEQ_TYPE and HTSEQ_STRANDED can also be set per sample in data.csv
 HTSEQ_TYPE = "CDS"
 if 'HTSEQ_TYPE' in brefito_config.keys():
-    HTSEQ_TYPE = brefito_config['HTSEQ_TYPE']
-    print("User specified htseq feature type to count " + HTSEQ_TYPE)
+    print("User specified htseq feature type to count " + brefito_config['HTSEQ_TYPE'])
 else:
     print("Used default htseq feature type to count: " + HTSEQ_TYPE)
     print("To change, set --config HTSEQ_TYPE=gene or similar")
 
 HTSEQ_STRANDED = "reverse"
 if 'HTSEQ_STRANDED' in brefito_config.keys():
-    HTSEQ_STRANDED = brefito_config['HTSEQ_STRANDED']
-    print("User specified htseq strand type to count: " + HTSEQ_STRANDED)
+    print("User specified htseq strand type to count: " + brefito_config['HTSEQ_STRANDED'])
 else:
     print("Used default htseq strand type to count " + HTSEQ_STRANDED)
     print("To change, set --config HTSEQ_STRANDED=<yes|no|reverse>")
@@ -76,7 +75,10 @@ rule htseq_rnaseq_counts:
         "logs/htseq-rnaseq-counts/{sample}.log"
     conda:
         "../envs/htseq.yml"
+    params:
+        htseq_type = lambda wildcards: get_config_value('HTSEQ_TYPE', HTSEQ_TYPE, wildcards.sample),
+        htseq_stranded = lambda wildcards: get_config_value('HTSEQ_STRANDED', HTSEQ_STRANDED, wildcards.sample),
     shell:
         """
-        htseq-count --nonunique random --type {HTSEQ_TYPE} --stranded {HTSEQ_STRANDED} -i ID -r name {input.bam} {input.gff3} > {output}
+        htseq-count --nonunique random --type {params.htseq_type} --stranded {params.htseq_stranded} -i ID -r name {input.bam} {input.gff3} > {output}
         """

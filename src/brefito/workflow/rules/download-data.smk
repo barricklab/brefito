@@ -152,7 +152,7 @@ def remote_path_to_shell_command(remote_path, download_path, output_path):
             shell_command = f"mv sra-downloads/{remote_path}.R1.fastq.gz {output_path}"
         elif output_path.endswith("R2.fastq.gz"): #this is R2 of PE data
             shell_command = f"mv sra-downloads/{remote_path}.R2.fastq.gz {output_path}"
-        elif "nanopore" in output_path: #this is nanopore data
+        elif output_path.split("/", 1)[0] in [t + "-reads" for t in LONG_READ_TYPES]: #this is long-read data (nanopore or PacBio)
             shell_command = f"mv sra-downloads/{remote_path}.fastq.gz {output_path}"
         return shell_command
 
@@ -179,7 +179,7 @@ def get_sra_path_from_local_path(local_path, file_name):
         if file_name.endswith(read_ending):
             return(f"sra-downloads/{run_accession}{read_ending}")
 
-    # Nanopore reads
+    # Long reads (nanopore or PacBio): one read per spot, all in one file
     return(f"sra-downloads/{run_accession}.fastq.gz")
 
 rule download_file:
@@ -193,7 +193,7 @@ rule download_file:
         shell_command = lambda wildcards: remote_path_to_shell_command(sample_info.get_remote_path_from_local_path(wildcards.download_type + "/" + wildcards.sample), wildcards.download_type + "/temp_" + wildcards.sample, wildcards.download_type + "/" + wildcards.sample)
     threads: 1
     wildcard_constraints:
-        download_type="(references|illumina-reads|nanopore-reads)"
+        download_type="(references|illumina-reads|" + "|".join(t + "-reads" for t in LONG_READ_TYPES) + ")"
     resources:
         # This is an invented resource to prevent opening too many download connections at once!
         # We calculate this so we can use 0 here for SRA downloads handled by a separate function
@@ -218,7 +218,17 @@ SRA_RUN_ACCESSION_CONSTRAINT = "[A-Za-z0-9]+"
 # that is really single-end, or illumina-SE/nanopore for a run that is really paired)
 # before a long download happens. This only reads run metadata, which takes seconds.
 SRA_LAYOUT_CHECK_SCRIPT = os.path.join(str(workflow.current_basedir), "..", "scripts", "check_sra_layout.sh")
-SRA_LAYOUT_MISMATCH_MODE = "warn" if config_is_true("SRA_IGNORE_LAYOUT_MISMATCH") else "error"
+# Can be set per sample in data.csv; applies to a run if any sample listing it sets it.
+def get_sra_layout_mismatch_mode(run_accession):
+    run_samples = []
+    for this_sample in sample_info.get_sample_list():
+        for this_file_list in sample_info.file_lists_by_sample_by_type.get(this_sample, {}).values():
+            if any(os.path.basename(f).split(".")[0] == run_accession for f in this_file_list):
+                run_samples.append(this_sample)
+                break
+    if len(run_samples) == 0:
+        return "warn" if config_is_true("SRA_IGNORE_LAYOUT_MISMATCH") else "error"
+    return "warn" if any(config_is_true("SRA_IGNORE_LAYOUT_MISMATCH", sample=s) for s in run_samples) else "error"
 
 rule download_paired_sra:
     output:
@@ -234,11 +244,13 @@ rule download_paired_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} paired {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} paired {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 
@@ -253,7 +265,7 @@ rule download_paired_sra:
 
         if [ ! -s {wildcards.run_accession}_1.fastq ] || [ ! -s {wildcards.run_accession}_2.fastq ]; then
             echo "ERROR: SRA run {wildcards.run_accession} did not yield any paired reads." >&2
-            echo "       It appears to be single-end. Use type 'illumina-SE' (or 'nanopore')" >&2
+            echo "       It appears to be single-end. Use type 'illumina-SE' (or a long-read type such as 'nanopore-hq' or 'pacbio-hifi')" >&2
             echo "       for this accession in data.csv instead of 'illumina-PE'." >&2
             exit 1
         fi
@@ -282,11 +294,13 @@ rule download_single_end_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 
@@ -309,11 +323,13 @@ rule download_nanopore_sra:
         connections=1
     wildcard_constraints:
         run_accession=SRA_RUN_ACCESSION_CONSTRAINT
+    params:
+        sra_layout_mismatch_mode = lambda wildcards: get_sra_layout_mismatch_mode(wildcards.run_accession)
     conda:
         "../envs/download.yml"
     shell:
         """
-        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {SRA_LAYOUT_MISMATCH_MODE}
+        bash {SRA_LAYOUT_CHECK_SCRIPT} {wildcards.run_accession} single {params.sra_layout_mismatch_mode}
 
         cd sra-downloads
 

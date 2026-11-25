@@ -10,14 +10,10 @@ MERGE = 0      # Merge together all of the BAM files
 SORT = 1      # Sort reads by coordinate in the BAM file
 INDEX = 1     # Create BAM indexes *.bai
 
-if 'SORT' in brefito_config.keys():
-    SORT = brefito_config['SORT']
-
-if 'MERGE' in brefito_config.keys():
-    MERGE = brefito_config['MERGE']
-
-if 'INDEX' in brefito_config.keys():
-    INDEX = brefito_config['INDEX']
+# These change which output files exist, so they can't vary between samples
+SORT = int(config_is_true_for_all_samples('SORT', SORT))
+MERGE = int(config_is_true_for_all_samples('MERGE', MERGE))
+INDEX = int(config_is_true_for_all_samples('INDEX', INDEX))
 
 # Can't index if we don't sort
 if SORT == 0:
@@ -85,17 +81,7 @@ else: # Not merged
         SAMTOOLS_MERGE_OUTPUT_SUFFIX =   ".unused.4"
 
 
-BOWTIE2_OPTIONS = ""
-if 'BOWTIE2_OPTIONS' in brefito_config.keys():
-    BOWTIE2_OPTIONS = brefito_config['BOWTIE2_OPTIONS'] 
-
-BOWTIE2_PE_OPTIONS = ""
-if 'BOWTIE2_PE_OPTIONS' in brefito_config.keys():
-    BOWTIE2_PE_OPTIONS = brefito_config['BOWTIE2_PE_OPTIONS'] 
-
-BOWTIE2_SE_OPTIONS = ""
-if 'BOWTIE2_SE_OPTIONS' in brefito_config.keys():
-    BOWTIE2_SE_OPTIONS = brefito_config['BOWTIE2_SE_OPTIONS'] 
+# BOWTIE2_OPTIONS, BOWTIE2_PE_OPTIONS and BOWTIE2_SE_OPTIONS can be set per sample in data.csv
 
 ## The output files change depending on the options
 
@@ -112,10 +98,12 @@ def get_all_output_files_list():
         all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/reference.gff3")
         
         if not MERGE:
-            for n in sample_info.get_nanopore_read_base_list(s):
-                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam".format(n))
+            long_read_type = sample_info.get_long_read_type(s)
+            for n in sample_info.get_long_read_base_list(s):
+                prefix = long_read_bam_prefix(long_read_type)
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + ".{}.bam".format(n))
                 if INDEX:
-                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads.{}.bam.bai".format(n))
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + ".{}.bam.bai".format(n))
 
             for i_se in sample_info.get_illumina_SE_read_base_list(s):
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.SE.bam".format(i_se))
@@ -128,10 +116,11 @@ def get_all_output_files_list():
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads.{}.PE.bam.bai".format(i_pe))
 
         else: # MERGE
-            if len(sample_info.get_nanopore_read_base_list(s)) > 0:
-                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads_merged.bam")
+            if len(sample_info.get_long_read_base_list(s)) > 0:
+                prefix = long_read_bam_prefix(sample_info.get_long_read_type(s))
+                all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + "_merged.bam")
                 if INDEX:
-                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/nanopore_reads_merged.bam.bai")
+                    all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/" + prefix + "_merged.bam.bai")
             if len(sample_info.get_illumina_SE_read_base_list(s) + sample_info.get_illumina_PE_read_base_list(s)) > 0:
                 all_output_files_list.append("aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + s + "/illumina_reads_merged.bam")
                 if INDEX:
@@ -145,19 +134,25 @@ rule all_align_reads:
         get_all_output_files_list()
     default_target: True
 
+# Long reads of any type, with the minimap2 preset for that type (map-ont, lr:hq, map-pb, map-hifi;
+# see LONG_READ_SETTINGS)
 rule align_nanopore_reads:
     input:
-        reads = "nanopore-reads-trimmed/{reads}.fastq.gz",
+        reads = lambda wildcards: LONG_READ_BAM_PREFIXES[wildcards.long_read_prefix] + "-reads-trimmed/" + wildcards.reads + ".fastq.gz",
         reference = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/reference.fasta"
     output:
-        temp("aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads.{reads}.sam")
+        temp("aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{long_read_prefix}.{reads}.sam")
+    wildcard_constraints:
+        long_read_prefix=LONG_READ_BAM_PREFIX_REGEX
     log:
-        "logs/align-nanopore-reads-" + sample_info.get_reference_prefix() + "-{sample}-{reads}.log"
+        "logs/align-{long_read_prefix}-" + sample_info.get_reference_prefix() + "-{sample}-{reads}.log"
     conda:
         "../envs/minimap2.yml"
+    params:
+        preset = lambda wildcards: long_read_setting(LONG_READ_BAM_PREFIXES[wildcards.long_read_prefix], "minimap2")
     threads: 12
     shell:
-        "minimap2 --secondary=no -t {threads} -x map-ont -a -o {output} {input.reference} {input.reads} > {log} 2>&1"
+        "minimap2 --secondary=no -t {threads} -x {params.preset} -a -o {output} {input.reference} {input.reads} > {log} 2>&1"
 
 rule align_PE_illumina_reads:
     input:
@@ -170,12 +165,14 @@ rule align_PE_illumina_reads:
     conda:
         "../envs/bowtie2.yml"
     params:
-        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.PE.bowtie2_index"
+        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.PE.bowtie2_index",
+        bowtie2_options = lambda wildcards: get_config_value('BOWTIE2_OPTIONS', "", wildcards.sample),
+        bowtie2_pe_options = lambda wildcards: get_config_value('BOWTIE2_PE_OPTIONS', "", wildcards.sample),
     threads: 12
     shell:
         """
         bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 {BOWTIE2_PE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
+        bowtie2 {params.bowtie2_pe_options} {params.bowtie2_options} --threads {threads} -x {params.bowtie2_index} -1 {input.reads[0]} -2 {input.reads[1]} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 
@@ -190,12 +187,14 @@ rule align_SE_illumina_reads:
     conda:
         "../envs/bowtie2.yml"
     params:
-        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.SE.bowtie2_index"
+        bowtie2_index = "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/illumina_reads.{reads}.SE.bowtie2_index",
+        bowtie2_options = lambda wildcards: get_config_value('BOWTIE2_OPTIONS', "", wildcards.sample),
+        bowtie2_se_options = lambda wildcards: get_config_value('BOWTIE2_SE_OPTIONS', "", wildcards.sample),
     threads: 12
     shell:
         """
         bowtie2-build --threads {threads} {input.reference} {params.bowtie2_index} > {log} 2>&1
-        bowtie2 {BOWTIE2_SE_OPTIONS} {BOWTIE2_OPTIONS} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
+        bowtie2 {params.bowtie2_se_options} {params.bowtie2_options} --threads {threads} -x {params.bowtie2_index} -U {input.reads} -S {output} >> {log} 2>&1
         rm {params.bowtie2_index}*
         """
 
@@ -234,11 +233,13 @@ rule samtools_sort:
 # This operates on sorted BAM files
 rule samtools_merge_nanopore:
     input:
-        lambda wildcards: [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/nanopore_reads." + s + SAMTOOLS_MERGE_INPUT_SUFFIX for s in sample_info.get_nanopore_read_base_list(wildcards.sample)]
+        lambda wildcards: [ "aligned-reads-" + sample_info.get_reference_prefix() + "/data/" + wildcards.sample + "/" + wildcards.long_read_prefix + "." + s + SAMTOOLS_MERGE_INPUT_SUFFIX for s in sample_info.get_long_read_base_list(wildcards.sample)]
     output:
-        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/nanopore_reads_merged" + SAMTOOLS_MERGE_OUTPUT_SUFFIX
+        "aligned-reads-" + sample_info.get_reference_prefix() + "/data/{sample}/{long_read_prefix}_merged" + SAMTOOLS_MERGE_OUTPUT_SUFFIX
+    wildcard_constraints:
+        long_read_prefix=LONG_READ_BAM_PREFIX_REGEX
     log:
-        "logs/samtools-merge-" + sample_info.get_reference_prefix() + "-{sample}-nanopore.log"
+        "logs/samtools-merge-" + sample_info.get_reference_prefix() + "-{sample}-{long_read_prefix}.log"
     conda:
         "../envs/samtools.yml"
     threads: 12

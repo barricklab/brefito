@@ -22,18 +22,33 @@ FULL_FASTQ_IDS = ["25", "26", "27", "28", "29"]
 
 ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLISH_RESAMPLED_IDS + CANU_RESAMPLED_IDS + NECAT_RESAMPLED_IDS + UNICYCLER_RESAMPLED_IDS
 
+# Long reads of any type. The assemblers are told the dataset's read type (flye, canu, and
+# minimap2 overlaps for miniasm); NECAT assembles nanopore reads only, so it is left out of the
+# clustering for PacBio datasets.
+def get_trycycler_assembly_ids(dataset):
+    if long_read_setting(sample_info.get_long_read_type(dataset), "necat"):
+        return ALL_RESAMPLED_IDS
+    return [i for i in ALL_RESAMPLED_IDS if i not in NECAT_RESAMPLED_IDS]
+
+def get_trycycler_subsampled_reads(dataset, assembly_id):
+    return sample_info.get_long_read_type(dataset) + "-reads-subsampled/" + dataset + "/sample_" + assembly_id + ".fastq"
+
+def get_trycycler_read_setting(dataset, key):
+    return long_read_setting(sample_info.get_long_read_type(dataset), key)
+
 rule all_trycycler_cluster:
     input:
-        ["trycycler/" + s + "/done" for s in sample_info.get_sample_list() ]
+        ["trycycler/" + s + "/done" for s in sample_info.get_samples_with_long_reads() ]
     default_target: True
 
 rule copy_full_fastq:
     input:
-        "nanopore-reads-filtered/{dataset}.fastq"
+        "{lrt}-reads-filtered/{dataset}.fastq"
     wildcard_constraints:
         assembly_id="|".join(FULL_FASTQ_IDS),
+        lrt=LONG_READ_TYPE_REGEX
     output:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        "{lrt}-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
     threads: 1
     shell:
         "cp {input} {output}"
@@ -41,7 +56,7 @@ rule copy_full_fastq:
 
 rule assemble_with_flye:
     input:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(FLYE_RESAMPLED_IDS),
     output:
@@ -50,14 +65,16 @@ rule assemble_with_flye:
         "logs/{dataset}/flye_{assembly_id}.log"
     conda:
         "../envs/flye.yml"
+    params:
+        read_type = lambda wildcards: get_trycycler_read_setting(wildcards.dataset, "flye")
     threads: 16
     shell:
-        "mkdir -p intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} && flye --nano-raw {input} --threads {threads} --out-dir intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} > {log} 2>&1 && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly.fasta {output} && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly_graph.gfa intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}_01.gfa"
+        "mkdir -p intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} && flye {params.read_type} {input} --threads {threads} --out-dir intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id} > {log} 2>&1 && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly.fasta {output} && cp intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}/assembly_graph.gfa intermediate-assemblies/{wildcards.dataset}/assembly_{wildcards.assembly_id}_01.gfa"
 
 
 rule assemble_with_miniasm_minipolish:
     input:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(MINIASM_MINIPOLISH_RESAMPLED_IDS),
     output:
@@ -67,6 +84,8 @@ rule assemble_with_miniasm_minipolish:
         "logs/{dataset}/miniasm_minipolish_{assembly_id}.log"
     conda:
         "../envs/miniasm_minipolish.yml"
+    params:
+        ava_preset = lambda wildcards: get_trycycler_read_setting(wildcards.dataset, "minimap2_ava")
     threads: 16
     shell:
         """
@@ -75,7 +94,7 @@ rule assemble_with_miniasm_minipolish:
         unpolished_assembly=$(mktemp)".gfa"
 
         # Find read overlaps with minimap2.
-        minimap2 -x ava-ont -t {threads} {input} {input} > "$overlaps" 2>> {log}
+        minimap2 -x {params.ava_preset} -t {threads} {input} {input} > "$overlaps" 2>> {log}
 
         # Run miniasm to make an unpolished assembly.
         miniasm -f {input} "$overlaps" > "$unpolished_assembly" 2>> {log}
@@ -92,7 +111,7 @@ rule assemble_with_miniasm_minipolish:
 
 rule assemble_with_raven:
     input:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(RAVEN_RESAMPLED_IDS),
     output:
@@ -109,7 +128,7 @@ rule assemble_with_raven:
 rule assemble_with_canu:
     priority: 2
     input:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(CANU_RESAMPLED_IDS),
     output:
@@ -117,10 +136,12 @@ rule assemble_with_canu:
         assembly_directory = directory("03_canu_assembly_temp/{dataset}/{assembly_id}")
     conda:
         "../envs/canu.yml"
+    params:
+        read_type = lambda wildcards: get_trycycler_read_setting(wildcards.dataset, "canu")
     threads: 16
     shell:
         """
-        canu -p canu -d {output.assembly_directory} -fast genomeSize="{config[genome_size]}" useGrid=false minThreads="{threads}" maxThreads="{threads}" -nanopore {input}
+        canu -p canu -d {output.assembly_directory} -fast genomeSize="{config[genome_size]}" useGrid=false minThreads="{threads}" maxThreads="{threads}" {params.read_type} {input}
         rm -rf canu_temp
         """
 
@@ -145,7 +166,7 @@ rule trim_canu_assembly:
 
 rule assemble_with_necat:
     input:
-        "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq"
+        lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id)
     wildcard_constraints:
         assembly_id="|".join(NECAT_RESAMPLED_IDS),
     output:
@@ -200,7 +221,7 @@ READ_NUMS = ["1", "2"]
 rule assemble_with_unicycler:
     priority: 1
     input:
-        long_reads = "nanopore-reads-subsampled/{dataset}/sample_{assembly_id}.fastq",
+        long_reads = lambda wildcards: get_trycycler_subsampled_reads(wildcards.dataset, wildcards.assembly_id),
         short_reads = expand("03_subsampled_illumina_reads/{{dataset}}/sample_{{assembly_id}}_R{read_num}.fastq.gz", read_num=READ_NUMS)
     wildcard_constraints:
         assembly_id="|".join(UNICYCLER_RESAMPLED_IDS),
@@ -222,8 +243,8 @@ rule assemble_with_unicycler:
 
 rule trycycler_cluster:
     input:
-        reads = "nanopore-reads-filtered/{dataset}.fastq",
-        assemblies = expand("intermediate-assemblies/{{dataset}}/assembly_{assembly_id}.fasta", assembly_id=ALL_RESAMPLED_IDS)
+        reads = lambda wildcards: sample_info.get_long_read_path(wildcards.dataset, "filtered"),
+        assemblies = lambda wildcards: expand("intermediate-assemblies/{dataset}/assembly_{assembly_id}.fasta", dataset=wildcards.dataset, assembly_id=get_trycycler_assembly_ids(wildcards.dataset))
     output:
         output_directory = directory("trycycler/{dataset}"),
         done_file = "trycycler/{dataset}/done"

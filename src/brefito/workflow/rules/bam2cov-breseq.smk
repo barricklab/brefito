@@ -11,20 +11,17 @@ except NameError:
 print()
 print("Config options for workflow :: bam2cov-breseq")
 
-BAM2COV_REGION = ""
-if 'BAM2COV_REGION' in brefito_config.keys():
-    BAM2COV_REGION = brefito_config['BAM2COV_REGION'] 
-elif 'REGION' in brefito_config.keys():
-    BAM2COV_REGION = brefito_config['REGION'] 
-else:
+# REGION and FORMAT name the output files, so they can't vary between samples
+BAM2COV_REGION = get_uniform_config_value('BAM2COV_REGION', get_uniform_config_value('REGION', ""))
+if BAM2COV_REGION == "":
     print()
     print("  You must provide a region for bam2cov. Add to your command: --config BAM2COV_REGION=seq_id:start-end")
     exit(1)
 
 
 BAM2COV_FORMAT = "png"
-if 'BAM2COV_FORMAT' in brefito_config.keys() and brefito_config['BAM2COV_FORMAT'] != None:
-    BAM2COV_FORMAT = brefito_config['BAM2COV_FORMAT']
+if get_uniform_config_value('BAM2COV_FORMAT') != None:
+    BAM2COV_FORMAT = get_uniform_config_value('BAM2COV_FORMAT')
 else:
     print()
     print("  Using default --config BAM2COV_FORMAT setting: --format " + BAM2COV_FORMAT)
@@ -32,14 +29,22 @@ else:
 BAM2COV_FORMAT = BAM2COV_FORMAT.lower()
 
 BAM2COV_OPTIONS = ""
-if 'BAM2COV_OPTIONS' in brefito_config.keys() and brefito_config['BAM2COV_OPTIONS'] != None:
-    BAM2COV_OPTIONS = brefito_config['BAM2COV_OPTIONS']
-    pattern = r"--format +\S+"
-    if re.search(pattern, BAM2COV_OPTIONS):
-       print()
-       print("Provide --format options through --config BAM2COV_FORMAT=\"png|svg|pdf|tsv|csv\" instead of BAM2COV_OPTIONS")
-       exit(1)
-else:
+
+# BAM2COV_OPTIONS can be set per sample in data.csv
+def get_cov_options(sample):
+    options = get_config_value('BAM2COV_OPTIONS', BAM2COV_OPTIONS, sample)
+    if options == None:
+        options = ""
+    if re.search(r"--format +\S+", options):
+        print()
+        print("Provide --format options through --config BAM2COV_FORMAT=\"png|svg|pdf|tsv|csv\" instead of BAM2COV_OPTIONS")
+        exit(1)
+    return options
+
+for this_sample in sample_info.get_sample_list():
+    get_cov_options(this_sample)
+
+if 'BAM2COV_OPTIONS' not in brefito_config.keys():
     print()
     print("  Using default --config BAM2COV_OPTIONS options: " + BAM2COV_OPTIONS)
     print("  You can change this using --config BAM2COV_OPTIONS=\"<options>\"")
@@ -61,6 +66,7 @@ rule bam2cov_breseq:
     output:
         "bam2cov-" + sample_info.get_reference_prefix() + "/{sample}/" + BAM2COV_OUTPUT_FILENAME
     params:
+        cov_options = lambda wildcards: get_cov_options(wildcards.sample),
         region = "bam2cov-" + sample_info.get_reference_prefix() + "/{sample}/" + BAM2COV_REGION
     log: 
         "logs/bam2cov-" + sample_info.get_reference_prefix() + "/{sample}/" + BAM2COV_REGION + ".log"
@@ -69,6 +75,6 @@ rule bam2cov_breseq:
     threads: 1 
     shell:
         """
-        echo "breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION}" > {log}
-        breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {BAM2COV_OPTIONS} --region {BAM2COV_REGION} >> {log} 2>&1
+        echo "breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {params.cov_options} --region {BAM2COV_REGION}" > {log}
+        breseq BAM2COV --output {output} --fasta {input.fasta} --bam {input.bam} --format {BAM2COV_FORMAT} {params.cov_options} --region {BAM2COV_REGION} >> {log} 2>&1
         """

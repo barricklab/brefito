@@ -5,23 +5,29 @@ except NameError:
 include: "filter-nanopore-reads.smk"
 
 
+# The default is the read-type option for the sample's long reads: --nano-raw (nanopore,
+# nanopore-raw), --nano-hq (nanopore-hq), --pacbio-raw (pacbio, pacbio-clr) or --pacbio-hifi
+# (pacbio-hifi). FLYE_OPTIONS replaces it, so it must
+# include the read-type option itself.
+DEFAULT_FLYE_OPTIONS = "--nano-raw"
+def get_default_flye_options(sample):
+    return long_read_setting(sample_info.get_long_read_type(sample), "flye")
+
 if 'FLYE_OPTIONS' in brefito_config.keys():
-    FLYE_OPTIONS = brefito_config['FLYE_OPTIONS']
     print("flye assembly with user-specified command-line options:")
-    print("  " + FLYE_OPTIONS)
+    print("  " + brefito_config['FLYE_OPTIONS'])
 else:
-    FLYE_OPTIONS="--nano-raw"
-    print("flye assembly with default command-line options:")
-    print("  " + FLYE_OPTIONS)
+    print("flye assembly with default command-line options (unless set per sample in data.csv):")
+    print("  " + DEFAULT_FLYE_OPTIONS + "   (nanopore-hq: --nano-hq, pacbio/pacbio-clr: --pacbio-raw, pacbio-hifi: --pacbio-hifi)")
     print("To change these options add something like this to your brefito command")
-    print("  --config FLYE_OPTIONS=\"--meta --nano-hq")
+    print("  --config FLYE_OPTIONS=\"--meta --nano-hq\"")
 
 rule all:
-    input: [ "assemblies/{}.fasta".format(d) for d in sample_info.get_samples_with_nanopore_reads()]
+    input: [ "assemblies/{}.fasta".format(d) for d in sample_info.get_samples_with_long_reads()]
 
 rule assemble_with_flye:
     input:
-        "nanopore-reads-filtered/{sample}.fastq"
+        lambda wildcards: sample_info.get_long_read_path(wildcards.sample, "filtered")
     output:
         fasta = "assemblies/{sample}.fasta",
         gfa = "assemblies/{sample}.gfa",
@@ -30,11 +36,13 @@ rule assemble_with_flye:
         "logs/flye_{sample}.log"
     conda:
         "../envs/flye.yml"
+    params:
+        flye_options = lambda wildcards: get_config_value('FLYE_OPTIONS', get_default_flye_options(wildcards.sample), wildcards.sample)
     threads: 8
     shell:
         """
         mkdir -p {output.tmpdir}
-        flye {FLYE_OPTIONS} {input} --threads {threads} --out-dir {output.tmpdir} > {log} 2>&1
+        flye {params.flye_options} {input} --threads {threads} --out-dir {output.tmpdir} > {log} 2>&1
         cp {output.tmpdir}/assembly.fasta {output.fasta}
         cp {output.tmpdir}/assembly_graph.gfa {output.gfa}
         """

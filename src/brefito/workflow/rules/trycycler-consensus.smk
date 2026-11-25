@@ -7,7 +7,7 @@ except NameError:
 
 rule all_trycycler_consensus:
     input:
-        ["assemblies/" + s + ".fasta" for s in sample_info.get_samples_with_nanopore_reads() ]
+        ["assemblies/" + s + ".fasta" for s in sample_info.get_samples_with_long_reads() ]
     default_target: True
 
 def find_all_contigs_for_sample(wildcards):
@@ -48,7 +48,7 @@ rule trycycler_msa:
 
 rule trycycler_partition:
     input:
-        reads = "nanopore-reads-filtered/{dataset}.fastq",
+        reads = lambda wildcards: sample_info.get_long_read_path(wildcards.dataset, "filtered"),
         all_seqs = "trycycler/{dataset}/cluster_{cluster_id}/3_msa.fasta"
     output:
         "trycycler/{dataset}/cluster_{cluster_id}/4_reads.fastq"

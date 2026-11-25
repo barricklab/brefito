@@ -11,30 +11,33 @@ ALL_RESAMPLED_IDS = FLYE_RESAMPLED_IDS + RAVEN_RESAMPLED_IDS + MINIASM_MINIPOLIS
 
 SUBSAMPLE_OPTIONS = "--genome_size " + str(config["genome_size"])
 if "SUBSAMPLE_OPTIONS" not in config.keys():
-    print("Subsampling nanopore reads using default trycycler subsample command-line options:")
+    print("Subsampling long reads using default trycycler subsample command-line options:")
     print("  " + SUBSAMPLE_OPTIONS)
     print("To change these options add something like this to your brefito command")
     print("  --config SUBSAMPLE_OPTIONS=\"--genome_size 4600000 --min_read_depth 60\"")
 else:
     SUBSAMPLE_OPTIONS = config["SUBSAMPLE_OPTIONS"]
-    print("Subsampling nanopore reads with user-specified trycycler subsample command-line options:")
+    print("Subsampling long reads with user-specified trycycler subsample command-line options:")
     print("  " + SUBSAMPLE_OPTIONS)
 
+# Long reads of any type: <type>-reads-filtered/<sample>.fastq -> <type>-reads-subsampled/<sample>/
 rule all_subsample_nanopore_reads:
     input:
-        ["nanopore-reads-subsampled/" + s + "/sample_01.fastq" for s in sample_info.get_sample_list() ]
+        [sample_info.get_long_read_type(s) + "-reads-subsampled/" + s + "/sample_01.fastq" for s in sample_info.get_samples_with_long_reads()]
     default_target: True
 
 rule subsample_nanopore_reads:
     input:
-        "nanopore-reads-filtered/{sample}.fastq"
+        "{lrt}-reads-filtered/{sample}.fastq"
     output:
-        expand("nanopore-reads-subsampled/{{sample}}/sample_{assembly_id}.fastq", assembly_id=ALL_RESAMPLED_IDS)
+        expand("{{lrt}}-reads-subsampled/{{sample}}/sample_{assembly_id}.fastq", assembly_id=ALL_RESAMPLED_IDS)
+    wildcard_constraints:
+        lrt=LONG_READ_TYPE_REGEX
     conda:
         "../envs/trycycler.yml"
     log:
-        "logs/trycycler-subsample-{sample}.log"
+        "logs/trycycler-subsample-{lrt}-{sample}.log"
     shell:
-        "trycycler subsample {SUBSAMPLE_OPTIONS} --reads {input} --count 24 --out_dir nanopore-reads-subsampled/{wildcards.sample} > {log} 2>&1"
+        "trycycler subsample {SUBSAMPLE_OPTIONS} --reads {input} --count 24 --out_dir {wildcards.lrt}-reads-subsampled/{wildcards.sample} > {log} 2>&1"
 
 

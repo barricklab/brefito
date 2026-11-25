@@ -29,6 +29,31 @@ user explicitly directs you to. In particular:
 - Commit on the worktree branch. Only touch `main` or the main checkout when the user asks
   you to merge or commit there.
 
+## User documentation lives in the GitHub wiki: update it with user-visible changes
+
+The user documentation is the GitHub wiki (https://github.com/barricklab/brefito/wiki), which
+the README links to. It is a separate git repository,
+`https://github.com/barricklab/brefito.wiki.git`, with one Markdown file per page:
+
+- `Home.md`: landing page
+- `Installation.md`: installing brefito
+- `Overview.md`: running brefito, the `data.csv` format (sample/type/setting columns, the table
+  of valid types, setting prefixes such as `sra://`), file name rules and alternate reference
+  directories
+- `Workflows.md`: each workflow, its inputs, outputs and config options
+
+When a change alters anything users see, edit the matching wiki page in the same piece of work.
+That includes `data.csv` types or columns, config options and their defaults, workflow names,
+inputs or outputs, directory layout, and CLI flags. CLAUDE.md is for working on the code and is
+not a substitute for the wiki. Write for users: explain what to put in `data.csv` or on the
+command line and what comes out, not how the code works.
+
+Use a clone that sits next to the main checkout (`../brefito.wiki`), cloning it if it is not
+there. Run `git pull` first, since the wiki is also edited on the web. The git rules above apply
+to the wiki too. Pushing publishes the pages immediately, so show the user the wiki diff and get
+an explicit OK before you commit or push. A wiki edit for a feature still on a branch should be
+pushed only once that branch is merged.
+
 ## What brefito is
 
 `brefito` is a Python CLI that wraps Snakemake workflows for microbial genome assembly, polishing, annotation, and mutation prediction. Each workflow is a standalone `.smk` file; `brefito` resolves sample data and invokes `snakemake --use-conda` with the appropriate file and config arguments.
@@ -88,16 +113,60 @@ except NameError:
 ```
 
 `load-sample-info.smk` defines the `SampleInfo` class and instantiates `sample_info`. It loads from `data.csv` if present, otherwise auto-scans these directories:
-- `nanopore-reads/` — `*.fastq.gz`
+- `<type>-reads/` for each long-read type (`nanopore-reads/`, `nanopore-hq-reads/`, `pacbio-hifi-reads/`, …) — `*.fastq.gz`
 - `illumina-reads/` — `*.R1.fastq.gz`, `*.R2.fastq.gz`, `*.fastq.gz` (SE)
 - `assemblies/` — `*.fasta`, `*.fna`, `*.fa`
 - `references/` — genome/annotation files
 
-The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: `nanopore`, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or arbitrary option keys (e.g., `breseq_option`). SRA accessions are supported via `sra://SRRxxxxxx`.
+The `data.csv` format has columns `sample`, `type`, `setting`. Valid types: the long-read types below, `illumina-PE` (paired, use `{1|2}` placeholder), `illumina-R1`, `illumina-R2`, `illumina-SE`, `reference`, or the name of any `--config` option (see below). SRA run accessions are supported via `sra://SRRxxxxxx` (or `ERR…`/`DRR…`, the ENA and DDBJ run accessions, which the SRA also serves).
+
+**Long reads.** The long-read types (`LONG_READ_TYPES`, from `LONG_READ_SETTINGS` in `load-sample-info.smk`) are:
+- `nanopore-raw`: older, noisier nanopore reads (R9.4.1, or basecalled before Guppy 5 SUP)
+- `nanopore-hq`: high-accuracy nanopore reads (R10.4.1 SUP, Q20+, under ~5% error)
+- `nanopore`: accuracy not stated; runs with the `nanopore-raw` settings
+- `pacbio-clr`: PacBio RS II/Sequel continuous long reads
+- `pacbio-hifi`: PacBio HiFi/CCS
+- `pacbio`: kind not stated; runs with the `pacbio-clr` settings
+
+The unqualified types get the settings for the noisier reads. Those still work, if not optimally, on accurate reads, but settings for accurate reads give poor results on noisy ones. Use `nanopore-hq` for modern R10.4.1 data.
+
+A sample may have reads of at most one long-read type; mixing them in one sample (even `nanopore` and `nanopore-hq`) is an error at load time. Each type has its own directories, `<type>-reads/`, `<type>-reads-trimmed/`, `<type>-reads-filtered/`, `<type>-reads-subsampled/`, so nanopore paths are unchanged. Aligned reads are `<type with _>_reads.*` (`nanopore_reads.*`, `nanopore_hq_reads.*`, `pacbio_clr_reads.*`, …). Rules take the read type from an `{lrt}` wildcard (or `{long_read_prefix}` in align-reads), and per-type tool settings come from `LONG_READ_SETTINGS` via `long_read_setting(type, key)`; `is_nanopore_type(type)` tells ONT types from PacBio ones:
+
+| | `nanopore`, `nanopore-raw` | `nanopore-hq` | `pacbio`, `pacbio-clr` | `pacbio-hifi` |
+|---|---|---|---|---|
+| minimap2 (align-reads) | `map-ont` | `lr:hq` | `map-pb` | `map-hifi` |
+| minimap2 overlaps (miniasm) | `ava-ont` | `ava-ont` | `ava-pb` | `ava-pb` |
+| flye | `--nano-raw` | `--nano-hq` | `--pacbio-raw` | `--pacbio-hifi` |
+| canu | `-nanopore` | `-nanopore` | `-pacbio` | `-pacbio-hifi` |
+| autocycler helper `--read_type` | `ont_r9` | `ont_r10` | `pacbio_clr` | `pacbio_hifi` |
+| metaMDBG (autocycler) | left out | yes | left out | yes |
+| NECAT (autocycler, trycycler) | yes | yes | left out | left out |
+| porechop trimming (`NANOPORE_TRIMMING`) | yes | yes | no (linked through) | no (linked through) |
+| medaka model (`MEDAKA_MODEL` overrides) | `r941_min_sup_g507` | `r1041_e82_400bps_sup_v4.3.0` | refused | refused |
+| filtlong default | `--min_length 1000 --keep_percent 90` | same | same | `--min_length 1000` |
+| breseq default (minimap2-breseq) | `-x --require-match-fraction 0.0` | same | `--require-match-fraction 0.0` | same |
+
+`polish-medaka` stops with an error for PacBio samples. Set `MEDAKA_MODEL` (per sample in data.csv, or `--config`) when the default model does not match the reads' flow cell and basecaller, e.g. for R9.4.1 SUP reads typed `nanopore-hq`. `NANOPORE_FILTERING` and `FILTLONG_OPTIONS` apply to every long-read type. Rule and workflow names keep their historical `nanopore` names (`filter-nanopore-reads`, `align_nanopore_reads`, ...) although they handle all long reads.
+
+A `sample` containing `*`, `?` or `[...]` is a shell glob (no regex). Glob rows are expanded after the whole file is read, so they apply to every sample named exactly anywhere in the file, not just earlier rows. A glob matching nothing is warned about.
+
+**Per-sample options in data.csv.** A row whose `type` is a config key (case-insensitive) sets that option for the matching sample(s), e.g. `REL1166A,BRESEQ_OPTIONS,--polymorphism-mode`. Resolution for key `K` (`get_config_value()` in `load-sample-info.smk`):
+1. Workflow default.
+2. data.csv `K`: a row naming the sample exactly beats a glob row; among rows at the same level, the later row wins. Replaces the default.
+3. data.csv `K_ADD`: every matching row is appended, in file order.
+4. Command-line `--config K=...` replaces all of the above, with a WARNING listing the affected samples.
+5. Command-line `--config K_ADD=...` or `brefito --config-add K=...` is put in front of the result (command line first, then data.csv).
+
+On/off flags (`config_is_true(name, default, sample=None)`): a blank data.csv setting means on; `0/false/no/off` means off. Keys brefito sets itself (`SAMPLES`, `REFERENCES`, `DATA_CSV`, `BREFITO_PACKAGE_PATH`, `QUERY_FILE_PATH`, `BRESEQ_PRERELEASE`) cannot be set in data.csv.
+
+Some options cannot vary between samples. These are rule-order choices like `ILLUMINA_TRIMMING`/`NANOPORE_TRIMMING`/`NANOPORE_FILTERING`, thread counts, and keys that name output files (`*_REGION`, `*_FORMAT`, `SORT`/`MERGE`/`INDEX`). Per-read-file options like `FASTP_*` also cannot vary between the samples that share a read file. Workflows read these with `get_uniform_config_value()`, which accepts a data.csv value only if every relevant sample agrees and otherwise exits with an error.
+
+When writing workflows, read per-sample options in a rule's `params:` (`lambda wildcards: get_config_value('KEY', DEFAULT, wildcards.sample)`) and use `{params.x}` in `shell:`, rather than a module-level global.
 
 `SampleInfo` methods used in rules:
 - `get_sample_list()` — all sample names
-- `get_nanopore_read_list(sample)` / `get_illumina_PE_read_base_list(sample)` — file lists
+- `get_nanopore_read_list(sample)` (every nanopore type) / `get_illumina_PE_read_base_list(sample)` — file lists
+- `get_long_read_type(sample)` (None or one of `LONG_READ_TYPES`), `get_long_read_list(sample)`, `get_long_read_base_list(sample)`, `get_samples_with_long_reads()`, `get_long_read_path(sample, stage, suffix)` — long reads of whichever type the sample has; use these, not the nanopore ones, in new workflows
 - `get_reference_list(sample)` / `get_reference_arguments(sample, '-r ')` — reference files
 - `get_reference_prefix()` — the active reference directory name
 
@@ -108,13 +177,27 @@ Each `.smk` file is a self-contained workflow. Key workflows:
 | Category | Workflows |
 |----------|-----------|
 | Assembly | `autocycler-assemble`, `assemble-flye`, `assemble-unicycler` |
-| Polishing | `polish-breseq`, `polish-medaka`, `polish-polypolish`, `polish-polca` |
+| Polishing | `polish-breseq`, `polish-medaka`, `polish-polypolish` |
 | Mutation prediction | `predict-mutations-breseq`, `predict-mutations-minimap2-breseq` |
 | Read QC | `trim-illumina-reads`, `trim-nanopore-reads`, `filter-nanopore-reads`, `evaluate-nanopore-reads` |
 | Annotation | `annotate-genomes` |
 | Comparison | `compare-syri`, `compare-assemblies-breseq`, `compare-mutations-breseq`, `compare-genome-diffs-breseq` |
+| GenomeDiff files | `validate-genome-diff-gdtools`, `clean-genome-diffs-gdtools` |
 | Reads/data | `download-data`, `data-to-sra`, `merge-reads`, `align-reads` |
 | Analysis | `classify-kraken2`, `search-blast`, `predict-cnv-breseq`, `tabulate-ssrs-breseq`, `evaluate-coverage-breseq` |
+
+`annotate-genomes` runs Prokka, then ISEScan, then PhiSpy, and combines them with
+`breseq CONVERT-REFERENCE`. Each stage has a skip flag, settable globally or per sample in data.csv:
+`SKIP_PROKKA` keeps the reference's own gene annotations (so the only additions are ISEScan's IS elements
+and PhiSpy's prophages), `SKIP_ISESCAN` and `SKIP_PHISPY` drop those stages. The output path
+`annotated-<references>/<sample>.gbk` is the same whichever are set. Adding IS element annotations to a
+reference that lacks them is `--config SKIP_PROKKA=1 SKIP_PHISPY=1`.
+
+`clean-genome-diffs-gdtools` rewrites `genome-diffs/<sample>.gd` into `genome-diffs-clean/<sample>.gd`,
+keeping only mutation entries and writing a dot (`.`) for the id and parent-ids columns, so that editing a
+GenomeDiff file under version control does not renumber every entry after the change. It needs a breseq
+build that has `gdtools REMOVE --clear-ids`: pass `--breseq-prerelease`, or `--breseq-path DIR` to use a
+local build.
 
 `autocycler-assemble` runs 6 assemblers (canu, flye, miniasm, necat, metamdbg, raven) × 4 subsampled read sets, then uses autocycler cluster/trim/resolve/combine to produce a consensus assembly in `assemblies/<sample>.fasta`. It requires `--config genome_size=<bp>`.
 
@@ -132,6 +215,8 @@ Config is passed as `--config key=value` and accessed in rules as `brefito_confi
 - `data_csv` — path to data CSV (default: `data.csv`)
 - `references` — reference directory name (default: `references`)
 - `samples` — underscore-comma-separated sample filter (set automatically from CLI positional args)
-- `genome_size` — required by autocycler-assemble
+- `genome_size` — required by autocycler-assemble (can be set per sample in data.csv)
 - `BRESEQ_THREADS`, `BRESEQ_OPTIONS`, `NO_DEFAULT_BRESEQ_OPTIONS` — breseq tuning
 - `SRA_IGNORE_LAYOUT_MISMATCH` — downgrade the paired/single-end check on `sra://` downloads from an error to a warning
+
+Any of these can also be set per sample in data.csv (see above). Use `--config-add KEY=VALUE` (same as `--config KEY_ADD=VALUE`) to add to data.csv settings instead of overriding them.

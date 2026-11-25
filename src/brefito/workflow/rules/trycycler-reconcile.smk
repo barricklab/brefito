@@ -19,7 +19,7 @@ print()
 
 def get_all_trycycler_reconcile_outputs():
     smk_targets = []
-    for s in sample_info.get_samples_with_nanopore_reads():
+    for s in sample_info.get_samples_with_long_reads():
         for this_input_file in glob.glob(os.path.join("trycycler", s, "cluster_*")):
             smk_targets.append(os.path.join(this_input_file, "2_all_seqs.fasta"))
     return(smk_targets)
@@ -31,7 +31,7 @@ rule all_trycycler_reconcile:
 
 rule trycycler_reconcile:
     input:
-        reads = "nanopore-reads-filtered/{dataset}.fastq",
+        reads = lambda wildcards: sample_info.get_long_read_path(wildcards.dataset, "filtered"),
     output:
         "trycycler/{dataset}/cluster_{cluster_id}/2_all_seqs.fasta"
     conda:

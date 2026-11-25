@@ -3,5 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - flye =2.9.3
+  - flye =2.9.7
 name: flye
